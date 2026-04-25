@@ -14,7 +14,7 @@ export default function App() {
         <Pressable
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
           onPress={() =>
-            Linking.openURL('https://github.com/Urgi/SermonRecall-site').catch(() => {})
+            Linking.openURL('https://github.com/Urgi/sermon-recall-site').catch(() => {})
           }
         >
           <Text style={styles.ctaLabel}>Site repo on GitHub</Text>
