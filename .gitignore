@@ -3,20 +3,15 @@
 # dependencies
 node_modules/
 
-# Expo
+# Next.js
+.next/
+out/
+
+# Expo (legacy / local clones)
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
 
 # Metro
 .metro-health-check*

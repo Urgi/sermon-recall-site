@@ -1,6 +1,6 @@
 # Workspace layout
 
-This repository is the **Sermon Recall marketing site** (Expo + React Native for Web).
+This repository is the **Sermon Recall marketing site** (Next.js 14, App Router, Tailwind CSS).
 
 The mobile app is a **separate repo**:
 
