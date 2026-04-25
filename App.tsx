@@ -14,10 +14,10 @@ export default function App() {
         <Pressable
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
           onPress={() =>
-            Linking.openURL('https://github.com/Urgi/SermonRecall').catch(() => {})
+            Linking.openURL('https://github.com/Urgi/SermonRecall-site').catch(() => {})
           }
         >
-          <Text style={styles.ctaLabel}>View project on GitHub</Text>
+          <Text style={styles.ctaLabel}>Site repo on GitHub</Text>
         </Pressable>
       </View>
       <Text style={styles.footer}>Run locally: cd site && npm run web</Text>
