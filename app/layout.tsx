@@ -3,9 +3,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Sermon Recall',
+  title: 'Sermon Recall — Church admin',
   description:
-    'Bridge Sunday to the rest of the week with a sermon-to-devotional pipeline for pastors and church leaders.',
+    'Pastor web portal: sermon ingestion, devotional review, and congregation engagement for Sermon Recall.',
 };
 
 export default function RootLayout({

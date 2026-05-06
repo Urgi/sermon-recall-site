@@ -1,0 +1,130 @@
+/** Shape returned by Gemini and accepted by publish API (no DB ids). */
+
+export type GeminiDevotionalDay = {
+  day_number: number;
+  title: string;
+  main_content: string;
+  scripture_reference: string | null;
+  scripture_text: string | null;
+  reflection_question: string;
+  estimated_minutes: number;
+  /** Short retrieval question answered before reading the day’s content (optional). */
+  pre_prompt: string | null;
+};
+
+const MAX_TITLE = 600;
+const MAX_MAIN = 48_000;
+const MAX_SCRIPTURE_REF = 400;
+const MAX_SCRIPTURE_TEXT = 8_000;
+const MAX_REFLECTION = 2_000;
+const MAX_PRE_PROMPT = 2_000;
+
+export function clampMinutes(n: number | undefined): number {
+  if (typeof n !== 'number' || Number.isNaN(n)) return 4;
+  return Math.min(12, Math.max(3, Math.round(n)));
+}
+
+/** Parse model JSON string (same rules as generate route). */
+export function parseDaysFromModelJson(raw: string): GeminiDevotionalDay[] {
+  let text = raw.trim();
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '');
+  }
+  const parsed = JSON.parse(text) as unknown;
+  return normalizeDaysArray(parsed);
+}
+
+/** Validate body from client before insert. */
+export function parseDaysFromClientPayload(days: unknown): GeminiDevotionalDay[] {
+  return normalizeDaysArray(days);
+}
+
+function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
+  if (!Array.isArray(parsed)) {
+    throw new Error('Expected an array of 6 devotionals.');
+  }
+  if (parsed.length !== 6) {
+    throw new Error(`Expected 6 devotionals, got ${parsed.length}.`);
+  }
+  const out: GeminiDevotionalDay[] = [];
+  const seen = new Set<number>();
+  for (let i = 0; i < parsed.length; i++) {
+    const item = parsed[i] as Record<string, unknown>;
+    if (!item || typeof item.day_number !== 'number') {
+      throw new Error(`Invalid devotional at index ${i}.`);
+    }
+    const n = item.day_number;
+    if (n < 1 || n > 6) throw new Error(`Invalid day_number ${n}.`);
+    if (seen.has(n)) throw new Error(`Duplicate day_number ${n}.`);
+    seen.add(n);
+
+    const title = typeof item.title === 'string' ? item.title.trim() : '';
+    const main_content = typeof item.main_content === 'string' ? item.main_content.trim() : '';
+    const reflection_question =
+      typeof item.reflection_question === 'string' ? item.reflection_question.trim() : '';
+    if (!title || !main_content || !reflection_question) {
+      throw new Error(`Day ${n} is missing title, main_content, or reflection_question.`);
+    }
+    if (title.length > MAX_TITLE) throw new Error(`Day ${n} title is too long.`);
+    if (main_content.length > MAX_MAIN) throw new Error(`Day ${n} content is too long.`);
+    if (reflection_question.length > MAX_REFLECTION) {
+      throw new Error(`Day ${n} reflection question is too long.`);
+    }
+
+    let scripture_reference: string | null = null;
+    if (item.scripture_reference != null) {
+      if (typeof item.scripture_reference !== 'string') {
+        throw new Error(`Day ${n} scripture_reference must be a string or null.`);
+      }
+      const s = item.scripture_reference.trim();
+      scripture_reference = s || null;
+      if (scripture_reference && scripture_reference.length > MAX_SCRIPTURE_REF) {
+        throw new Error(`Day ${n} scripture reference is too long.`);
+      }
+    }
+
+    let scripture_text: string | null = null;
+    if (item.scripture_text != null) {
+      if (typeof item.scripture_text !== 'string') {
+        throw new Error(`Day ${n} scripture_text must be a string or null.`);
+      }
+      const s = item.scripture_text.trim();
+      scripture_text = s || null;
+      if (scripture_text && scripture_text.length > MAX_SCRIPTURE_TEXT) {
+        throw new Error(`Day ${n} scripture text is too long.`);
+      }
+    }
+
+    const estimated_minutes = clampMinutes(
+      typeof item.estimated_minutes === 'number' ? item.estimated_minutes : undefined,
+    );
+
+    let pre_prompt: string | null = null;
+    if (item.pre_prompt != null && item.pre_prompt !== '') {
+      if (typeof item.pre_prompt !== 'string') {
+        throw new Error(`Day ${n} pre_prompt must be a string or null.`);
+      }
+      const p = item.pre_prompt.trim();
+      pre_prompt = p || null;
+      if (pre_prompt && pre_prompt.length > MAX_PRE_PROMPT) {
+        throw new Error(`Day ${n} pre_prompt is too long.`);
+      }
+    }
+
+    out.push({
+      day_number: n,
+      title,
+      main_content,
+      scripture_reference,
+      scripture_text,
+      reflection_question,
+      estimated_minutes,
+      pre_prompt,
+    });
+  }
+  for (let d = 1; d <= 6; d++) {
+    if (!seen.has(d)) throw new Error(`Missing day ${d}.`);
+  }
+  out.sort((a, b) => a.day_number - b.day_number);
+  return out;
+}

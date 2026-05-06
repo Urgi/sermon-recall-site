@@ -17,6 +17,115 @@
   }
 }
 
+/*
+ * Admin shell fallbacks: if Tailwind utilities fail to load, layout still behaves
+ * (sidebar vs mobile header, stacked nav links).
+ */
+@layer components {
+  .admin-shell {
+    display: flex;
+    min-height: 100vh;
+    background-color: #05070a;
+    color: #e2e8f0;
+  }
+
+  .admin-sidebar {
+    display: none;
+    width: 14rem;
+    flex-shrink: 0;
+    flex-direction: column;
+    border-right: 1px solid rgba(56, 189, 248, 0.12);
+    background-color: #020408;
+    padding: 1rem;
+  }
+
+  .admin-sidebar nav.admin-nav-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .admin-sidebar nav.admin-nav-stack a {
+    display: block;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    color: #94a3b8;
+    text-decoration: none;
+  }
+
+  .admin-sidebar nav.admin-nav-stack a:hover {
+    background-color: #0a0f18;
+    color: #38bdf8;
+  }
+
+  .admin-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-main-wrap {
+    display: flex;
+    min-height: 100vh;
+    flex: 1;
+    flex-direction: column;
+  }
+
+  @media (min-width: 840px) {
+    .admin-sidebar {
+      display: flex;
+    }
+
+    .admin-mobile-header {
+      display: none;
+    }
+  }
+}
+
+/* react-day-picker — dark theme inside sermon date popover */
+@layer components {
+  .sermon-rdp .rdp-root {
+    --rdp-accent-color: #38bdf8;
+    --rdp-accent-background-color: rgba(56, 189, 248, 0.15);
+    color: #e2e8f0;
+  }
+
+  .sermon-rdp .rdp-caption_label {
+    color: #e2e8f0;
+  }
+
+  .sermon-rdp .rdp-weekday {
+    color: #64748b;
+  }
+
+  .sermon-rdp .rdp-day_button {
+    color: #e2e8f0;
+  }
+
+  .sermon-rdp .rdp-dropdown {
+    background-color: #05070a;
+    color: #e2e8f0;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.35rem;
+    font-size: 0.875rem;
+  }
+
+  .sermon-rdp .rdp-button_next,
+  .sermon-rdp .rdp-button_previous {
+    color: #94a3b8;
+  }
+
+  .sermon-rdp .rdp-button_next:hover,
+  .sermon-rdp .rdp-button_previous:hover {
+    background-color: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+  }
+}
+
 @layer components {
   .site-header {
     backdrop-filter: saturate(140%) blur(10px);
