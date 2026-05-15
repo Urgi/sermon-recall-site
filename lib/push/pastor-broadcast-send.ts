@@ -18,11 +18,15 @@ export type SendPastorBroadcastParams = {
 export async function sendPastorBroadcastAndLog(
   params: SendPastorBroadcastParams,
 ): Promise<{ recipientCount: number }> {
+  const includeSender =
+    process.env.PASTOR_BROADCAST_INCLUDE_SENDER === 'true' ||
+    process.env.PASTOR_BROADCAST_INCLUDE_SENDER === '1';
+
   const { recipientCount } = await notifyChurchBroadcast({
     churchId: params.churchId,
     title: params.title,
     body: params.body,
-    excludeUserId: params.excludeFromPushUserId,
+    excludeUserId: includeSender ? undefined : params.excludeFromPushUserId,
   });
 
   const { error: logErr } = await params.admin.from('church_broadcast_log').insert({
