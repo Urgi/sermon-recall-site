@@ -20,18 +20,30 @@ export function LoginForm({ nextPath }: Props) {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const supabase = createBrowserSupabaseClient();
-    const { error: signError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setPending(false);
-    if (signError) {
-      setError(signError.message);
-      return;
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error: signError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (signError) {
+        setError(signError.message);
+        return;
+      }
+      router.refresh();
+      router.push(nextPath);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('fetch') || err instanceof TypeError) {
+        setError(
+          'Cannot reach Supabase (network). Check internet and VPN, and that site/.env has the correct NEXT_PUBLIC_SUPABASE_URL (https://…supabase.co). Dev tip: NODE_OPTIONS=--dns-result-order=ipv4first npm run dev',
+        );
+      } else {
+        setError(msg || 'Sign-in failed.');
+      }
+    } finally {
+      setPending(false);
     }
-    router.refresh();
-    router.push(nextPath);
   }
 
   return (

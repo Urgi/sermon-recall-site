@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { User } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
@@ -33,9 +34,18 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: User | null = null;
+  try {
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
+    user = u;
+  } catch (e) {
+    console.warn(
+      '[middleware] Supabase auth request failed (offline, bad URL, or network). Treating as signed out.',
+      e,
+    );
+  }
 
   const path = request.nextUrl.pathname;
   const isProtected = path.startsWith('/dashboard') || path.startsWith('/sermons');
