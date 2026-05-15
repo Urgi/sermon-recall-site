@@ -14,9 +14,9 @@ export type NotifyChurchBroadcastParams = {
  */
 export async function notifyChurchBroadcast(
   params: NotifyChurchBroadcastParams,
-): Promise<{ recipientCount: number }> {
+): Promise<{ recipientCount: number; pushTicketErrors: string[] }> {
   const admin = createServiceRoleClient();
-  if (!admin) return { recipientCount: 0 };
+  if (!admin) return { recipientCount: 0, pushTicketErrors: [] };
 
   let query = admin
     .from('users')
@@ -30,7 +30,7 @@ export async function notifyChurchBroadcast(
   const { data: rows, error } = await query;
   if (error) {
     console.warn('[notify-church-broadcast]', error.message);
-    return { recipientCount: 0 };
+    return { recipientCount: 0, pushTicketErrors: [] };
   }
 
   const tokens = (rows ?? [])
@@ -46,7 +46,7 @@ export async function notifyChurchBroadcast(
     })
     .filter((t): t is string => typeof t === 'string' && t.length > 0);
 
-  if (tokens.length === 0) return { recipientCount: 0 };
+  if (tokens.length === 0) return { recipientCount: 0, pushTicketErrors: [] };
 
   const messages = tokens.map((to) => ({
     to,
@@ -59,6 +59,6 @@ export async function notifyChurchBroadcast(
     },
   }));
 
-  await sendExpoPushMessages(messages);
-  return { recipientCount: tokens.length };
+  const { ticketErrors } = await sendExpoPushMessages(messages);
+  return { recipientCount: tokens.length, pushTicketErrors: ticketErrors };
 }

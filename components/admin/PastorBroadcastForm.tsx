@@ -9,12 +9,14 @@ export function PastorBroadcastForm() {
   const [body, setBody] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pushWarnings, setPushWarnings] = useState<string[] | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setPushWarnings(null);
     setPending(true);
     try {
       const res = await fetch('/api/church/broadcast', {
@@ -28,6 +30,7 @@ export function PastorBroadcastForm() {
         ok?: boolean;
         recipientCount?: number;
         warning?: string;
+        pushTicketErrors?: string[];
       };
       setPending(false);
       if (!res.ok) {
@@ -35,9 +38,11 @@ export function PastorBroadcastForm() {
         return;
       }
       const n = data.recipientCount ?? 0;
+      setPushWarnings(
+        data.pushTicketErrors && data.pushTicketErrors.length > 0 ? data.pushTicketErrors : null,
+      );
       setSuccess(
-        data.warning ??
-          `Sent to ${n} device${n === 1 ? '' : 's'}.`,
+        data.warning ?? `Sent to ${n} device${n === 1 ? '' : 's'} (handed off to Expo).`,
       );
       setTitle('');
       setBody('');
@@ -90,6 +95,13 @@ export function PastorBroadcastForm() {
       {success ? (
         <p className="text-[13px] text-emerald-400" role="status">
           {success}
+        </p>
+      ) : null}
+      {pushWarnings?.length ? (
+        <p className="text-[13px] text-amber-300" role="status">
+          Expo push could not deliver to this token/device: {pushWarnings.join('; ')}. Typical
+          fixes: reinstall app and open once (fresh token), confirm phone notifications are on, and
+          verify the member uses the same Supabase project as this site.
         </p>
       ) : null}
       <button

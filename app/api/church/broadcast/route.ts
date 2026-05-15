@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { recipientCount } = await sendPastorBroadcastAndLog({
+  const { recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
     admin,
     churchId,
     title,
@@ -101,6 +101,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     recipientCount,
+    pushTicketErrors: pushTicketErrors.length ? pushTicketErrors : undefined,
     warning:
       recipientCount === 0
         ? 'No devices registered for push in your church yet. Members open the app and allow notifications.'

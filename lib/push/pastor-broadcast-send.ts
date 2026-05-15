@@ -17,12 +17,12 @@ export type SendPastorBroadcastParams = {
  */
 export async function sendPastorBroadcastAndLog(
   params: SendPastorBroadcastParams,
-): Promise<{ recipientCount: number }> {
+): Promise<{ recipientCount: number; pushTicketErrors: string[] }> {
   const includeSender =
     process.env.PASTOR_BROADCAST_INCLUDE_SENDER === 'true' ||
     process.env.PASTOR_BROADCAST_INCLUDE_SENDER === '1';
 
-  const { recipientCount } = await notifyChurchBroadcast({
+  const { recipientCount, pushTicketErrors } = await notifyChurchBroadcast({
     churchId: params.churchId,
     title: params.title,
     body: params.body,
@@ -41,5 +41,5 @@ export async function sendPastorBroadcastAndLog(
     console.warn('[pastor-broadcast-send] log insert', logErr.message);
   }
 
-  return { recipientCount };
+  return { recipientCount, pushTicketErrors };
 }

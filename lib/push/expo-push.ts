@@ -18,12 +18,20 @@ type ExpoPushResponse = {
   data?: ExpoPushTicket[];
 };
 
+export type ExpoPushSendResult = {
+  /** Per-message errors from Expo (e.g. DeviceNotRegistered, InvalidCredentials). */
+  ticketErrors: string[];
+};
+
 /**
  * Sends push notifications via Expo Push API. Chunks to respect batch limits.
  * @see https://docs.expo.dev/push-notifications/sending-notifications/
  */
-export async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise<void> {
-  if (messages.length === 0) return;
+export async function sendExpoPushMessages(
+  messages: ExpoPushMessage[],
+): Promise<ExpoPushSendResult> {
+  const ticketErrors: string[] = [];
+  if (messages.length === 0) return { ticketErrors };
 
   const chunkSize = 100;
   for (let i = 0; i < messages.length; i += chunkSize) {
@@ -39,7 +47,9 @@ export async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise
     });
 
     if (!res.ok) {
-      console.warn('[expo-push] HTTP', res.status, await res.text());
+      const text = await res.text();
+      console.warn('[expo-push] HTTP', res.status, text);
+      ticketErrors.push(`expo_http_${res.status}: ${text.slice(0, 240)}`);
       continue;
     }
 
@@ -47,8 +57,12 @@ export async function sendExpoPushMessages(messages: ExpoPushMessage[]): Promise
     const tickets = json.data ?? [];
     for (const t of tickets) {
       if (t.status === 'error') {
-        console.warn('[expo-push] ticket error', t.message ?? t.details?.error);
+        const detail = t.details?.error ?? t.message ?? 'unknown';
+        console.warn('[expo-push] ticket error', detail);
+        ticketErrors.push(detail);
       }
     }
   }
+
+  return { ticketErrors };
 }
