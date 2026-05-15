@@ -48,9 +48,9 @@ export default async function NewSermonPage() {
         </Link>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Add sermon</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-          Add a title (and optional pasted notes). After you save, you’ll land on the sermon page,
-          where pastors can <span className="text-[#e2e8f0]">upload audio or video</span> for
-          transcription or keep editing text. Status starts as{' '}
+          Add a title (and optional pasted notes), then tap <span className="text-[#e2e8f0]">Add sermon</span>.
+          You’ll stay on this page and get a <span className="text-[#e2e8f0]">Choose file</span> button for
+          audio or video transcription. Status starts as{' '}
           <span className="text-[#e2e8f0]">processing</span> until you mark it ready.
         </p>
       </div>

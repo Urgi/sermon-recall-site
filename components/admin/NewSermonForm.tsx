@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
+import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 
 type Props = {
   churchId: string;
@@ -18,6 +19,8 @@ export function NewSermonForm({ churchId }: Props) {
   const [scriptOrNotes, setScriptOrNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** After insert, show upload on this page (avoids missing “Choose file” after instant redirect). */
+  const [savedSermonId, setSavedSermonId] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,9 +47,45 @@ export function NewSermonForm({ churchId }: Props) {
       return;
     }
     if (data?.id) {
-      router.push(`/sermons/${data.id}`);
-      router.refresh();
+      setSavedSermonId(data.id);
     }
+  }
+
+  if (savedSermonId) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div
+          className="rounded-xl border border-emerald-500/30 bg-emerald-950/25 p-4"
+          role="status"
+        >
+          <p className="text-[15px] font-semibold text-emerald-100">Sermon saved</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-[#94a3b8]">
+            Use <span className="font-medium text-[#e2e8f0]">Choose file</span> below for audio,
+            video, or a .txt transcript. Then open the full sermon page for devotionals and
+            publishing.
+          </p>
+        </div>
+        <div id="sermon-media-upload">
+          <SermonTranscriptUpload sermonId={savedSermonId} />
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => router.push(`/sermons/${savedSermonId}`)}
+            className="rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7]"
+          >
+            Open sermon page →
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/sermons')}
+            className="rounded-lg border border-[rgba(56,189,248,0.25)] px-4 py-2.5 text-[15px] text-[#94a3b8] hover:bg-[#0a0f18]"
+          >
+            Back to all sermons
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -88,8 +127,11 @@ export function NewSermonForm({ churchId }: Props) {
           Sermon script or notes <span className="text-[#64748b]">(optional)</span>
         </label>
         <p className="mt-1 text-[12px] leading-relaxed text-[#64748b]">
-          Paste text here, or leave blank and upload audio/video on the next screen after you save.
-          Needs <code className="rounded bg-black/40 px-1 text-[11px] text-violet-200">OPENAI_API_KEY</code>{' '}
+          Paste text here, or leave blank and upload audio/video after you tap{' '}
+          <span className="text-[#e2e8f0]">Add sermon</span> — the{' '}
+          <span className="text-[#e2e8f0]">Choose file</span> button will appear on the next step on
+          this same page. Needs{' '}
+          <code className="rounded bg-black/40 px-1 text-[11px] text-violet-200">OPENAI_API_KEY</code>{' '}
           on the server for transcription.
         </p>
         <textarea
