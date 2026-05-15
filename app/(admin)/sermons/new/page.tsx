@@ -47,10 +47,11 @@ export default async function NewSermonPage() {
           ← Sermons
         </Link>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Add sermon</h1>
-        <p className="mt-2 text-[15px] text-[#94a3b8]">
-          Add title and paste the sermon script or notes. Content is saved for generation and review;
-          status starts as <span className="text-[#e2e8f0]">processing</span> until your pipeline marks
-          it ready.
+        <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
+          Add a title (and optional pasted notes). After you save, you’ll land on the sermon page,
+          where pastors can <span className="text-[#e2e8f0]">upload audio or video</span> for
+          transcription or keep editing text. Status starts as{' '}
+          <span className="text-[#e2e8f0]">processing</span> until you mark it ready.
         </p>
       </div>
       <NewSermonForm churchId={profile.church_id} />

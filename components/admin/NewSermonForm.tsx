@@ -23,10 +23,6 @@ export function NewSermonForm({ churchId }: Props) {
     e.preventDefault();
     setError(null);
     const notes = scriptOrNotes.trim();
-    if (!notes) {
-      setError('Paste sermon script or notes (even a rough outline is fine).');
-      return;
-    }
     setPending(true);
     const supabase = createBrowserSupabaseClient();
     const row = {
@@ -34,7 +30,7 @@ export function NewSermonForm({ churchId }: Props) {
       title: title.trim(),
       pastor_name: pastorName.trim() || null,
       sermon_date: sermonDate || null,
-      transcript: notes,
+      transcript: notes.length > 0 ? notes : null,
       status: 'processing' as const,
     };
     const { data, error: insertError } = await supabase
@@ -89,18 +85,18 @@ export function NewSermonForm({ churchId }: Props) {
       </div>
       <div>
         <label htmlFor="sermon-script" className="block text-[13px] font-medium text-[#94a3b8]">
-          Sermon script or notes <span className="text-red-400">*</span>
+          Sermon script or notes <span className="text-[#64748b]">(optional)</span>
         </label>
         <p className="mt-1 text-[12px] leading-relaxed text-[#64748b]">
-          Paste your manuscript, outline, or bullet notes. This is stored as the sermon transcript for
-          processing and review.
+          Paste text here, or leave blank and upload audio/video on the next screen after you save.
+          Needs <code className="rounded bg-black/40 px-1 text-[11px] text-violet-200">OPENAI_API_KEY</code>{' '}
+          on the server for transcription.
         </p>
         <textarea
           id="sermon-script"
           name="scriptOrNotes"
-          required
           rows={14}
-          placeholder="Paste sermon content here…"
+          placeholder="Paste sermon content here… (optional if you’ll upload media next)"
           value={scriptOrNotes}
           onChange={(e) => setScriptOrNotes(e.target.value)}
           className="mt-2 w-full resize-y rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-[system-ui] text-[15px] leading-relaxed text-white outline-none ring-sky-400/40 placeholder:text-[#475569] focus:border-[#38bdf8] focus:ring-2"

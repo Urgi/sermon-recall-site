@@ -60,6 +60,7 @@ export default async function SermonDetailPage({ params }: Props) {
             {sermon.status}
           </span>
         </div>
+        {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
         {sermon.transcript ? (
           <div className="mt-6 rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-5">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[#64748b]">
@@ -93,7 +94,6 @@ export default async function SermonDetailPage({ params }: Props) {
             </p>
           </div>
         ) : null}
-        {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
       </div>
 
       <section>
