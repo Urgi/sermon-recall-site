@@ -7,6 +7,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { EditableDevotionalPreview } from '@/components/admin/EditableDevotionalPreview';
 import { GeminiDevotionalWorkflow } from '@/components/admin/GeminiDevotionalWorkflow';
 import { SeedStubDevotionalsButton } from '@/components/admin/SeedStubDevotionalsButton';
+import { DemoSimulateEarlyDaysPanel } from '@/components/admin/DemoSimulateEarlyDaysPanel';
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 
 type Props = { params: { id: string } };
@@ -164,6 +165,11 @@ export default async function SermonDetailPage({ params }: Props) {
             ))}
           </ul>
         )}
+        {canEdit && days.length > 0 ? (
+          <div className="mt-8">
+            <DemoSimulateEarlyDaysPanel sermonId={sermon.id} />
+          </div>
+        ) : null}
       </section>
     </div>
   );
