@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
+import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
 function safeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120) || 'upload';
@@ -18,6 +20,11 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [mediaProgress, setMediaProgress] = useState<{
+    phase: TranscribePhase;
+    phaseStartedAt: number;
+    bytes: number;
+  } | null>(null);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -27,14 +34,15 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
     setError(null);
     setDone(null);
     setBusy(true);
+    setMediaProgress(null);
 
     const supabase = createBrowserSupabaseClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setBusy(false);
       setError('Not signed in.');
+      setBusy(false);
       return;
     }
 
@@ -44,7 +52,6 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         const trimmed = text.trim();
         if (!trimmed) {
           setError('Text file was empty.');
-          setBusy(false);
           return;
         }
         const { error: upErr } = await supabase
@@ -53,14 +60,18 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
           .eq('id', sermonId);
         if (upErr) {
           setError(upErr.message);
-          setBusy(false);
           return;
         }
         setDone(`Saved text (${trimmed.length.toLocaleString()} characters).`);
         router.refresh();
-        setBusy(false);
         return;
       }
+
+      setMediaProgress({
+        phase: 'upload',
+        phaseStartedAt: Date.now(),
+        bytes: file.size,
+      });
 
       const path = `${user.id}/${sermonId}/${Date.now()}-${safeFileName(file.name)}`;
       const { error: upStorage } = await supabase.storage.from('sermon-media').upload(path, file, {
@@ -69,9 +80,14 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       });
       if (upStorage) {
         setError(upStorage.message);
-        setBusy(false);
         return;
       }
+
+      setMediaProgress({
+        phase: 'transcribe',
+        phaseStartedAt: Date.now(),
+        bytes: file.size,
+      });
 
       const res = await fetch('/api/transcribe-sermon', {
         method: 'POST',
@@ -82,7 +98,6 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       const json = (await res.json()) as { error?: string; charCount?: number };
       if (!res.ok) {
         setError(json.error ?? 'Transcription failed.');
-        setBusy(false);
         return;
       }
 
@@ -92,8 +107,10 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       router.refresh();
     } catch {
       setError('Something went wrong.');
+    } finally {
+      setMediaProgress(null);
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return (
@@ -117,6 +134,15 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
           {busy ? 'Working…' : 'Choose file'}
         </span>
       </label>
+      {mediaProgress && busy ? (
+        <div className="mt-4">
+          <TranscribeProgressPanel
+            phase={mediaProgress.phase}
+            phaseStartedAt={mediaProgress.phaseStartedAt}
+            fileBytes={mediaProgress.bytes}
+          />
+        </div>
+      ) : null}
       {error ? (
         <p className="mt-2 text-[13px] text-red-400" role="alert">
           {error}

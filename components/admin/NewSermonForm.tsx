@@ -5,6 +5,8 @@ import { useState } from 'react';
 
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
+import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
+import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
 type Props = {
   churchId: string;
@@ -26,10 +28,16 @@ export function NewSermonForm({ churchId }: Props) {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [mediaProgress, setMediaProgress] = useState<{
+    phase: TranscribePhase;
+    phaseStartedAt: number;
+    bytes: number;
+  } | null>(null);
 
   function onModeChange(next: InputKind) {
     setInputKind(next);
     setError(null);
+    setMediaProgress(null);
     if (next === 'text') setMediaFile(null);
     if (next === 'file') setScriptOrNotes('');
   }
@@ -149,6 +157,12 @@ export function NewSermonForm({ churchId }: Props) {
         return;
       }
 
+      setMediaProgress({
+        phase: 'upload',
+        phaseStartedAt: Date.now(),
+        bytes: mediaFile.size,
+      });
+
       const path = `${user.id}/${sermonId}/${Date.now()}-${safeFileName(mediaFile.name)}`;
       const { error: upStorage } = await supabase.storage.from('sermon-media').upload(path, mediaFile, {
         upsert: false,
@@ -158,6 +172,12 @@ export function NewSermonForm({ churchId }: Props) {
         setError(upStorage.message);
         return;
       }
+
+      setMediaProgress({
+        phase: 'transcribe',
+        phaseStartedAt: Date.now(),
+        bytes: mediaFile.size,
+      });
 
       const res = await fetch('/api/transcribe-sermon', {
         method: 'POST',
@@ -176,6 +196,7 @@ export function NewSermonForm({ churchId }: Props) {
     } catch {
       setError('Something went wrong.');
     } finally {
+      setMediaProgress(null);
       setPending(false);
     }
   }
@@ -312,6 +333,13 @@ export function NewSermonForm({ churchId }: Props) {
         <p className="text-[13px] text-red-400" role="alert">
           {error}
         </p>
+      ) : null}
+      {mediaProgress && pending ? (
+        <TranscribeProgressPanel
+          phase={mediaProgress.phase}
+          phaseStartedAt={mediaProgress.phaseStartedAt}
+          fileBytes={mediaProgress.bytes}
+        />
       ) : null}
       <div className="flex flex-wrap gap-3 pt-2">
         <button
