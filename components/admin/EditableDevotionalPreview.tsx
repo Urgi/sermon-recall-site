@@ -14,6 +14,7 @@ export type DevotionalForAdmin = {
   scripture_text: string | null;
   reflection_question: string | null;
   estimated_minutes: number;
+  pre_prompt: string | null;
 };
 
 const EXCERPT_LEN = 240;
@@ -88,6 +89,16 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
             </p>
             <p className="mt-1 text-[13px] text-[#64748b]">{sermonTitle}</p>
             <h3 className="mt-3 text-[19px] font-bold leading-snug text-white">{headline}</h3>
+
+            {devotional.pre_prompt?.trim() ? (
+              <div className="mt-4 rounded-lg border border-violet-500/25 bg-violet-950/30 px-3 py-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-200">
+                  Pre-session retrieval
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[#e2e8f0]">{devotional.pre_prompt}</p>
+              </div>
+            ) : null}
+
             <p className="mt-2 text-[12px] text-[#64748b]">~{devotional.estimated_minutes} min</p>
 
             {scrPreview ? (

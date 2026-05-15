@@ -30,8 +30,9 @@ export async function GET(req: Request) {
     const result = await runDevotionalReminders(admin);
     return NextResponse.json({
       ok: true,
-      spacedSent: result.spacedSent,
+      morningSent: result.morningSent,
       middaySent: result.middaySent,
+      customHourSent: result.customHourSent,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';

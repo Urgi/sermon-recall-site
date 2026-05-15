@@ -1,11 +1,11 @@
 /**
- * Canonical paths under site/public/sermonrecalllogo (see .cursor/brand-assets.md).
- * Update here when new files are added to the pack.
+ * Canonical paths under `site/public/sermonrecalllogo/`.
+ * Update dimensions here when the raster is replaced.
  */
 export const LOGO_ASSETS = {
-  /** Full horizontal lockup: SR mark + “SermonRecall” + LISTEN. REMEMBER. GROW. on dark background */
-  wordmarkLockupDarkBg: '/sermonrecalllogo/wordmark-lockup-dark-bg.jpg',
+  /** Primary brand mark (square), used in admin UI and favicon. */
+  brandMark: '/sermonrecalllogo/logo.png',
 } as const;
 
-/** Intrinsic dimensions of wordmark-lockup-dark-bg (matches exported raster). */
-export const WORDMARK_LOCKUP_ASPECT = { width: 1024, height: 565 } as const;
+/** Intrinsic dimensions of `logo.png` (matches exported raster). */
+export const BRAND_LOGO_ASPECT = { width: 1254, height: 1254 } as const;

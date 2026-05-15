@@ -7,6 +7,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { EditableDevotionalPreview } from '@/components/admin/EditableDevotionalPreview';
 import { GeminiDevotionalWorkflow } from '@/components/admin/GeminiDevotionalWorkflow';
 import { SeedStubDevotionalsButton } from '@/components/admin/SeedStubDevotionalsButton';
+import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 
 type Props = { params: { id: string } };
 
@@ -29,7 +30,7 @@ export default async function SermonDetailPage({ params }: Props) {
   const { data: devotionals } = await supabase
     .from('devotionals')
     .select(
-      'id, day_number, title, main_content, scripture_reference, scripture_text, reflection_question, estimated_minutes',
+      'id, day_number, title, main_content, scripture_reference, scripture_text, reflection_question, estimated_minutes, pre_prompt',
     )
     .eq('sermon_id', params.id)
     .order('day_number', { ascending: true });
@@ -91,6 +92,7 @@ export default async function SermonDetailPage({ params }: Props) {
             </p>
           </div>
         ) : null}
+        {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
       </div>
 
       <section>
@@ -106,7 +108,8 @@ export default async function SermonDetailPage({ params }: Props) {
             <div className="max-w-lg space-y-1">
               <p className="text-[13px] font-semibold text-violet-200">AI generation (Gemini)</p>
               <p className="text-[13px] leading-relaxed text-[#94a3b8]">
-                Uses the sermon script below. Set{' '}
+                Uses the sermon transcript on this page (paste, upload .txt, or transcribe
+                audio/video above). Set{' '}
                 <code className="rounded bg-black/40 px-1 py-0.5 text-[12px] text-violet-200">
                   GEMINI_API_KEY
                 </code>{' '}
@@ -155,6 +158,7 @@ export default async function SermonDetailPage({ params }: Props) {
                   scripture_text: d.scripture_text,
                   reflection_question: d.reflection_question,
                   estimated_minutes: d.estimated_minutes,
+                  pre_prompt: d.pre_prompt,
                 }}
               />
             ))}

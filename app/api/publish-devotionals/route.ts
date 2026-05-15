@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     scripture_text: d.scripture_text,
     reflection_question: d.reflection_question,
     estimated_minutes: d.estimated_minutes,
-    pre_prompt: d.pre_prompt ?? null,
+    pre_prompt: d.pre_prompt,
   }));
 
   const { error: insErr } = await supabase.from('devotionals').insert(insertRows);

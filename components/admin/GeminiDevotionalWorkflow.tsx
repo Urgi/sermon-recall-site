@@ -150,8 +150,14 @@ export function GeminiDevotionalWorkflow({
                 </p>
                 <p className="mt-1 text-[12px] text-[#64748b]">{sermonTitle}</p>
                 <p className="mt-2 text-[16px] font-semibold text-white">{d.title}</p>
+                <p className="mt-2 text-[12px] text-amber-100/90">
+                  Pre-session:{' '}
+                  <span className="text-amber-50">
+                    {d.pre_prompt.length > 140 ? `${d.pre_prompt.slice(0, 140).trim()}…` : d.pre_prompt}
+                  </span>
+                </p>
                 {d.scripture_reference ? (
-                  <p className="mt-1 text-[13px] font-medium text-sky-300">{d.scripture_reference}</p>
+                  <p className="mt-2 text-[13px] font-medium text-sky-300">{d.scripture_reference}</p>
                 ) : null}
                 <p className="mt-2 text-[13px] leading-relaxed text-[#94a3b8]">
                   {d.main_content.length > EXCERPT

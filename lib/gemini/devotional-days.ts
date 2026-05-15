@@ -8,8 +8,8 @@ export type GeminiDevotionalDay = {
   scripture_text: string | null;
   reflection_question: string;
   estimated_minutes: number;
-  /** Short retrieval question answered before reading the day’s content (optional). */
-  pre_prompt: string | null;
+  /** Short retrieval question answered before reading the day’s content (required; distinct per day). */
+  pre_prompt: string;
 };
 
 const MAX_TITLE = 600;
@@ -62,8 +62,12 @@ function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
     const main_content = typeof item.main_content === 'string' ? item.main_content.trim() : '';
     const reflection_question =
       typeof item.reflection_question === 'string' ? item.reflection_question.trim() : '';
-    if (!title || !main_content || !reflection_question) {
-      throw new Error(`Day ${n} is missing title, main_content, or reflection_question.`);
+    const pre_prompt_raw =
+      typeof item.pre_prompt === 'string' ? item.pre_prompt.trim() : '';
+    if (!title || !main_content || !reflection_question || !pre_prompt_raw) {
+      throw new Error(
+        `Day ${n} is missing title, main_content, reflection_question, or pre_prompt.`,
+      );
     }
     if (title.length > MAX_TITLE) throw new Error(`Day ${n} title is too long.`);
     if (main_content.length > MAX_MAIN) throw new Error(`Day ${n} content is too long.`);
@@ -99,16 +103,9 @@ function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
       typeof item.estimated_minutes === 'number' ? item.estimated_minutes : undefined,
     );
 
-    let pre_prompt: string | null = null;
-    if (item.pre_prompt != null && item.pre_prompt !== '') {
-      if (typeof item.pre_prompt !== 'string') {
-        throw new Error(`Day ${n} pre_prompt must be a string or null.`);
-      }
-      const p = item.pre_prompt.trim();
-      pre_prompt = p || null;
-      if (pre_prompt && pre_prompt.length > MAX_PRE_PROMPT) {
-        throw new Error(`Day ${n} pre_prompt is too long.`);
-      }
+    const pre_prompt = pre_prompt_raw;
+    if (pre_prompt.length > MAX_PRE_PROMPT) {
+      throw new Error(`Day ${n} pre_prompt is too long.`);
     }
 
     out.push({
@@ -126,5 +123,14 @@ function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
     if (!seen.has(d)) throw new Error(`Missing day ${d}.`);
   }
   out.sort((a, b) => a.day_number - b.day_number);
+
+  const lowerPrompts = out.map((d) => d.pre_prompt.toLowerCase());
+  const unique = new Set(lowerPrompts);
+  if (unique.size < 6) {
+    throw new Error(
+      'Each day must have a distinct pre_prompt (no duplicate retrieval questions).',
+    );
+  }
+
   return out;
 }

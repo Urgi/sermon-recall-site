@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-shell flex min-h-screen bg-[#05070a] text-[#e2e8f0]">
       <aside className="admin-sidebar hidden w-56 shrink-0 flex-col border-r border-[rgba(56,189,248,0.12)] bg-[#020408] p-4 wide:flex">
         <Link href="/dashboard" className="mb-6 inline-block" aria-label="Dashboard home">
-          <SermonRecallLogo variant="header" className="h-7 w-auto max-w-[9rem]" priority />
+          <SermonRecallLogo variant="header" className="h-10 w-auto max-w-[10rem] object-contain" priority />
         </Link>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#64748b]">
           Church admin
@@ -60,8 +60,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
       <div className="admin-main-wrap flex min-h-screen flex-1 flex-col">
         <header className="admin-mobile-header flex items-center justify-between gap-3 border-b border-[rgba(56,189,248,0.12)] px-4 py-3 wide:hidden">
-          <Link href="/dashboard" className="min-w-0 text-sm font-semibold text-white">
-            Church admin
+          <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="Dashboard home">
+            <SermonRecallLogo variant="header" className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
+            <span className="truncate text-sm font-semibold text-white">Church admin</span>
           </Link>
           <div className="flex shrink-0 items-center gap-2">
             <Link

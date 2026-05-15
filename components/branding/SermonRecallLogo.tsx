@@ -1,6 +1,6 @@
 import Image from 'next/image';
 
-import { LOGO_ASSETS, WORDMARK_LOCKUP_ASPECT } from './logo-sources';
+import { BRAND_LOGO_ASPECT, LOGO_ASSETS } from './logo-sources';
 
 type Props = {
   variant?: 'header' | 'hero';
@@ -9,22 +9,23 @@ type Props = {
 };
 
 export function SermonRecallLogo({ variant = 'header', className, priority }: Props) {
-  const src = LOGO_ASSETS.wordmarkLockupDarkBg;
+  const src = LOGO_ASSETS.brandMark;
   const isHero = variant === 'hero';
 
   return (
     <Image
       src={src}
-      alt="SermonRecall — Listen. Remember. Grow."
-      width={WORDMARK_LOCKUP_ASPECT.width}
-      height={WORDMARK_LOCKUP_ASPECT.height}
+      alt="Sermon Recall"
+      width={BRAND_LOGO_ASPECT.width}
+      height={BRAND_LOGO_ASPECT.height}
       priority={priority ?? isHero}
-      sizes={
-        isHero
-          ? '(min-width: 840px) min(42vw, 32.5rem), min(25rem, calc(100vw - 2 * clamp(1.25rem, 5vw, 2rem)))'
-          : '10rem'
+      sizes={isHero ? 'min(20rem, 80vw)' : '8rem'}
+      className={
+        className ??
+        (isHero
+          ? 'h-32 w-auto max-w-[min(20rem,85vw)] select-none object-contain'
+          : 'h-8 w-auto max-w-[8rem] select-none object-contain')
       }
-      className={className ?? (isHero ? 'h-auto w-full' : 'h-8 w-auto max-w-[10rem] select-none')}
     />
   );
 }

@@ -7,6 +7,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
 import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
 import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
+import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
+import { ScheduledBroadcastPanel } from '@/components/admin/ScheduledBroadcastPanel';
 import { PastorEngagementSection } from '@/components/admin/PastorEngagementSection';
 
 export default async function DashboardPage() {
@@ -111,6 +113,23 @@ export default async function DashboardPage() {
 
       {profile.church_id && canPublish ? (
         <PastorEngagementSection engagement={engagementParsed} churchHasMembers={churchMemberPositive} />
+      ) : null}
+
+      {profile.church_id && canPublish ? (
+        <section className="rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-6">
+          <h2 className="text-lg font-semibold text-white">Notify your church</h2>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#94a3b8]">
+            Send a one-time push to everyone in your church who has the app and allowed notifications.
+            This is in addition to automatic daily reminders to complete the current day&apos;s
+            devotional (when a sermon is published and a member is on days 1–6 of the journey).
+          </p>
+          <div className="mt-4 space-y-8">
+            <PastorBroadcastForm />
+            <div className="border-t border-[rgba(56,189,248,0.12)] pt-8">
+              <ScheduledBroadcastPanel />
+            </div>
+          </div>
+        </section>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2">
