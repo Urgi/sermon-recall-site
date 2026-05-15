@@ -9,6 +9,7 @@ import { GeminiDevotionalWorkflow } from '@/components/admin/GeminiDevotionalWor
 import { SeedStubDevotionalsButton } from '@/components/admin/SeedStubDevotionalsButton';
 import { DemoSimulateEarlyDaysPanel } from '@/components/admin/DemoSimulateEarlyDaysPanel';
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
+import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
 
 type Props = { params: { id: string } };
 
@@ -56,9 +57,14 @@ export default async function SermonDetailPage({ params }: Props) {
               {[sermon.pastor_name, sermon.sermon_date].filter(Boolean).join(' · ') || '—'}
             </p>
           </div>
-          <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[12px] font-medium capitalize text-amber-200">
-            {sermon.status}
-          </span>
+          <div className="flex flex-col items-end gap-2">
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[12px] font-medium capitalize text-amber-200">
+              {sermon.status}
+            </span>
+            {canEdit ? (
+              <DeleteSermonButton sermonId={sermon.id} sermonTitle={sermon.title} />
+            ) : null}
+          </div>
         </div>
         {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
         {sermon.transcript ? (
