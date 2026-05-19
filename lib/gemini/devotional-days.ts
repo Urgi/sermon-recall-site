@@ -39,6 +39,85 @@ export function parseDaysFromClientPayload(days: unknown): GeminiDevotionalDay[]
   return normalizeDaysArray(days);
 }
 
+/** Parse a single day from model JSON (regenerate-one-day API). */
+export function parseSingleDayFromModelJson(raw: string, expectedDayNumber: number): GeminiDevotionalDay {
+  let text = raw.trim();
+  if (text.startsWith('```')) {
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '');
+  }
+  const parsed = JSON.parse(text) as unknown;
+  const day =
+    parsed && typeof parsed === 'object' && 'day' in (parsed as object)
+      ? (parsed as { day: unknown }).day
+      : parsed;
+  return normalizeSingleDay(day, expectedDayNumber);
+}
+
+function normalizeSingleDay(item: unknown, expectedDayNumber: number): GeminiDevotionalDay {
+  if (!item || typeof item !== 'object') {
+    throw new Error('Expected a devotional day object.');
+  }
+  const row = item as Record<string, unknown>;
+  const n =
+    typeof row.day_number === 'number' && row.day_number >= 1 && row.day_number <= 6
+      ? row.day_number
+      : expectedDayNumber;
+
+  const title = typeof row.title === 'string' ? row.title.trim() : '';
+  const main_content = typeof row.main_content === 'string' ? row.main_content.trim() : '';
+  const reflection_question =
+    typeof row.reflection_question === 'string' ? row.reflection_question.trim() : '';
+  const pre_prompt_raw = typeof row.pre_prompt === 'string' ? row.pre_prompt.trim() : '';
+  if (!title || !main_content || !reflection_question || !pre_prompt_raw) {
+    throw new Error(`Day ${n} is missing title, main_content, reflection_question, or pre_prompt.`);
+  }
+  if (title.length > MAX_TITLE) throw new Error(`Day ${n} title is too long.`);
+  if (main_content.length > MAX_MAIN) throw new Error(`Day ${n} content is too long.`);
+  if (reflection_question.length > MAX_REFLECTION) {
+    throw new Error(`Day ${n} reflection question is too long.`);
+  }
+  if (pre_prompt_raw.length > MAX_PRE_PROMPT) {
+    throw new Error(`Day ${n} pre_prompt is too long.`);
+  }
+
+  let scripture_reference: string | null = null;
+  if (row.scripture_reference != null) {
+    if (typeof row.scripture_reference !== 'string') {
+      throw new Error(`Day ${n} scripture_reference must be a string or null.`);
+    }
+    const s = row.scripture_reference.trim();
+    scripture_reference = s || null;
+    if (scripture_reference && scripture_reference.length > MAX_SCRIPTURE_REF) {
+      throw new Error(`Day ${n} scripture reference is too long.`);
+    }
+  }
+
+  let scripture_text: string | null = null;
+  if (row.scripture_text != null) {
+    if (typeof row.scripture_text !== 'string') {
+      throw new Error(`Day ${n} scripture_text must be a string or null.`);
+    }
+    const s = row.scripture_text.trim();
+    scripture_text = s || null;
+    if (scripture_text && scripture_text.length > MAX_SCRIPTURE_TEXT) {
+      throw new Error(`Day ${n} scripture text is too long.`);
+    }
+  }
+
+  return {
+    day_number: n,
+    title,
+    main_content,
+    scripture_reference,
+    scripture_text,
+    reflection_question,
+    estimated_minutes: clampMinutes(
+      typeof row.estimated_minutes === 'number' ? row.estimated_minutes : undefined,
+    ),
+    pre_prompt: pre_prompt_raw,
+  };
+}
+
 function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
   if (!Array.isArray(parsed)) {
     throw new Error('Expected an array of 6 devotionals.');
