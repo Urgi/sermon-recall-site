@@ -24,6 +24,13 @@ function toastFromAuthQuery(
     return { message: EMAIL_SENT_MESSAGE, variant: 'success' };
   }
   if (searchParams.get('confirmed') === '1') {
+    if (searchParams.get('already_used') === '1') {
+      return {
+        message:
+          'This confirmation link was already used. You are confirmed — sign in below or continue to your dashboard.',
+        variant: 'success',
+      };
+    }
     return { message: CONFIRMED_MESSAGE, variant: 'success' };
   }
   const error = searchParams.get('error');
@@ -74,11 +81,25 @@ export function AppToastHost() {
 
   useEffect(() => {
     if (queryHandled.current) return;
-    const queryToast = toastFromAuthQuery(searchParams);
-    if (queryToast) {
-      queryHandled.current = true;
-      pushToast(queryToast);
-    }
+    const supabase = createBrowserSupabaseClient();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (queryHandled.current) return;
+      const hasConfirmError = searchParams.get('error') === 'confirmation_failed';
+      if (hasConfirmError && session) {
+        queryHandled.current = true;
+        pushToast({
+          message:
+            'Your email is confirmed. Sign in below or wait a moment for your dashboard.',
+          variant: 'success',
+        });
+        return;
+      }
+      const queryToast = toastFromAuthQuery(searchParams);
+      if (queryToast) {
+        queryHandled.current = true;
+        pushToast(queryToast);
+      }
+    });
   }, [searchParams, pushToast]);
 
   useEffect(() => {

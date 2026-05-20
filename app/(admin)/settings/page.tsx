@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AppearanceSettings } from '@/components/admin/AppearanceSettings';
+import { DeleteAccountPanel } from '@/components/admin/DeleteAccountPanel';
 import { requireAdminSession } from '@/lib/auth/server';
 
 export default async function AdminSettingsPage() {
@@ -30,6 +31,8 @@ export default async function AdminSettingsPage() {
           <AppearanceSettings />
         </div>
       </section>
+
+      <DeleteAccountPanel />
     </div>
   );
 }
