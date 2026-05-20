@@ -217,8 +217,8 @@ export function NewSermonForm({ churchId }: Props) {
   return (
     <form onSubmit={(ev) => void onSubmit(ev)} className="mx-auto max-w-3xl space-y-5">
       <div>
-        <label htmlFor="sermon-title" className="block text-[13px] font-medium text-[#94a3b8]">
-          Title <span className="text-red-400">*</span>
+        <label htmlFor="sermon-title" className="admin-label">
+          Title <span className="text-red-500">*</span>
         </label>
         <input
           id="sermon-title"
@@ -227,11 +227,11 @@ export function NewSermonForm({ churchId }: Props) {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="admin-input mt-1"
         />
       </div>
       <div>
-        <label htmlFor="sermon-pastor" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="sermon-pastor" className="admin-label">
           Pastor name
         </label>
         <input
@@ -240,40 +240,41 @@ export function NewSermonForm({ churchId }: Props) {
           type="text"
           value={pastorName}
           onChange={(e) => setPastorName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="admin-input mt-1"
         />
       </div>
       <div>
-        <span className="block text-[13px] font-medium text-[#94a3b8]">Sermon date</span>
-        <p className="mt-1 text-[12px] text-[#64748b]">Optional — pick from the calendar or leave unset.</p>
+        <span className="admin-label">Sermon date</span>
+        <p className="admin-hint mt-1">Optional — pick from the calendar or leave unset.</p>
         <SermonDatePicker id="sermon-date" value={sermonDate} onChange={setSermonDate} />
       </div>
 
-      <fieldset className="space-y-3 rounded-xl border border-[rgba(56,189,248,0.2)] bg-[#05070a]/40 p-4">
-        <legend className="px-1 text-[13px] font-semibold text-[#94a3b8]">Sermon source</legend>
-        <p className="text-[12px] leading-relaxed text-[#64748b]">
+      <fieldset className="admin-fieldset space-y-3">
+        <legend>Sermon source</legend>
+        <p className="admin-hint leading-relaxed">
           Choose one: paste text, or upload a file. Audio and video are transcribed on the server (
-          <code className="text-[11px] text-violet-200">OPENAI_API_KEY</code>).
+          <code className="text-[11px] text-violet-600 dark:text-violet-200">OPENAI_API_KEY</code>
+          ).
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[rgba(56,189,248,0.25)] bg-[#0a0f18] px-3 py-2 text-[14px] text-[#e2e8f0] has-[:checked]:border-sky-400/60 has-[:checked]:bg-sky-950/40">
+          <label className="admin-radio-choice">
             <input
               type="radio"
               name="inputKind"
               checked={inputKind === 'text'}
               onChange={() => onModeChange('text')}
-              className="border-[#64748b] text-sky-500"
+              className="text-sky-500"
             />
             Paste text
           </label>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[rgba(56,189,248,0.25)] bg-[#0a0f18] px-3 py-2 text-[14px] text-[#e2e8f0] has-[:checked]:border-sky-400/60 has-[:checked]:bg-sky-950/40">
+          <label className="admin-radio-choice">
             <input
               type="radio"
               name="inputKind"
               checked={inputKind === 'file'}
               onChange={() => onModeChange('file')}
-              className="border-[#64748b] text-sky-500"
+              className="text-sky-500"
             />
             Audio / video / .txt file
           </label>
@@ -281,8 +282,8 @@ export function NewSermonForm({ churchId }: Props) {
 
         {inputKind === 'text' ? (
           <div>
-            <label htmlFor="sermon-script" className="block text-[13px] font-medium text-[#94a3b8]">
-              Sermon script or notes <span className="text-red-400">*</span>
+            <label htmlFor="sermon-script" className="admin-label">
+              Sermon script or notes <span className="text-red-500">*</span>
             </label>
             <textarea
               id="sermon-script"
@@ -292,15 +293,15 @@ export function NewSermonForm({ churchId }: Props) {
               placeholder="Paste manuscript, outline, or bullets…"
               value={scriptOrNotes}
               onChange={(e) => setScriptOrNotes(e.target.value)}
-              className="mt-2 w-full resize-y rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-[system-ui] text-[15px] leading-relaxed text-white outline-none ring-sky-400/40 placeholder:text-[#475569] focus:border-[#38bdf8] focus:ring-2"
+              className="admin-input mt-2 resize-y leading-relaxed placeholder:text-[var(--admin-dim)]"
             />
           </div>
         ) : (
           <div>
-            <span className="block text-[13px] font-medium text-[#94a3b8]">
-              File <span className="text-red-400">*</span>
+            <span className="admin-label">
+              File <span className="text-red-500">*</span>
             </span>
-            <p className="mt-1 text-[12px] text-[#64748b]">
+            <p className="admin-hint mt-1">
               .txt is saved directly; audio or video is uploaded then transcribed (may take a minute).
             </p>
             <label className="mt-2 inline-block">
@@ -316,13 +317,14 @@ export function NewSermonForm({ churchId }: Props) {
                   ev.target.value = '';
                 }}
               />
-              <span className="cursor-pointer rounded-lg border border-[rgba(56,189,248,0.35)] bg-[#0a0f18] px-4 py-2 text-[13px] font-medium text-sky-200 hover:bg-[#0f172a]">
+              <span className="admin-btn-secondary inline-block cursor-pointer text-[13px]">
                 Choose file
               </span>
             </label>
             {mediaFile ? (
-              <p className="mt-2 text-[13px] text-[#94a3b8]">
-                Selected: <span className="font-medium text-[#e2e8f0]">{mediaFile.name}</span>
+              <p className="admin-hint mt-2">
+                Selected:{' '}
+                <span className="font-medium text-[var(--admin-fg-strong)]">{mediaFile.name}</span>
               </p>
             ) : null}
           </div>
@@ -330,7 +332,7 @@ export function NewSermonForm({ churchId }: Props) {
       </fieldset>
 
       {error ? (
-        <p className="text-[13px] text-red-400" role="alert">
+        <p className="text-[13px] text-red-500 dark:text-red-400" role="alert">
           {error}
         </p>
       ) : null}
@@ -342,18 +344,10 @@ export function NewSermonForm({ churchId }: Props) {
         />
       ) : null}
       <div className="flex flex-wrap gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
-        >
+        <button type="submit" disabled={pending} className="admin-btn-primary text-[15px]">
           {submitLabel}
         </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="rounded-lg border border-[rgba(56,189,248,0.25)] px-4 py-2.5 text-[15px] text-[#94a3b8] hover:bg-[#0a0f18]"
-        >
+        <button type="button" onClick={() => router.back()} className="admin-btn-secondary text-[15px]">
           Cancel
         </button>
       </div>

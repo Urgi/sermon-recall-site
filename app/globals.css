@@ -3,6 +3,43 @@
 @tailwind utilities;
 
 @layer base {
+  :root,
+  [data-theme='dark'] {
+    --admin-page-bg: #05070a;
+    --admin-shell-bg: #05070a;
+    --admin-sidebar-bg: #020408;
+    --admin-card-bg: #0a0f18;
+    --admin-surface-bg: #05070a;
+    --admin-fg: #e2e8f0;
+    --admin-fg-strong: #f8fafc;
+    --admin-fg-secondary: #cbd5e1;
+    --admin-muted: #94a3b8;
+    --admin-dim: #64748b;
+    --admin-border: rgba(56, 189, 248, 0.12);
+    --admin-border-strong: rgba(56, 189, 248, 0.25);
+    --admin-accent: #38bdf8;
+    --admin-link: #38bdf8;
+    --admin-nav-hover-bg: #0a0f18;
+  }
+
+  [data-theme='light'] {
+    --admin-page-bg: #f1f5f9;
+    --admin-shell-bg: #f8fafc;
+    --admin-sidebar-bg: #ffffff;
+    --admin-card-bg: #ffffff;
+    --admin-surface-bg: #ffffff;
+    --admin-fg: #0f172a;
+    --admin-fg-strong: #020617;
+    --admin-fg-secondary: #334155;
+    --admin-muted: #64748b;
+    --admin-dim: #475569;
+    --admin-border: rgba(14, 165, 233, 0.2);
+    --admin-border-strong: rgba(14, 165, 233, 0.35);
+    --admin-accent: #0284c7;
+    --admin-link: #0369a1;
+    --admin-nav-hover-bg: #e2e8f0;
+  }
+
   body {
     font-family:
       system-ui,
@@ -13,7 +50,8 @@
       'Helvetica Neue',
       Arial,
       sans-serif;
-    background-color: #05070a;
+    background-color: var(--admin-page-bg);
+    color: var(--admin-fg);
   }
 }
 
@@ -25,8 +63,8 @@
   .admin-shell {
     display: flex;
     min-height: 100vh;
-    background-color: #05070a;
-    color: #e2e8f0;
+    background-color: var(--admin-shell-bg);
+    color: var(--admin-fg);
   }
 
   .admin-sidebar {
@@ -34,8 +72,8 @@
     width: 14rem;
     flex-shrink: 0;
     flex-direction: column;
-    border-right: 1px solid rgba(56, 189, 248, 0.12);
-    background-color: #020408;
+    border-right: 1px solid var(--admin-border);
+    background-color: var(--admin-sidebar-bg);
     padding: 1rem;
   }
 
@@ -49,13 +87,13 @@
     display: block;
     border-radius: 0.375rem;
     padding: 0.5rem;
-    color: #94a3b8;
+    color: var(--admin-muted);
     text-decoration: none;
   }
 
   .admin-sidebar nav.admin-nav-stack a:hover {
-    background-color: #0a0f18;
-    color: #38bdf8;
+    background-color: var(--admin-nav-hover-bg);
+    color: var(--admin-accent);
   }
 
   .admin-mobile-header {
@@ -63,7 +101,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+    border-bottom: 1px solid var(--admin-border);
+    background-color: var(--admin-sidebar-bg);
     padding: 0.75rem 1rem;
   }
 
@@ -83,32 +122,485 @@
       display: none;
     }
   }
-}
 
-/* react-day-picker — dark theme inside sermon date popover */
-@layer components {
-  .sermon-rdp .rdp-root {
-    --rdp-accent-color: #38bdf8;
-    --rdp-accent-background-color: rgba(56, 189, 248, 0.15);
-    color: #e2e8f0;
+  /* Delete account — danger zone (theme-aware) */
+  .admin-delete-zone {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    background-color: #180808;
+    padding: 1.5rem;
+    color: #fecaca;
   }
 
-  .sermon-rdp .rdp-caption_label {
-    color: #e2e8f0;
+  [data-theme='light'] .admin-delete-zone {
+    border-color: rgba(220, 38, 38, 0.35);
+    background-color: #fef2f2;
+    color: #7f1d1d;
   }
 
-  .sermon-rdp .rdp-weekday {
+  .admin-delete-zone__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #fee2e2;
+  }
+
+  [data-theme='light'] .admin-delete-zone__title {
+    color: #991b1b;
+  }
+
+  .admin-delete-zone__hint {
+    margin-top: 0.5rem;
+    font-size: 14px;
+    line-height: 1.625;
+    color: rgba(254, 202, 202, 0.88);
+  }
+
+  [data-theme='light'] .admin-delete-zone__hint {
+    color: #b91c1c;
+  }
+
+  .admin-delete-zone__outline-btn {
+    margin-top: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    padding: 0.5rem 1rem;
+    font-size: 14px;
+    font-weight: 500;
+    color: #fecaca;
+    background: transparent;
+  }
+
+  [data-theme='light'] .admin-delete-zone__outline-btn {
+    border-color: rgba(220, 38, 38, 0.45);
+    color: #b91c1c;
+  }
+
+  .admin-delete-zone__outline-btn:hover:not(:disabled) {
+    background-color: rgba(69, 10, 10, 0.6);
+  }
+
+  [data-theme='light'] .admin-delete-zone__outline-btn:hover:not(:disabled) {
+    background-color: rgba(254, 226, 226, 0.9);
+    color: #7f1d1d;
+  }
+
+  .admin-delete-zone__outline-btn:disabled {
+    opacity: 0.5;
+  }
+
+  .admin-delete-zone__body-text {
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  [data-theme='light'] .admin-delete-zone__body-text {
     color: #64748b;
   }
 
-  .sermon-rdp .rdp-day_button {
+  .admin-delete-zone__body-text strong {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  [data-theme='light'] .admin-delete-zone__body-text strong {
+    color: #0f172a;
+  }
+
+  .admin-delete-zone__label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+
+  [data-theme='light'] .admin-delete-zone__label {
+    color: #64748b;
+  }
+
+  .admin-delete-zone__checkbox-label {
+    font-size: 13px;
     color: #e2e8f0;
   }
 
-  .sermon-rdp .rdp-dropdown {
+  [data-theme='light'] .admin-delete-zone__checkbox-label {
+    color: #334155;
+  }
+
+  .admin-delete-zone__input {
+    margin-top: 0.25rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(248, 113, 113, 0.35);
     background-color: #05070a;
-    color: #e2e8f0;
-    border: 1px solid rgba(56, 189, 248, 0.25);
+    padding: 0.5rem 0.75rem;
+    font-size: 15px;
+    color: #f8fafc;
+  }
+
+  [data-theme='light'] .admin-delete-zone__input {
+    border-color: rgba(220, 38, 38, 0.35);
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+
+  .admin-delete-zone__warn {
+    border-radius: 0.5rem;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    background-color: rgba(69, 26, 3, 0.55);
+    padding: 1rem;
+    font-size: 13px;
+    line-height: 1.625;
+    color: #fde68a;
+  }
+
+  [data-theme='light'] .admin-delete-zone__warn {
+    border-color: rgba(217, 119, 6, 0.4);
+    background-color: #fffbeb;
+    color: #92400e;
+  }
+
+  .admin-delete-zone__warn-title {
+    font-weight: 600;
+    color: #fef3c7;
+  }
+
+  [data-theme='light'] .admin-delete-zone__warn-title {
+    color: #b45309;
+  }
+
+  .admin-delete-zone__cancel {
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 14px;
+    color: #94a3b8;
+    background: transparent;
+  }
+
+  [data-theme='light'] .admin-delete-zone__cancel {
+    color: #64748b;
+  }
+
+  .admin-delete-zone__cancel:hover:not(:disabled) {
+    color: #f8fafc;
+  }
+
+  [data-theme='light'] .admin-delete-zone__cancel:hover:not(:disabled) {
+    color: #0f172a;
+  }
+
+  /* Theme-aware admin UI primitives (light + dark) */
+  .admin-heading {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--admin-fg-strong);
+  }
+
+  .admin-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--admin-fg-strong);
+  }
+
+  .admin-body {
+    font-size: 0.9375rem;
+    line-height: 1.625;
+    color: var(--admin-fg-secondary);
+  }
+
+  .admin-hint {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--admin-muted);
+  }
+
+  .admin-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--admin-muted);
+  }
+
+  .admin-card {
+    border-radius: 0.75rem;
+    border: 1px solid var(--admin-border);
+    background-color: var(--admin-card-bg);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  [data-theme='light'] .admin-card {
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+
+  .admin-card-nested {
+    border-radius: 0.5rem;
+    border: 1px solid var(--admin-border);
+    background-color: var(--admin-surface-bg);
+  }
+
+  .admin-input {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--admin-border-strong);
+    background-color: var(--admin-surface-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    color: var(--admin-fg-strong);
+    outline: none;
+  }
+
+  .admin-input:focus {
+    border-color: var(--admin-accent);
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+  }
+
+  .admin-btn-primary {
+    border-radius: 0.5rem;
+    background-color: #0ea5e9;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .admin-btn-primary:hover:not(:disabled) {
+    background-color: #0284c7;
+  }
+
+  .admin-btn-primary:disabled {
+    opacity: 0.6;
+  }
+
+  .admin-btn-secondary {
+    border-radius: 0.5rem;
+    border: 1px solid var(--admin-border-strong);
+    background-color: transparent;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    color: var(--admin-muted);
+  }
+
+  .admin-btn-secondary:hover:not(:disabled) {
+    background-color: var(--admin-nav-hover-bg);
+    color: var(--admin-accent);
+  }
+
+  .admin-stat-card {
+    border-radius: 0.75rem;
+    border: 1px solid var(--admin-border);
+    background-color: var(--admin-card-bg);
+    padding: 1.25rem;
+  }
+
+  .admin-stat-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--admin-dim);
+  }
+
+  .admin-stat-value {
+    margin-top: 0.5rem;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--admin-fg-strong);
+  }
+
+  .admin-fieldset {
+    border-radius: 0.75rem;
+    border: 1px solid var(--admin-border-strong);
+    background-color: color-mix(in srgb, var(--admin-card-bg) 60%, var(--admin-page-bg));
+    padding: 1rem;
+  }
+
+  [data-theme='light'] .admin-fieldset {
+    background-color: var(--admin-card-bg);
+  }
+
+  .admin-fieldset legend {
+    padding: 0 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--admin-muted);
+  }
+
+  .admin-radio-choice {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--admin-border-strong);
+    background-color: var(--admin-surface-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--admin-fg);
+  }
+
+  .admin-radio-choice:has(:checked) {
+    border-color: var(--admin-accent);
+    background-color: color-mix(in srgb, var(--admin-accent) 12%, var(--admin-surface-bg));
+  }
+
+  .admin-link-back {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--admin-dim);
+    text-decoration: none;
+  }
+
+  .admin-link-back:hover {
+    color: var(--admin-link);
+  }
+
+  .admin-link {
+    color: var(--admin-link);
+    text-decoration: none;
+  }
+
+  .admin-link:hover {
+    text-decoration: underline;
+  }
+
+  .admin-empty-hint {
+    border-radius: 0.5rem;
+    border: 1px dashed var(--admin-border-strong);
+    background-color: var(--admin-nav-hover-bg);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--admin-muted);
+  }
+
+  .admin-quote-item {
+    border-radius: 0.5rem;
+    border: 1px solid var(--admin-border);
+    background-color: var(--admin-nav-hover-bg);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.625;
+    color: var(--admin-fg-secondary);
+  }
+
+  .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid var(--admin-border);
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .admin-badge--ready,
+  .admin-badge--approved {
+    border-color: rgba(16, 185, 129, 0.35);
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #6ee7b7;
+  }
+
+  [data-theme='light'] .admin-badge--ready,
+  [data-theme='light'] .admin-badge--approved {
+    color: #047857;
+    background-color: rgba(16, 185, 129, 0.15);
+  }
+
+  .admin-badge--processing,
+  .admin-badge--generated {
+    border-color: rgba(245, 158, 11, 0.35);
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #fcd34d;
+  }
+
+  [data-theme='light'] .admin-badge--processing,
+  [data-theme='light'] .admin-badge--generated {
+    color: #b45309;
+  }
+
+  .admin-badge--submitted {
+    border-color: rgba(56, 189, 248, 0.35);
+    background-color: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+  }
+
+  [data-theme='light'] .admin-badge--submitted {
+    color: #0369a1;
+  }
+
+  .admin-badge--changes {
+    border-color: rgba(251, 146, 60, 0.35);
+    background-color: rgba(251, 146, 60, 0.12);
+    color: #fdba74;
+  }
+
+  [data-theme='light'] .admin-badge--changes {
+    color: #c2410c;
+  }
+
+  .admin-badge--failed {
+    border-color: rgba(248, 113, 113, 0.35);
+    background-color: rgba(248, 113, 113, 0.12);
+    color: #fca5a5;
+  }
+
+  [data-theme='light'] .admin-badge--failed {
+    color: #b91c1c;
+  }
+
+  /* Team permissions matrix — horizontal scroll + sticky column/header */
+  .permissions-matrix-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .permissions-matrix-sticky-col {
+    position: sticky;
+    left: 0;
+  }
+
+  .permissions-matrix-sticky-head {
+    position: sticky;
+    top: 0;
+  }
+
+  .permissions-matrix thead .permissions-matrix-sticky-col {
+    z-index: 30;
+  }
+}
+
+/* react-day-picker — theme-aware inside sermon date popover */
+@layer components {
+  .sermon-rdp {
+    border: 1px solid var(--admin-border-strong);
+    background-color: var(--admin-card-bg);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+  }
+
+  [data-theme='dark'] .sermon-rdp {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  }
+
+  .sermon-rdp .rdp-root {
+    --rdp-accent-color: var(--admin-accent);
+    --rdp-accent-background-color: color-mix(in srgb, var(--admin-accent) 18%, transparent);
+    color: var(--admin-fg);
+  }
+
+  .sermon-rdp .rdp-caption_label {
+    color: var(--admin-fg-strong);
+  }
+
+  .sermon-rdp .rdp-weekday {
+    color: var(--admin-dim);
+  }
+
+  .sermon-rdp .rdp-day_button {
+    color: var(--admin-fg);
+  }
+
+  .sermon-rdp .rdp-dropdown {
+    background-color: var(--admin-surface-bg);
+    color: var(--admin-fg);
+    border: 1px solid var(--admin-border-strong);
     border-radius: 0.375rem;
     padding: 0.25rem 0.35rem;
     font-size: 0.875rem;
@@ -116,13 +608,13 @@
 
   .sermon-rdp .rdp-button_next,
   .sermon-rdp .rdp-button_previous {
-    color: #94a3b8;
+    color: var(--admin-muted);
   }
 
   .sermon-rdp .rdp-button_next:hover,
   .sermon-rdp .rdp-button_previous:hover {
-    background-color: rgba(56, 189, 248, 0.12);
-    color: #38bdf8;
+    background-color: color-mix(in srgb, var(--admin-accent) 12%, transparent);
+    color: var(--admin-accent);
   }
 }
 

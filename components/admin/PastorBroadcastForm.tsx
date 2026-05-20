@@ -1,29 +1,54 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useId, useState } from 'react';
+
+type AudienceType = 'all_members' | 'pastors_only';
 
 export function PastorBroadcastForm() {
   const router = useRouter();
+  const formId = useId();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [audienceType, setAudienceType] = useState<AudienceType>('all_members');
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pushWarnings, setPushWarnings] = useState<string[] | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
+  const onSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    if (!title.trim() || !body.trim()) {
+      setError('Title and message are required.');
+      return;
+    }
+    setShowConfirm(true);
+  }, [title, body]);
+
+  async function confirmSend() {
+    setShowConfirm(false);
     setError(null);
     setSuccess(null);
     setPushWarnings(null);
     setPending(true);
     try {
+      const idempotencyKey =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+
       const res = await fetch('/api/church/broadcast', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), body: body.trim() }),
+        body: JSON.stringify({
+          title: title.trim(),
+          body: body.trim(),
+          audienceType,
+          idempotencyKey,
+        }),
       });
       const data = (await res.json()) as {
         error?: string;
@@ -31,6 +56,7 @@ export function PastorBroadcastForm() {
         recipientCount?: number;
         warning?: string;
         pushTicketErrors?: string[];
+        duplicate?: boolean;
       };
       setPending(false);
       if (!res.ok) {
@@ -39,13 +65,17 @@ export function PastorBroadcastForm() {
       }
       const n = data.recipientCount ?? 0;
       setPushWarnings(
-        data.pushTicketErrors && data.pushTicketErrors.length > 0 ? data.pushTicketErrors : null,
+        data.pushTicketErrors?.length ? data.pushTicketErrors : null,
       );
       setSuccess(
-        data.warning ?? `Sent to ${n} device${n === 1 ? '' : 's'} (handed off to Expo).`,
+        data.duplicate
+          ? 'Already sent (duplicate prevented).'
+          : data.warning ?? `Sent to ${n} device${n === 1 ? '' : 's'}.`,
       );
-      setTitle('');
-      setBody('');
+      if (!data.duplicate) {
+        setTitle('');
+        setBody('');
+      }
       router.refresh();
     } catch {
       setPending(false);
@@ -54,63 +84,110 @@ export function PastorBroadcastForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="broadcast-title" className="block text-[13px] font-medium text-[#94a3b8]">
-          Title <span className="text-[#64748b]">(max 80 characters)</span>
-        </label>
-        <input
-          id="broadcast-title"
-          name="title"
-          type="text"
-          required
-          maxLength={80}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g. Womens retreat signup closes Friday"
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
-        />
-      </div>
-      <div>
-        <label htmlFor="broadcast-body" className="block text-[13px] font-medium text-[#94a3b8]">
-          Message <span className="text-[#64748b]">(max 320 characters)</span>
-        </label>
-        <textarea
-          id="broadcast-body"
-          name="body"
-          required
-          rows={4}
-          maxLength={320}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Short message shown on members’ phones."
-          className="mt-1 w-full resize-y rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
-        />
-      </div>
-      {error ? (
-        <p className="text-[13px] text-red-400" role="alert">
-          {error}
-        </p>
+    <>
+      <form id={formId} onSubmit={onSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="broadcast-title" className="admin-label">
+            Title <span className="admin-hint">(max 80 characters)</span>
+          </label>
+          <input
+            id="broadcast-title"
+            name="title"
+            type="text"
+            required
+            maxLength={80}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="admin-input mt-1"
+            placeholder="e.g. Women's retreat signup closes Friday"
+          />
+        </div>
+        <div>
+          <label htmlFor="broadcast-body" className="admin-label">
+            Message <span className="admin-hint">(max 320 characters)</span>
+          </label>
+          <textarea
+            id="broadcast-body"
+            name="body"
+            required
+            maxLength={320}
+            rows={4}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            className="admin-input mt-1"
+            placeholder="Your message to the church…"
+          />
+        </div>
+        <div>
+          <label htmlFor="broadcast-audience" className="admin-label">
+            Audience
+          </label>
+          <select
+            id="broadcast-audience"
+            value={audienceType}
+            onChange={(e) => setAudienceType(e.target.value as AudienceType)}
+            className="admin-input mt-1"
+          >
+            <option value="all_members">All members with push enabled</option>
+            <option value="pastors_only">Pastors / staff only</option>
+          </select>
+        </div>
+        {title && body ? (
+          <div className="admin-card-nested p-4">
+            <p className="admin-hint text-xs font-semibold uppercase">Preview</p>
+            <p className="mt-2 font-semibold text-admin-fg-strong">{title}</p>
+            <p className="admin-body mt-1">{body}</p>
+          </div>
+        ) : null}
+        <button type="submit" disabled={pending} className="admin-btn-primary">
+          {pending ? 'Sending…' : 'Review & send now'}
+        </button>
+        {error ? (
+          <p className="text-[13px] text-red-500" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {success ? <p className="text-[13px] text-emerald-600">{success}</p> : null}
+        {pushWarnings ? (
+          <p className="text-[12px] text-amber-600">{pushWarnings.join(', ')}</p>
+        ) : null}
+      </form>
+
+      {showConfirm ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-send-title"
+        >
+          <div className="admin-card max-w-md p-6 shadow-xl">
+            <h3 id="confirm-send-title" className="admin-section-title">
+              Send notification now?
+            </h3>
+            <p className="admin-body mt-2">
+              This will immediately push to{' '}
+              {audienceType === 'pastors_only' ? 'pastors/staff' : 'all members'} with registered
+              devices. This cannot be undone.
+            </p>
+            <div className="admin-card-nested mt-4 p-3">
+              <p className="font-semibold text-admin-fg-strong">{title}</p>
+              <p className="admin-body mt-1 text-sm">{body}</p>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button type="button" onClick={() => void confirmSend()} className="admin-btn-primary">
+                Send now
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="admin-btn-secondary"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
-      {success ? (
-        <p className="text-[13px] text-emerald-400" role="status">
-          {success}
-        </p>
-      ) : null}
-      {pushWarnings?.length ? (
-        <p className="text-[13px] text-amber-300" role="status">
-          Expo push could not deliver to this token/device: {pushWarnings.join('; ')}. Typical
-          fixes: reinstall app and open once (fresh token), confirm phone notifications are on, and
-          verify the member uses the same Supabase project as this site.
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg bg-[#0ea5e9] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
-      >
-        {pending ? 'Sending…' : 'Send notification'}
-      </button>
-    </form>
+    </>
   );
 }

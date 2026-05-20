@@ -2,8 +2,8 @@ import { File } from 'node:buffer';
 
 import { NextResponse } from 'next/server';
 
-import { canManageSermons } from '@/lib/auth/profile';
-import type { UserRole } from '@/lib/auth/profile';
+import { authorizeApiPermission } from '@/lib/auth/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { transcribeAudioBuffer } from '@/lib/openai/transcribe';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -44,30 +44,17 @@ export async function POST(req: Request) {
     );
   }
 
+  const auth = await authorizeApiPermission('can_generate_devotionals');
+  if (!auth.ok) return auth.response;
+
+  const limit = await checkRateLimit(`transcribe:${auth.ctx.user.id}`, 10, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Transcription rate limit reached.' }, { status: 429 });
+  }
+
+  const user = auth.ctx.user;
+  const profileRow = auth.ctx.profile;
   const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
-
-  const { data: profileRow, error: profileError } = await supabase
-    .from('users')
-    .select('id, church_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profileRow) {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
-  }
-
-  const profileRole = profileRow.role as UserRole;
-  if (!canManageSermons(profileRole)) {
-    return NextResponse.json({ error: 'Pastor or admin role required.' }, { status: 403 });
-  }
 
   const pathOk = safeStoragePath(user.id, sermonId, storagePath);
   if (!pathOk) {

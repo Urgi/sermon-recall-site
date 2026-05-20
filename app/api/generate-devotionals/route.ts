@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
-import { canManageSermons } from '@/lib/auth/profile';
-import type { UserRole } from '@/lib/auth/profile';
+import { canRegenerateWorkflow } from '@/lib/admin/workflow-status';
+import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
+import { authorizeApiPermission } from '@/lib/auth/server';
 import type { GeminiDevotionalDay } from '@/lib/gemini/devotional-days';
 import { parseDaysFromModelJson } from '@/lib/gemini/devotional-days';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -97,34 +99,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'sermonId is required.' }, { status: 400 });
   }
 
+  const auth = await authorizeApiPermission('can_generate_devotionals');
+  if (!auth.ok) return auth.response;
+
+  const limit = await checkRateLimit(`gemini:${auth.ctx.user.id}`, 15, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Generation rate limit reached. Try again later.' }, { status: 429 });
+  }
+
   const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
-
-  const { data: profileRow, error: profileError } = await supabase
-    .from('users')
-    .select('id, church_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profileRow) {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
-  }
-
-  const profileRole = profileRow.role as UserRole;
-  if (!canManageSermons(profileRole)) {
-    return NextResponse.json({ error: 'Pastor or admin role required.' }, { status: 403 });
-  }
+  const profileRow = auth.ctx.profile;
 
   const { data: sermon, error: sermonError } = await supabase
     .from('sermons')
-    .select('id, church_id, title, pastor_name, sermon_date, transcript')
+    .select('id, church_id, title, pastor_name, sermon_date, transcript, workflow_status')
     .eq('id', sermonId)
     .single();
 
@@ -134,6 +122,14 @@ export async function POST(req: Request) {
 
   if (sermon.church_id !== profileRow.church_id) {
     return NextResponse.json({ error: 'This sermon belongs to another church.' }, { status: 403 });
+  }
+
+  const wf = (sermon.workflow_status as SermonWorkflowStatus) ?? 'draft';
+  if (!canRegenerateWorkflow(wf)) {
+    return NextResponse.json(
+      { error: 'Cannot regenerate while sermon is in review or published.' },
+      { status: 409 },
+    );
   }
 
   const transcript = (sermon.transcript as string | null)?.trim() ?? '';
@@ -196,6 +192,11 @@ export async function POST(req: Request) {
   if (!days) {
     return NextResponse.json({ error: 'Generation failed.' }, { status: 502 });
   }
+
+  await supabase
+    .from('sermons')
+    .update({ workflow_status: 'generated' })
+    .eq('id', sermonId);
 
   return NextResponse.json({ ok: true, days });
 }

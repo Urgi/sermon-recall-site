@@ -50,10 +50,12 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full max-w-xs items-center justify-between gap-2 rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-left text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+        className="admin-input mt-0 flex max-w-xs items-center justify-between gap-2 text-left"
       >
-        <span className={value ? 'text-white' : 'text-[#64748b]'}>{displayLabel}</span>
-        <span className="text-[#64748b]" aria-hidden>
+        <span className={value ? 'text-[var(--admin-fg-strong)]' : 'text-[var(--admin-dim)]'}>
+          {displayLabel}
+        </span>
+        <span className="text-[var(--admin-dim)]" aria-hidden>
           ▾
         </span>
       </button>
@@ -63,7 +65,7 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
           role="dialog"
           aria-modal="true"
           aria-labelledby={buttonId}
-          className="sermon-rdp absolute left-0 top-full z-50 mt-2 rounded-xl border border-[rgba(56,189,248,0.2)] bg-[#0a0f18] p-3 shadow-xl shadow-black/40"
+          className="sermon-rdp absolute left-0 top-full z-50 mt-2 rounded-xl p-3"
         >
           <DayPicker
             mode="single"

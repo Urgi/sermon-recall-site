@@ -27,5 +27,5 @@ export async function GET() {
     return NextResponse.json({ error: 'Invalid preview response.' }, { status: 500 });
   }
 
-  return NextResponse.json({ preview });
+  return NextResponse.json({ preview, email: user.email ?? '' });
 }

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { canManageSermons } from '@/lib/auth/profile';
-import type { UserRole } from '@/lib/auth/profile';
+import { authorizeApiPermission } from '@/lib/auth/server';
 import { parseDaysFromClientPayload } from '@/lib/gemini/devotional-days';
+import { writeAuditLog } from '@/lib/audit/log';
 import { notifyChurchNewDevotionals } from '@/lib/push/notify-church-new-devotionals';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -22,42 +22,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'sermonId is required.' }, { status: 400 });
   }
 
-  let normalized;
-  try {
-    normalized = parseDaysFromClientPayload(body.days);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Invalid devotionals payload.';
-    return NextResponse.json({ error: msg }, { status: 400 });
-  }
+  const auth = await authorizeApiPermission('can_publish_devotionals');
+  if (!auth.ok) return auth.response;
+  const user = auth.ctx.user;
+  const profileRow = auth.ctx.profile;
 
   const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
-
-  const { data: profileRow, error: profileError } = await supabase
-    .from('users')
-    .select('id, church_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profileRow) {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
-  }
-
-  const profileRole = profileRow.role as UserRole;
-  if (!canManageSermons(profileRole)) {
-    return NextResponse.json({ error: 'Pastor or admin role required.' }, { status: 403 });
-  }
 
   const { data: sermon, error: sermonError } = await supabase
     .from('sermons')
-    .select('id, church_id, title')
+    .select('id, church_id, title, workflow_status, churches(require_devotional_approval)')
     .eq('id', sermonId)
     .single();
 
@@ -69,47 +43,88 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'This sermon belongs to another church.' }, { status: 403 });
   }
 
-  if (replace) {
-    const { error: delErr } = await supabase
-      .from('devotionals')
-      .delete()
-      .eq('sermon_id', sermonId);
-    if (delErr) {
-      return NextResponse.json({ error: delErr.message }, { status: 500 });
+  const churchEmbedRaw = sermon.churches as
+    | { require_devotional_approval: boolean }
+    | { require_devotional_approval: boolean }[]
+    | null;
+  const churchEmbed = Array.isArray(churchEmbedRaw) ? churchEmbedRaw[0] : churchEmbedRaw;
+  const approvalRequired = churchEmbed?.require_devotional_approval !== false;
+  const wf = (sermon.workflow_status as string) ?? 'draft';
+
+  if (approvalRequired && wf !== 'approved') {
+    return NextResponse.json(
+      {
+        error:
+          wf === 'submitted_for_approval'
+            ? 'Awaiting approval before publish.'
+            : 'Submit for approval first.',
+      },
+      { status: 409 },
+    );
+  }
+
+  const { count: existingCount } = await supabase
+    .from('devotionals')
+    .select('id', { count: 'exact', head: true })
+    .eq('sermon_id', sermonId);
+
+  const hasExisting = (existingCount ?? 0) > 0;
+
+  if (approvalRequired && wf === 'approved') {
+    if (!hasExisting) {
+      return NextResponse.json({ error: 'No devotionals to publish.' }, { status: 409 });
     }
   } else {
-    const { count } = await supabase
-      .from('devotionals')
-      .select('id', { count: 'exact', head: true })
-      .eq('sermon_id', sermonId);
-    if (count && count > 0) {
+    let normalized;
+    try {
+      normalized = parseDaysFromClientPayload(body.days);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Invalid devotionals payload.';
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+
+    if (hasExisting && !replace) {
       return NextResponse.json(
-        {
-          error: 'This sermon already has devotionals. Pass replace: true to replace them.',
-        },
+        { error: 'This sermon already has devotionals. Pass replace: true to replace them.' },
         { status: 409 },
       );
     }
+
+    if (replace && hasExisting) {
+      const { error: delErr } = await supabase.from('devotionals').delete().eq('sermon_id', sermonId);
+      if (delErr) {
+        return NextResponse.json({ error: delErr.message }, { status: 500 });
+      }
+    }
+
+    const insertRows = normalized.map((d) => ({
+      sermon_id: sermonId,
+      day_number: d.day_number,
+      title: d.title,
+      main_content: d.main_content,
+      scripture_reference: d.scripture_reference,
+      scripture_text: d.scripture_text,
+      reflection_question: d.reflection_question,
+      estimated_minutes: d.estimated_minutes,
+      pre_prompt: d.pre_prompt,
+    }));
+
+    const { error: insErr } = await supabase.from('devotionals').insert(insertRows);
+    if (insErr) {
+      return NextResponse.json({ error: insErr.message }, { status: 500 });
+    }
   }
 
-  const insertRows = normalized.map((d) => ({
-    sermon_id: sermonId,
-    day_number: d.day_number,
-    title: d.title,
-    main_content: d.main_content,
-    scripture_reference: d.scripture_reference,
-    scripture_text: d.scripture_text,
-    reflection_question: d.reflection_question,
-    estimated_minutes: d.estimated_minutes,
-    pre_prompt: d.pre_prompt,
-  }));
-
-  const { error: insErr } = await supabase.from('devotionals').insert(insertRows);
-  if (insErr) {
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
-  }
-
-  await supabase.from('sermons').update({ status: 'ready' }).eq('id', sermonId);
+  const now = new Date().toISOString();
+  await supabase
+    .from('sermons')
+    .update({
+      status: 'ready',
+      workflow_status: 'published',
+      published_by: user.id,
+      published_at: now,
+    })
+    .eq('id', sermonId);
 
   await notifyChurchNewDevotionals({
     churchId: sermon.church_id,
@@ -118,5 +133,13 @@ export async function POST(req: Request) {
     excludeUserId: user.id,
   });
 
-  return NextResponse.json({ ok: true, days: normalized.length });
+  await writeAuditLog({
+    churchId: sermon.church_id,
+    actorUserId: user.id,
+    action: 'devotional.published',
+    entityType: 'sermon',
+    entityId: sermonId,
+  });
+
+  return NextResponse.json({ ok: true });
 }

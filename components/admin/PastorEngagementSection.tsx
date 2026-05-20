@@ -11,7 +11,9 @@ import {
   YAxis,
 } from 'recharts';
 
+import { useAdminTheme } from '@/components/admin/ThemeProvider';
 import type { PastorEngagementPayload } from '@/lib/engagement/types';
+import { getAdminChartTheme } from '@/lib/theme/chart-theme';
 
 type Props = {
   engagement: PastorEngagementPayload | null;
@@ -19,13 +21,19 @@ type Props = {
 };
 
 export function PastorEngagementSection({ engagement, churchHasMembers }: Props) {
+  const { resolved } = useAdminTheme();
+  const chart = getAdminChartTheme(resolved);
+  const isLight = resolved === 'light';
+
   if (!engagement) {
     return (
-      <section className="rounded-xl border border-slate-700/80 bg-[#0a0f18] p-6">
-        <h2 className="text-lg font-semibold text-white">Congregation engagement</h2>
-        <p className="mt-2 text-[14px] text-[#94a3b8]">
+      <section className="admin-card p-6">
+        <h2 className="admin-section-title">Congregation engagement</h2>
+        <p className="admin-body mt-2">
           Engagement metrics could not be loaded. Apply the latest Supabase migration (
-          <code className="rounded bg-black/40 px-1 text-[12px]">pastor_church_engagement</code>
+          <code className="rounded bg-black/10 px-1 text-[12px] dark:bg-black/40">
+            pastor_church_engagement
+          </code>
           ) and refresh.
         </p>
       </section>
@@ -43,83 +51,91 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-white">Congregation engagement</h2>
-        <p className="mt-1 text-[14px] text-[#94a3b8]">
-          <strong className="font-medium text-[#cbd5e1]">Opened</strong> counts members who opened
-          that day in the app (or already had reading progress).{' '}
-          <strong className="font-medium text-[#cbd5e1]">Completed</strong> is “Mark day complete.”
-          Weekly figures use the last 7 days in UTC, same as before.
+        <h2 className="admin-section-title">Congregation engagement</h2>
+        <p className="admin-body mt-1">
+          <strong className="font-medium text-[var(--admin-fg-secondary)]">Opened</strong> counts
+          members who opened that day in the app (or already had reading progress).{' '}
+          <strong className="font-medium text-[var(--admin-fg-secondary)]">Completed</strong> is
+          “Mark day complete.” Weekly figures use the last 7 days in UTC, same as before.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-5">
-          <p className="text-[13px] font-medium uppercase tracking-wide text-[#64748b]">
-            Members
-          </p>
-          <p className="mt-2 text-3xl font-bold text-white">{engagement.member_count}</p>
+        <div className="admin-stat-card">
+          <p className="admin-stat-label">Members</p>
+          <p className="admin-stat-value">{engagement.member_count}</p>
         </div>
-        <div className="rounded-xl border border-[rgba(56,189,248,0.2)] bg-[#0a0f18] p-5">
-          <p className="text-[13px] font-medium uppercase tracking-wide text-[#64748b]">
-            Opened a day (7d)
+        <div className="admin-stat-card">
+          <p className="admin-stat-label">Opened a day (7d)</p>
+          <p
+            className={`admin-stat-value ${isLight ? 'text-sky-600' : 'text-sky-300'}`}
+          >
+            {engagement.opened_this_week}
           </p>
-          <p className="mt-2 text-3xl font-bold text-sky-300">{engagement.opened_this_week}</p>
         </div>
-        <div className="rounded-xl border border-[rgba(34,197,94,0.2)] bg-[#0a0f18] p-5">
-          <p className="text-[13px] font-medium uppercase tracking-wide text-[#64748b]">
-            Completed (7d)
+        <div className="admin-stat-card">
+          <p className="admin-stat-label">Completed (7d)</p>
+          <p
+            className={`admin-stat-value ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}
+          >
+            {engagement.active_this_week}
           </p>
-          <p className="mt-2 text-3xl font-bold text-emerald-400">{engagement.active_this_week}</p>
         </div>
-        <div className="rounded-xl border border-[rgba(248,113,113,0.15)] bg-[#0a0f18] p-5">
-          <p className="text-[13px] font-medium uppercase tracking-wide text-[#64748b]">
-            No completion (7d)
+        <div className="admin-stat-card">
+          <p className="admin-stat-label">No completion (7d)</p>
+          <p
+            className={`admin-stat-value ${isLight ? 'text-rose-600' : 'text-rose-300'}`}
+          >
+            {engagement.inactive_this_week}
           </p>
-          <p className="mt-2 text-3xl font-bold text-rose-300/90">{engagement.inactive_this_week}</p>
         </div>
       </div>
 
       {!churchHasMembers ? (
-        <p className="rounded-lg border border-dashed border-[#334155] bg-[#0f172a]/60 px-4 py-3 text-[14px] text-[#94a3b8]">
+        <p className="admin-empty-hint">
           When members join with your church code and open or complete days, charts will appear
           here.
         </p>
       ) : null}
 
       {topSermon && chartData.length > 0 ? (
-        <div className="rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-6">
-          <h3 className="text-[15px] font-semibold text-white">
+        <div className="admin-card p-6">
+          <h3 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
             Opens vs completions by day — latest sermon
           </h3>
-          <p className="mt-1 truncate text-[13px] text-[#94a3b8]" title={topSermon.title}>
+          <p className="admin-hint mt-1 truncate" title={topSermon.title}>
             {topSermon.title}
           </p>
           <div className="mt-6 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
-                <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
-                <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                <YAxis allowDecimals={false} tick={{ fill: '#94a3b8', fontSize: 12 }} width={36} />
+                <CartesianGrid stroke={chart.gridStroke} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tick={{ fill: chart.tickFill, fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fill: chart.tickFill, fontSize: 12 }}
+                  width={36}
+                />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
+                    backgroundColor: chart.tooltip.backgroundColor,
+                    border: chart.tooltip.border,
                     borderRadius: 8,
                   }}
-                  labelStyle={{ color: '#e2e8f0' }}
+                  labelStyle={{ color: chart.tooltip.labelColor }}
                 />
-                <Legend wrapperStyle={{ color: '#94a3b8', fontSize: 12 }} />
+                <Legend wrapperStyle={{ color: chart.legendColor, fontSize: 12 }} />
                 <Bar
                   name="Opened"
                   dataKey="opened"
-                  fill="#7dd3fc"
+                  fill={chart.barOpened}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
                 <Bar
                   name="Completed"
                   dataKey="completed"
-                  fill="#38bdf8"
+                  fill={chart.barCompleted}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
@@ -128,23 +144,22 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
           </div>
         </div>
       ) : churchHasMembers ? (
-        <p className="text-[14px] text-[#64748b]">
+        <p className="admin-hint text-[14px]">
           Publish devotionals for a sermon to see per-day open and completion counts.
         </p>
       ) : null}
 
       {engagement.sample_commitments.length > 0 ? (
-        <div className="rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-6">
-          <h3 className="text-[15px] font-semibold text-white">Application commitments (sample)</h3>
-          <p className="mt-1 text-[13px] text-[#64748b]">
+        <div className="admin-card p-6">
+          <h3 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
+            Application commitments (sample)
+          </h3>
+          <p className="admin-hint mt-1">
             Short excerpts from member submissions — names are not shown.
           </p>
           <ul className="mt-4 space-y-3">
             {engagement.sample_commitments.map((c, i) => (
-              <li
-                key={`${i}-${c.slice(0, 24)}`}
-                className="rounded-lg border border-[#1e293b] bg-[#020617]/40 px-4 py-3 text-[14px] leading-relaxed text-[#cbd5e1]"
-              >
+              <li key={`${i}-${c.slice(0, 24)}`} className="admin-quote-item">
                 “{c.length > 280 ? `${c.slice(0, 277)}…` : c}”
               </li>
             ))}

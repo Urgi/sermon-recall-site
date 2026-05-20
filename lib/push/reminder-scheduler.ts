@@ -110,6 +110,7 @@ export async function runDevotionalReminders(
     .from('sermons')
     .select('id, church_id, sermon_date, created_at, title')
     .eq('status', 'ready')
+    .eq('workflow_status', 'published')
     .order('created_at', { ascending: false });
 
   const latestSermonByChurch = new Map<string, SermonRow>();

@@ -11,11 +11,11 @@ export default async function NewSermonPage() {
   if (!profile.church_id) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="text-2xl font-bold text-white">Add sermon</h1>
-        <p className="text-[15px] text-[#94a3b8]">
+        <h1 className="admin-heading">Add sermon</h1>
+        <p className="admin-body">
           Create or join a church from the dashboard before adding sermons.
         </p>
-        <Link href="/dashboard" className="text-[#38bdf8] hover:underline">
+        <Link href="/dashboard" className="admin-link">
           Go to dashboard
         </Link>
       </div>
@@ -25,12 +25,12 @@ export default async function NewSermonPage() {
   if (!canPublish) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="text-2xl font-bold text-white">Add sermon</h1>
-        <p className="text-[15px] leading-relaxed text-[#94a3b8]">
+        <h1 className="admin-heading">Add sermon</h1>
+        <p className="admin-body">
           Your account needs the pastor or admin role to create sermons. See the dashboard for
           instructions.
         </p>
-        <Link href="/dashboard" className="text-[#38bdf8] hover:underline">
+        <Link href="/dashboard" className="admin-link">
           Back to dashboard
         </Link>
       </div>
@@ -40,17 +40,16 @@ export default async function NewSermonPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <Link
-          href="/sermons"
-          className="text-[13px] font-medium text-[#64748b] hover:text-[#38bdf8]"
-        >
+        <Link href="/sermons" className="admin-link-back">
           ← Sermons
         </Link>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Add sermon</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-          Choose <span className="text-[#e2e8f0]">paste text</span> or{' '}
-          <span className="text-[#e2e8f0]">audio / video / .txt</span>, then add sermon in one step.
-          Status starts as <span className="text-[#e2e8f0]">processing</span> until you mark it ready.
+        <h1 className="admin-heading mt-4">Add sermon</h1>
+        <p className="admin-body mt-2">
+          Choose <span className="font-medium text-[var(--admin-fg-strong)]">paste text</span> or{' '}
+          <span className="font-medium text-[var(--admin-fg-strong)]">audio / video / .txt</span>,
+          then add sermon in one step. Status starts as{' '}
+          <span className="font-medium text-[var(--admin-fg-strong)]">processing</span> until you mark
+          it ready.
         </p>
       </div>
       <NewSermonForm churchId={profile.church_id} />

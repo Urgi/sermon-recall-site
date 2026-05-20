@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { canManageSermons } from '@/lib/auth/profile';
+import {
+  canManageSermonsWithStaff,
+  staffHasPermission,
+} from '@/lib/auth/profile';
+import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
+import { workflowStatusBadgeClass, workflowStatusLabel } from '@/lib/admin/workflow-status';
 import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { EditableDevotionalPreview } from '@/components/admin/EditableDevotionalPreview';
 import { GeminiDevotionalWorkflow } from '@/components/admin/GeminiDevotionalWorkflow';
+import { SermonWorkflowPanel } from '@/components/admin/SermonWorkflowPanel';
 import { SeedStubDevotionalsButton } from '@/components/admin/SeedStubDevotionalsButton';
 import { DemoSimulateEarlyDaysPanel } from '@/components/admin/DemoSimulateEarlyDaysPanel';
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
@@ -14,13 +20,13 @@ import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
 type Props = { params: { id: string } };
 
 export default async function SermonDetailPage({ params }: Props) {
-  const { profile } = await requireAdminSession();
+  const { profile, staffRole } = await requireAdminSession();
   const supabase = createServerSupabaseClient();
 
   const { data: sermon } = await supabase
     .from('sermons')
     .select(
-      'id, title, pastor_name, sermon_date, source_url, transcript, status, summary, created_at',
+      'id, title, pastor_name, sermon_date, source_url, transcript, status, workflow_status, summary, created_at, changes_requested_note, churches(require_devotional_approval)',
     )
     .eq('id', params.id)
     .single();
@@ -38,116 +44,96 @@ export default async function SermonDetailPage({ params }: Props) {
     .order('day_number', { ascending: true });
 
   const days = devotionals ?? [];
-  const canEdit = canManageSermons(profile.role);
+  const canEdit = canManageSermonsWithStaff(profile, staffRole);
+  const canApprove = staffHasPermission(staffRole, profile, 'can_approve_devotionals');
+  const canPublish = staffHasPermission(staffRole, profile, 'can_publish_devotionals');
+  const canSubmit = staffHasPermission(staffRole, profile, 'can_submit_for_approval');
   const hasTranscript = Boolean(sermon.transcript?.trim());
+  const churchEmbedRaw = sermon.churches as
+    | { require_devotional_approval: boolean }
+    | { require_devotional_approval: boolean }[]
+    | null;
+  const churchEmbed = Array.isArray(churchEmbedRaw) ? churchEmbedRaw[0] : churchEmbedRaw;
+  const approvalRequired = churchEmbed?.require_devotional_approval !== false;
+  const workflowStatus = (sermon.workflow_status as SermonWorkflowStatus) ?? 'draft';
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <Link
-          href="/sermons"
-          className="text-[13px] font-medium text-[#64748b] hover:text-[#38bdf8]"
-        >
+        <Link href="/sermons" className="admin-hint font-medium hover:text-admin-accent">
           ← All sermons
         </Link>
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">{sermon.title}</h1>
-            <p className="mt-2 text-[14px] text-[#94a3b8]">
+            <h1 className="admin-heading">{sermon.title}</h1>
+            <p className="admin-body mt-2">
               {[sermon.pastor_name, sermon.sermon_date].filter(Boolean).join(' · ') || '—'}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[12px] font-medium capitalize text-amber-200">
-              {sermon.status}
+            <span className={workflowStatusBadgeClass(workflowStatus)}>
+              {workflowStatusLabel(workflowStatus)}
             </span>
+            <span className="admin-hint capitalize">{sermon.status}</span>
             {canEdit ? (
               <DeleteSermonButton sermonId={sermon.id} sermonTitle={sermon.title} />
             ) : null}
           </div>
         </div>
+
+        {canEdit ? (
+          <SermonWorkflowPanel
+            sermonId={sermon.id}
+            workflowStatus={workflowStatus}
+            approvalRequired={approvalRequired}
+            canApprove={canApprove}
+            canPublish={canPublish}
+            changesRequestedNote={sermon.changes_requested_note}
+          />
+        ) : null}
+
         {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
         {sermon.transcript ? (
-          <div className="mt-6 rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#64748b]">
+          <div className="admin-card mt-6 p-5">
+            <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">
               Sermon script & notes
             </h2>
-            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-[#e2e8f0]">
-              {sermon.transcript}
-            </p>
-          </div>
-        ) : null}
-        {sermon.source_url ? (
-          <p className="mt-4 break-all text-[14px]">
-            <span className="text-[#64748b]">Legacy source URL: </span>
-            <a
-              href={sermon.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#38bdf8] hover:underline"
-            >
-              {sermon.source_url}
-            </a>
-          </p>
-        ) : null}
-        {sermon.summary ? (
-          <div className="mt-6 rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-[#64748b]">
-              Summary
-            </h2>
-            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-[#e2e8f0]">
-              {sermon.summary}
-            </p>
+            <p className="admin-body mt-2 whitespace-pre-wrap">{sermon.transcript}</p>
           </div>
         ) : null}
       </div>
 
       <section>
-        <h2 className="text-lg font-semibold text-white">Six-day devotionals</h2>
-        <p className="mt-1 text-[14px] text-[#94a3b8]">
+        <h2 className="admin-section-title">Six-day devotionals</h2>
+        <p className="admin-body mt-1">
           {canEdit
-            ? 'Gemini builds a preview first; publish when ready. Or use quick placeholders. Saved days can be edited below.'
-            : 'Member-style preview. Pastor role required to edit titles.'}
+            ? 'Generate a preview, submit for approval if required, then publish.'
+            : 'Read-only view.'}
         </p>
 
         {canEdit ? (
-          <div className="mt-4 flex flex-col gap-4 rounded-xl border border-violet-500/20 bg-violet-950/20 p-5 wide:flex-row wide:items-start wide:justify-between">
-            <div className="max-w-lg space-y-1">
-              <p className="text-[13px] font-semibold text-violet-200">AI generation (Gemini)</p>
-              <p className="text-[13px] leading-relaxed text-[#94a3b8]">
-                Uses the sermon transcript on this page (paste, upload .txt, or transcribe
-                audio/video above). Set{' '}
-                <code className="rounded bg-black/40 px-1 py-0.5 text-[12px] text-violet-200">
-                  GEMINI_API_KEY
-                </code>{' '}
-                in <code className="text-[12px] text-[#94a3b8]">site/.env</code> (server only — do
-                not use EXPO_PUBLIC in the mobile app for keys).
-              </p>
-            </div>
+          <div className="mt-4 admin-card p-5">
             <GeminiDevotionalWorkflow
               sermonId={sermon.id}
               sermonTitle={sermon.title}
               hasTranscript={hasTranscript}
               hasExistingDevotionals={days.length > 0}
+              approvalRequired={approvalRequired}
+              workflowStatus={workflowStatus}
+              canPublish={canPublish}
+              canSubmit={canSubmit}
             />
           </div>
         ) : null}
 
         {days.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-dashed border-[rgba(56,189,248,0.2)] bg-[#0a0f18]/50 p-8">
-            <p className="text-center text-[15px] text-[#94a3b8]">
-              No devotionals yet — the app shows an empty six-day section until you generate or add
-              placeholders.
-            </p>
+          <div className="admin-card mt-4 border-dashed p-8 text-center">
+            <p className="admin-body">No devotionals yet.</p>
             {canEdit ? (
-              <div className="mt-6 flex flex-col items-center justify-center gap-6 wide:flex-row wide:flex-wrap">
+              <div className="mt-6">
                 <SeedStubDevotionalsButton sermonId={sermon.id} />
               </div>
-            ) : (
-              <p className="mt-4 text-center text-[13px] text-[#64748b]">
-                Pastor role required to create devotionals.
-              </p>
-            )}
+            ) : null}
           </div>
         ) : (
           <ul className="mt-4 space-y-6">

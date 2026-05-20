@@ -20,4 +20,10 @@ export function parseDeletionPreview(raw: unknown): AccountDeletionPreview | nul
   };
 }
 
-export const DELETE_CONFIRM_PHRASE = 'DELETE';
+export function normalizeAccountEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function emailsMatchForDeletion(entered: string, expected: string): boolean {
+  return normalizeAccountEmail(entered) === normalizeAccountEmail(expected);
+}

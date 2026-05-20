@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { canManageSermons } from '@/lib/auth/profile';
-import type { UserRole } from '@/lib/auth/profile';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { authorizeApiPermission } from '@/lib/auth/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
@@ -19,34 +17,9 @@ export type BroadcastHistoryItem = {
   sender_name: string | null;
 };
 
-/**
- * Pastor/admin: list custom push notifications sent for their church (newest first).
- */
 export async function GET() {
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
-
-  const { data: profileRow, error: profileError } = await supabase
-    .from('users')
-    .select('id, church_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profileRow?.church_id) {
-    return NextResponse.json({ error: 'You must belong to a church.' }, { status: 403 });
-  }
-
-  const profileRole = profileRow.role as UserRole;
-  if (!canManageSermons(profileRole)) {
-    return NextResponse.json({ error: 'Pastor or admin role required.' }, { status: 403 });
-  }
+  const auth = await authorizeApiPermission('can_send_notifications');
+  if (!auth.ok) return auth.response;
 
   const admin = createServiceRoleClient();
   if (!admin) {
@@ -56,7 +29,7 @@ export async function GET() {
     );
   }
 
-  const churchId = profileRow.church_id as string;
+  const churchId = auth.ctx.profile.church_id!;
 
   const { data: rows, error: logErr } = await admin
     .from('church_broadcast_log')

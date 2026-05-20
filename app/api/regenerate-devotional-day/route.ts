@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { canManageSermons } from '@/lib/auth/profile';
-import type { UserRole } from '@/lib/auth/profile';
+import { authorizeApiPermission } from '@/lib/auth/server';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { buildSingleDayRegenerationPrompt } from '@/lib/gemini/devotional-prompts';
 import type { GeminiDevotionalDay } from '@/lib/gemini/devotional-days';
 import { parseSingleDayFromModelJson } from '@/lib/gemini/devotional-days';
@@ -73,30 +73,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid day_number.' }, { status: 400 });
   }
 
+  const auth = await authorizeApiPermission('can_edit_devotionals');
+  if (!auth.ok) return auth.response;
+
+  const limit = await checkRateLimit(`gemini-day:${auth.ctx.user.id}`, 30, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json({ error: 'Rate limit reached.' }, { status: 429 });
+  }
+
+  const profileRow = auth.ctx.profile;
   const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
-  }
-
-  const { data: profileRow, error: profileError } = await supabase
-    .from('users')
-    .select('id, church_id, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError || !profileRow) {
-    return NextResponse.json({ error: 'Profile not found.' }, { status: 403 });
-  }
-
-  const profileRole = profileRow.role as UserRole;
-  if (!canManageSermons(profileRole)) {
-    return NextResponse.json({ error: 'Pastor or admin role required.' }, { status: 403 });
-  }
 
   if (churchId !== profileRow.church_id) {
     return NextResponse.json({ error: 'Invalid or mismatched churchId.' }, { status: 403 });

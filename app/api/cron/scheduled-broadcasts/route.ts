@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 
+import type { AudienceType } from '@/lib/admin/workflow-status';
 import { sendPastorBroadcastAndLog } from '@/lib/push/pastor-broadcast-send';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-/**
- * Vercel Cron: send due scheduled church notifications.
- * Authorization: Bearer <CRON_SECRET>
- */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get('authorization');
@@ -29,7 +26,8 @@ export async function GET(req: Request) {
 
   const { data: due, error: selErr } = await admin
     .from('scheduled_church_notifications')
-    .select('id, church_id, created_by, title, body')
+    .select('id, church_id, created_by, title, body, audience_type')
+    .eq('status', 'scheduled')
     .is('sent_at', null)
     .lte('send_at', nowIso)
     .order('send_at', { ascending: true })
@@ -41,38 +39,62 @@ export async function GET(req: Request) {
   }
 
   let sent = 0;
+  let failed = 0;
+
   for (const row of due ?? []) {
     const id = row.id as string;
-    const churchId = row.church_id as string;
-    const createdBy = row.created_by as string;
-    const title = row.title as string;
-    const body = row.body as string;
+
+    const { data: claimed, error: claimErr } = await admin
+      .from('scheduled_church_notifications')
+      .update({ status: 'sending', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('status', 'scheduled')
+      .select('id')
+      .maybeSingle();
+
+    if (claimErr || !claimed) continue;
 
     try {
-      await sendPastorBroadcastAndLog({
+      const { recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
         admin,
-        churchId,
-        title,
-        body,
-        sentBy: createdBy,
-        excludeFromPushUserId: createdBy,
+        churchId: row.church_id as string,
+        title: row.title as string,
+        body: row.body as string,
+        sentBy: row.created_by as string,
+        audienceType: (row.audience_type as AudienceType) ?? 'all_members',
+        excludeFromPushUserId: row.created_by as string,
       });
-    } catch (e) {
-      console.warn('[cron/scheduled-broadcasts] send', id, e);
-      continue;
-    }
 
-    const { error: upErr } = await admin
-      .from('scheduled_church_notifications')
-      .update({ sent_at: new Date().toISOString() })
-      .eq('id', id);
+      const failureReason =
+        pushTicketErrors.length > 0 ? pushTicketErrors.join('; ').slice(0, 500) : null;
 
-    if (upErr) {
-      console.warn('[cron/scheduled-broadcasts] mark sent', id, upErr.message);
-    } else {
+      await admin
+        .from('scheduled_church_notifications')
+        .update({
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          delivery_status: failureReason ? 'partial' : 'delivered',
+          failure_reason: failureReason,
+          recipient_count: recipientCount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
       sent += 1;
+    } catch (e) {
+      failed += 1;
+      const msg = e instanceof Error ? e.message : 'send_failed';
+      await admin
+        .from('scheduled_church_notifications')
+        .update({
+          status: 'failed',
+          failure_reason: msg.slice(0, 500),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+      console.warn('[cron/scheduled-broadcasts] send', id, e);
     }
   }
 
-  return NextResponse.json({ ok: true, processed: (due ?? []).length, sent });
+  return NextResponse.json({ ok: true, processed: (due ?? []).length, sent, failed });
 }

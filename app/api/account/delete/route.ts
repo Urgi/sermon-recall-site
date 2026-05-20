@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 
+import { emailsMatchForDeletion } from '@/lib/account/deletion';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  let body: { confirmChurchDeletion?: unknown } = {};
+  let body: { confirmChurchDeletion?: unknown; confirmEmail?: unknown } = {};
   try {
     body = await req.json();
   } catch {
@@ -21,6 +22,14 @@ export async function POST(req: Request) {
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  }
+
+  const confirmEmail = typeof body.confirmEmail === 'string' ? body.confirmEmail : '';
+  if (!user.email || !emailsMatchForDeletion(confirmEmail, user.email)) {
+    return NextResponse.json(
+      { error: 'Enter your account email to confirm deletion.' },
+      { status: 400 },
+    );
   }
 
   const confirmChurchDeletion = body.confirmChurchDeletion === true;

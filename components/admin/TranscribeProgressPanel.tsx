@@ -29,26 +29,20 @@ export function TranscribeProgressPanel({
   const { percent, title, detail } = buildTranscribeProgressView(phase, phaseSec, fileBytes);
 
   return (
-    <div
-      className="rounded-xl border border-[rgba(56,189,248,0.2)] bg-[#0a0f18] p-4"
-      role="status"
-      aria-live="polite"
-    >
+    <div className="admin-card p-4" role="status" aria-live="polite">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[12px] font-medium uppercase tracking-wide text-[#64748b]">
-          Progress (estimate)
-        </span>
-        <span className="tabular-nums text-[12px] text-[#94a3b8]">{percent}%</span>
+        <span className="admin-stat-label">Progress (estimate)</span>
+        <span className="admin-hint tabular-nums">{percent}%</span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#1e293b]">
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--admin-nav-hover-bg)]">
         <div
           className="h-full rounded-full bg-sky-500 transition-[width] duration-300 ease-out"
           style={{ width: `${percent}%` }}
         />
       </div>
-      <p className="mt-3 text-[14px] font-medium text-sky-100">{title}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-[#94a3b8]">{detail}</p>
-      <p className="mt-2 text-[12px] text-[#64748b]">
+      <p className="mt-3 text-[14px] font-medium text-[var(--admin-accent)]">{title}</p>
+      <p className="admin-hint mt-1 leading-relaxed">{detail}</p>
+      <p className="admin-hint mt-2">
         Time on this step: {formatStepElapsed(phaseStartedAt)}
       </p>
     </div>

@@ -5,7 +5,12 @@ export async function middleware(request: NextRequest) {
   const { response: supabaseResponse, user } = await updateSession(request);
 
   const path = request.nextUrl.pathname;
-  const isProtected = path.startsWith('/dashboard') || path.startsWith('/sermons');
+  const isProtected =
+    path.startsWith('/dashboard') ||
+    path.startsWith('/sermons') ||
+    path.startsWith('/settings') ||
+    path.startsWith('/notifications') ||
+    path.startsWith('/team');
   const isAuthPage =
     path === '/login' ||
     path === '/register' ||
