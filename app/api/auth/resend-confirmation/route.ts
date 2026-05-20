@@ -105,9 +105,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: errMsg }, { status: 502 });
   }
 
-  return NextResponse.json({
+  const payload: Record<string, unknown> = {
     message:
       'Confirmation email sent from Sermon Recall. Check inbox and spam. Open the link in your browser (not the member app).',
     sentVia: 'resend',
-  });
+    redirectTo,
+  };
+  if (process.env.NODE_ENV === 'development') {
+    payload.debugActionLink = actionLink;
+  }
+  return NextResponse.json(payload);
 }

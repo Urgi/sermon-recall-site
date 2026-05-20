@@ -80,10 +80,13 @@ export function LoginForm({ nextPath }: Props) {
         error?: string;
         alreadyConfirmed?: boolean;
         useClientFallback?: boolean;
+        sentVia?: string;
+        redirectTo?: string;
       };
 
       if (res.ok && json.message) {
-        setResendNotice(json.message);
+        const via = json.sentVia ? ` (via ${json.sentVia})` : '';
+        setResendNotice(`${json.message}${via}`);
         return;
       }
 
@@ -107,12 +110,17 @@ export function LoginForm({ nextPath }: Props) {
           return;
         }
         setResendNotice(
-          'Confirmation requested via Supabase mail (limited deliverability). Check inbox and spam in 5–10 minutes.',
+          `Supabase built-in mail only (~2/hour). ${json.error ?? 'Check spam or use /dev/auth-email locally.'}`,
         );
         return;
       }
 
-      setResendNotice(json.error ?? 'Could not send confirmation email. Try again later.');
+      const detail = json.error ?? 'Could not send confirmation email.';
+      setResendNotice(
+        process.env.NODE_ENV === 'development'
+          ? `${detail} Open /dev/auth-email for diagnostics.`
+          : detail,
+      );
     } catch {
       setResendNotice('Network error. Check your connection and try again.');
     } finally {
