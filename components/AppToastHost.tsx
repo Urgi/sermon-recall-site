@@ -45,10 +45,10 @@ function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | nu
       variant: 'error',
     };
   }
-  if (error === 'confirmation_failed') {
+  if (error === 'confirmation_failed' || error === 'wrong_client') {
     return {
       message:
-        'Email confirmation failed. The link may have expired — sign in with your password or register again.',
+        'This confirmation link must open in your browser on the admin website (not the member app). Sign in here after confirming, or open the email link in Chrome/Safari and choose Stay in browser.',
       variant: 'error',
     };
   }

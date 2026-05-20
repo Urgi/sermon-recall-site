@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
-import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -18,10 +19,7 @@ export function ForgotPasswordForm() {
     setError(null);
     setPending(true);
     const supabase = createBrowserSupabaseClient();
-    const redirectTo =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/auth/callback?next=/reset-password`
-        : undefined;
+    const redirectTo = getAdminEmailRedirectUrl('/reset-password');
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo,

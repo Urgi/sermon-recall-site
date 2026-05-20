@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -69,8 +70,7 @@ export function LoginForm({ nextPath }: Props) {
     setResendPending(true);
     setResendNotice(null);
     const supabase = createBrowserSupabaseClient();
-    const redirectTo =
-      typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+    const redirectTo = getAdminEmailRedirectUrl();
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),

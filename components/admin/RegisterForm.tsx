@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
+import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -27,18 +28,16 @@ export function RegisterForm() {
     }
     setPending(true);
     const supabase = createBrowserSupabaseClient();
-    const redirectTo =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/auth/callback`
-        : undefined;
+    const redirectTo = getAdminEmailRedirectUrl();
 
     const { data, error: signError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: redirectTo,
+        emailRedirectTo: redirectTo || undefined,
         data: {
           full_name: fullName.trim() || undefined,
+          signup_portal: 'admin_web',
         },
       },
     });
@@ -65,7 +64,7 @@ export function RegisterForm() {
     queueAppToast({
       variant: 'success',
       message:
-        'We sent a confirmation link to your email. Open it on this device, then sign in here. Check spam if nothing arrives in a few minutes.',
+        'We sent a confirmation link to your email. Open it in this browser (Chrome/Safari) — do not open the member app when prompted. Check spam if needed.',
     });
     router.push('/login?email_sent=1');
   }
