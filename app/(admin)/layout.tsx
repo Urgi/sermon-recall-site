@@ -45,6 +45,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               New sermon
             </Link>
           ) : null}
+          <Link
+            href="/settings"
+            className="rounded-md px-2 py-2 text-[#94a3b8] hover:bg-[#0a0f18] hover:text-[#38bdf8]"
+          >
+            Settings
+          </Link>
         </nav>
         <div className="mt-auto border-t border-[rgba(56,189,248,0.1)] pt-4">
           <p className="truncate px-2 text-[12px] text-[#64748b]" title={user.email}>
@@ -70,6 +76,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="text-xs font-medium text-[#38bdf8] hover:underline"
             >
               Sermons
+            </Link>
+            <Link
+              href="/settings"
+              className="text-xs font-medium text-[#38bdf8] hover:underline"
+            >
+              Settings
             </Link>
             <SignOutButton className="rounded-md px-2 py-1.5 text-[12px] text-[#64748b] hover:text-[#38bdf8]" />
           </div>
