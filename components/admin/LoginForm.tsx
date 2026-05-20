@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
@@ -20,6 +20,16 @@ export function LoginForm({ nextPath }: Props) {
   const [showResend, setShowResend] = useState(false);
   const [resendPending, setResendPending] = useState(false);
   const [resendNotice, setResendNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.refresh();
+        router.replace(nextPath);
+      }
+    });
+  }, [router, nextPath]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

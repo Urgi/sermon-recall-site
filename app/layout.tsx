@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 
 import { ThemeScript } from '@/components/admin/ThemeScript';
+import { AppToastHost } from '@/components/AppToastHost';
 
 import './globals.css';
 
@@ -23,6 +25,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeScript />
+        <Suspense fallback={null}>
+          <AppToastHost />
+        </Suspense>
         {children}
       </body>
     </html>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { queueAppToast } from '@/lib/app-toast';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -53,10 +54,19 @@ export function RegisterForm() {
       return;
     }
     if (data.session) {
+      queueAppToast({
+        variant: 'success',
+        message: 'Account created. Taking you to your dashboard…',
+      });
       router.refresh();
-      router.push('/dashboard');
+      router.push('/dashboard?welcome=1');
       return;
     }
+    queueAppToast({
+      variant: 'success',
+      message:
+        'We sent a confirmation link to your email. Open it on this device, then sign in here. Check spam if nothing arrives in a few minutes.',
+    });
     router.push('/login?email_sent=1');
   }
 

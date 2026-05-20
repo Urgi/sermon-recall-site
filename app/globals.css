@@ -638,6 +638,33 @@
     }
   }
 
+  /* Toasts: bottom on mobile (thumb reach), slightly higher on wide screens */
+  .app-toast-stack {
+    bottom: 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    padding-top: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .app-toast-stack {
+      bottom: auto;
+      top: 1rem;
+      padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+      padding-bottom: 0;
+    }
+  }
+
+  @keyframes app-toast-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @keyframes app-toast-slide-down {
     from {
       opacity: 0;
@@ -650,6 +677,12 @@
   }
 
   .app-toast-enter {
-    animation: app-toast-slide-down 0.35s ease-out;
+    animation: app-toast-slide-up 0.35s ease-out;
+  }
+
+  @media (min-width: 640px) {
+    .app-toast-enter {
+      animation: app-toast-slide-down 0.35s ease-out;
+    }
   }
 }

@@ -12,16 +12,20 @@ type VisibleToast = PendingAppToast & { id: number };
 const AUTO_DISMISS_MS = 9000;
 
 const EMAIL_SENT_MESSAGE =
-  'We sent a confirmation link to your email. Open it, then sign in here. Check spam if nothing arrives in a few minutes.';
+  'We sent a confirmation link to your email. Open it on this device, then sign in. Check spam if nothing arrives in a few minutes.';
 
 const CONFIRMED_MESSAGE =
   'Your email is confirmed! Sign in below, or we will take you to your dashboard if you are already signed in.';
 
-function toastFromAuthQuery(
-  searchParams: URLSearchParams,
-): PendingAppToast | null {
+const WELCOME_MESSAGE =
+  'Welcome! Create your church on the dashboard to get started.';
+
+function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | null {
   if (searchParams.get('email_sent') === '1') {
     return { message: EMAIL_SENT_MESSAGE, variant: 'success' };
+  }
+  if (searchParams.get('welcome') === '1') {
+    return { message: WELCOME_MESSAGE, variant: 'success' };
   }
   if (searchParams.get('confirmed') === '1') {
     if (searchParams.get('already_used') === '1') {
@@ -36,14 +40,15 @@ function toastFromAuthQuery(
   const error = searchParams.get('error');
   if (error === 'missing_auth_code') {
     return {
-      message: 'This confirmation link is incomplete. Try opening the link from your email again.',
+      message:
+        'This confirmation link is incomplete. Open the full link from your email again (try a different browser if it keeps failing).',
       variant: 'error',
     };
   }
   if (error === 'confirmation_failed') {
     return {
       message:
-        'Email confirmation failed. The link may have expired — sign in or register again.',
+        'Email confirmation failed. The link may have expired — sign in with your password or register again.',
       variant: 'error',
     };
   }
@@ -74,32 +79,19 @@ export function AppToastHost() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('email_sent') === '1') return;
-    const pending = consumePendingAppToast();
-    if (pending) pushToast(pending);
-  }, [pushToast, searchParams]);
-
-  useEffect(() => {
     if (queryHandled.current) return;
-    const supabase = createBrowserSupabaseClient();
-    void supabase.auth.getSession().then(({ data: { session } }) => {
-      if (queryHandled.current) return;
-      const hasConfirmError = searchParams.get('error') === 'confirmation_failed';
-      if (hasConfirmError && session) {
-        queryHandled.current = true;
-        pushToast({
-          message:
-            'Your email is confirmed. Sign in below or wait a moment for your dashboard.',
-          variant: 'success',
-        });
-        return;
-      }
-      const queryToast = toastFromAuthQuery(searchParams);
-      if (queryToast) {
-        queryHandled.current = true;
-        pushToast(queryToast);
-      }
-    });
+    const params = new URLSearchParams(searchParams.toString());
+    const queryToast = toastFromAuthQuery(params);
+    if (queryToast) {
+      queryHandled.current = true;
+      pushToast(queryToast);
+      return;
+    }
+    const pending = consumePendingAppToast();
+    if (pending) {
+      queryHandled.current = true;
+      pushToast(pending);
+    }
   }, [searchParams, pushToast]);
 
   useEffect(() => {
@@ -111,7 +103,7 @@ export function AppToastHost() {
       if (cancelled || !session) return;
       timeoutId = window.setTimeout(() => {
         router.replace('/dashboard');
-      }, 3200);
+      }, 2800);
     });
     return () => {
       cancelled = true;
@@ -130,18 +122,15 @@ export function AppToastHost() {
   if (toasts.length === 0) return null;
 
   return (
-    <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-[100] flex flex-col items-center gap-2 px-4 pt-4"
-      aria-live="polite"
-    >
+    <div className="app-toast-stack pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4" aria-live="polite">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           role="status"
-          className={`app-toast-enter pointer-events-auto flex max-w-md flex-col gap-2 rounded-xl border px-4 py-3 shadow-lg ${
+          className={`app-toast-enter pointer-events-auto flex w-full max-w-md flex-col gap-2 rounded-xl border px-4 py-3 shadow-lg ${
             toast.variant === 'error'
-              ? 'border-red-500/40 bg-[#1a0a0a] text-red-100'
-              : 'border-emerald-500/40 bg-[#061210] text-emerald-50'
+              ? 'border-red-500/40 bg-red-950 text-red-50'
+              : 'border-emerald-500/40 bg-emerald-950 text-emerald-50'
           }`}
         >
           <div className="flex items-start justify-between gap-3">
