@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { canManageSermons } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     'Admin';
 
   return (
+    <AdminShellProviders>
     <div className="admin-shell flex min-h-screen bg-[#05070a] text-[#e2e8f0]">
       <aside className="admin-sidebar hidden w-56 shrink-0 flex-col border-r border-[rgba(56,189,248,0.12)] bg-[#020408] p-4 wide:flex">
         <Link href="/dashboard" className="mb-6 inline-block" aria-label="Dashboard home">
@@ -89,5 +91,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <main className="flex-1 px-[clamp(1rem,4vw,2rem)] py-8">{children}</main>
       </div>
     </div>
+    </AdminShellProviders>
   );
 }
