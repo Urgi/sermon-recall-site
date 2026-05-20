@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { writeAuditLog } from '@/lib/audit/log';
-import { parseAudienceType } from '@/lib/admin/workflow-status';
+import type { AudienceType } from '@/lib/admin/workflow-status';
 import { authorizeApiPermission } from '@/lib/auth/server';
+import { parseTargetStaffRoles } from '@/lib/push/broadcast-audience';
 import { sendPastorBroadcastAndLog } from '@/lib/push/pastor-broadcast-send';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -18,6 +19,8 @@ export async function POST(req: Request) {
     title?: unknown;
     body?: unknown;
     audienceType?: unknown;
+    targetStaffRoles?: unknown;
+    includeAllMembers?: unknown;
     idempotencyKey?: unknown;
   };
   try {
@@ -30,7 +33,10 @@ export async function POST(req: Request) {
     typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : '';
   const messageBody =
     typeof body.body === 'string' ? body.body.trim().slice(0, BODY_MAX) : '';
-  const audienceType = parseAudienceType(body.audienceType);
+  const targetStaffRoles = parseTargetStaffRoles(body.targetStaffRoles);
+  const includeAllMembers = body.includeAllMembers === true;
+  const audienceType =
+    body.audienceType === 'pastors_only' ? 'pastors_only' : ('all_members' as AudienceType);
   const idempotencyKey =
     typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim().slice(0, 64) : '';
 
@@ -39,6 +45,12 @@ export async function POST(req: Request) {
   }
   if (!idempotencyKey) {
     return NextResponse.json({ error: 'idempotencyKey is required.' }, { status: 400 });
+  }
+  if (targetStaffRoles.length === 0 && !includeAllMembers) {
+    return NextResponse.json(
+      { error: 'Select at least one team role or include all members.' },
+      { status: 400 },
+    );
   }
 
   const auth = await authorizeApiPermission('can_send_notifications');
@@ -91,13 +103,15 @@ export async function POST(req: Request) {
     created_by: userId,
   });
 
-  const { recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
+  const { broadcastId, recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
     admin,
     churchId,
     title,
     body: messageBody,
     sentBy: userId,
-    audienceType,
+    audienceType: targetStaffRoles.length || includeAllMembers ? undefined : audienceType,
+    targetStaffRoles: targetStaffRoles.length ? targetStaffRoles : undefined,
+    includeAllMembers,
     excludeFromPushUserId: userId,
   });
 
@@ -106,11 +120,13 @@ export async function POST(req: Request) {
     actorUserId: userId,
     action: 'notification.sent',
     entityType: 'broadcast',
-    metadata: { title, audienceType, recipientCount },
+    entityId: broadcastId ?? undefined,
+    metadata: { title, targetStaffRoles, includeAllMembers, recipientCount },
   });
 
   return NextResponse.json({
     ok: true,
+    broadcastId,
     recipientCount,
     pushTicketErrors: pushTicketErrors.length ? pushTicketErrors : undefined,
     warning:

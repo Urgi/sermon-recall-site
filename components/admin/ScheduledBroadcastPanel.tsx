@@ -3,11 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  audienceTypeLabel,
-  BROADCAST_AUDIENCE_OPTIONS,
-  type AudienceType,
-} from '@/lib/admin/workflow-status';
+import type { StaffRole } from '@/lib/auth/permissions';
+import { formatTargetStaffRoles } from '@/lib/push/broadcast-audience';
+import { BroadcastRoleAudience } from '@/components/admin/BroadcastRoleAudience';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Row = {
@@ -18,7 +16,11 @@ type Row = {
   sent_at: string | null;
   status: string;
   audience_type: string;
+  target_staff_roles: string[] | null;
+  include_all_members: boolean;
 };
+
+const DEFAULT_ROLES: StaffRole[] = ['owner', 'admin_pastor', 'associate_pastor'];
 
 function formatLocal(iso: string): string {
   try {
@@ -37,7 +39,8 @@ export function ScheduledBroadcastPanel() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sendLocal, setSendLocal] = useState('');
-  const [audienceType, setAudienceType] = useState<AudienceType>('all_members');
+  const [targetStaffRoles, setTargetStaffRoles] = useState<StaffRole[]>(DEFAULT_ROLES);
+  const [includeAllMembers, setIncludeAllMembers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -46,7 +49,9 @@ export function ScheduledBroadcastPanel() {
     const sb = createBrowserSupabaseClient();
     const { data, error: qErr } = await sb
       .from('scheduled_church_notifications')
-      .select('id, title, body, send_at, sent_at, status, audience_type')
+      .select(
+        'id, title, body, send_at, sent_at, status, audience_type, target_staff_roles, include_all_members',
+      )
       .order('send_at', { ascending: true });
     if (qErr) {
       console.warn('[scheduled]', qErr.message);
@@ -73,6 +78,10 @@ export function ScheduledBroadcastPanel() {
       setError('Invalid date.');
       return;
     }
+    if (targetStaffRoles.length === 0 && !includeAllMembers) {
+      setError('Select at least one team role or all members.');
+      return;
+    }
     setPending(true);
     const idempotencyKey =
       typeof crypto !== 'undefined' && crypto.randomUUID
@@ -86,7 +95,8 @@ export function ScheduledBroadcastPanel() {
         title: title.trim(),
         body: body.trim(),
         sendAt: d.toISOString(),
-        audienceType,
+        targetStaffRoles,
+        includeAllMembers,
         idempotencyKey,
       }),
     });
@@ -147,20 +157,13 @@ export function ScheduledBroadcastPanel() {
             className="admin-input mt-1 resize-y"
           />
         </div>
-        <div>
-          <label className="admin-label">Audience</label>
-          <select
-            value={audienceType}
-            onChange={(e) => setAudienceType(e.target.value as AudienceType)}
-            className="admin-input mt-1"
-          >
-            {BROADCAST_AUDIENCE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <BroadcastRoleAudience
+          selected={targetStaffRoles}
+          includeAllMembers={includeAllMembers}
+          onSelectedChange={setTargetStaffRoles}
+          onIncludeAllMembersChange={setIncludeAllMembers}
+          disabled={pending}
+        />
         <div>
           <label className="admin-label">Send at (local)</label>
           <input
@@ -202,7 +205,11 @@ export function ScheduledBroadcastPanel() {
                 <div>
                   <p className="font-medium text-admin-fg-strong">{r.title}</p>
                   <p className="admin-hint">
-                    {formatLocal(r.send_at)} · {audienceTypeLabel(r.audience_type)}
+                    {formatLocal(r.send_at)} ·{' '}
+                    {r.target_staff_roles?.length
+                      ? formatTargetStaffRoles(r.target_staff_roles as StaffRole[])
+                      : r.audience_type.replace(/_/g, ' ')}
+                    {r.include_all_members ? ' · all members' : ''}
                   </p>
                 </div>
                 <button

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { writeAuditLog } from '@/lib/audit/log';
-import { parseAudienceType } from '@/lib/admin/workflow-status';
+import type { AudienceType } from '@/lib/admin/workflow-status';
 import { authorizeApiPermission } from '@/lib/auth/server';
+import { parseTargetStaffRoles } from '@/lib/push/broadcast-audience';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,8 @@ export async function POST(req: Request) {
     body?: unknown;
     sendAt?: unknown;
     audienceType?: unknown;
+    targetStaffRoles?: unknown;
+    includeAllMembers?: unknown;
     idempotencyKey?: unknown;
   };
   try {
@@ -30,7 +33,10 @@ export async function POST(req: Request) {
   const messageBody =
     typeof body.body === 'string' ? body.body.trim().slice(0, BODY_MAX) : '';
   const sendAtRaw = typeof body.sendAt === 'string' ? body.sendAt.trim() : '';
-  const audienceType = parseAudienceType(body.audienceType);
+  const targetStaffRoles = parseTargetStaffRoles(body.targetStaffRoles);
+  const includeAllMembers = body.includeAllMembers === true;
+  const audienceType =
+    body.audienceType === 'pastors_only' ? 'pastors_only' : ('all_members' as AudienceType);
   const idempotencyKey =
     typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim().slice(0, 64) : null;
 
@@ -39,6 +45,12 @@ export async function POST(req: Request) {
   }
   if (!sendAtRaw) {
     return NextResponse.json({ error: 'sendAt is required (ISO-8601).' }, { status: 400 });
+  }
+  if (targetStaffRoles.length === 0 && !includeAllMembers) {
+    return NextResponse.json(
+      { error: 'Select at least one team role or include all members.' },
+      { status: 400 },
+    );
   }
 
   const sendAt = new Date(sendAtRaw);
@@ -83,6 +95,8 @@ export async function POST(req: Request) {
       send_at: sendAt.toISOString(),
       status: 'scheduled',
       audience_type: audienceType,
+      target_staff_roles: targetStaffRoles.length ? targetStaffRoles : null,
+      include_all_members: includeAllMembers,
       idempotency_key: idempotencyKey,
     })
     .select('id')
@@ -98,7 +112,7 @@ export async function POST(req: Request) {
     action: 'notification.scheduled',
     entityType: 'scheduled_notification',
     entityId: row?.id as string,
-    metadata: { sendAt: sendAt.toISOString(), audienceType },
+    metadata: { sendAt: sendAt.toISOString(), targetStaffRoles, includeAllMembers },
   });
 
   return NextResponse.json({ ok: true, id: row?.id });

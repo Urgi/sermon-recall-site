@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import type { AudienceType } from '@/lib/admin/workflow-status';
+import type { StaffRole } from '@/lib/auth/permissions';
 import { sendPastorBroadcastAndLog } from '@/lib/push/pastor-broadcast-send';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
@@ -26,7 +27,9 @@ export async function GET(req: Request) {
 
   const { data: due, error: selErr } = await admin
     .from('scheduled_church_notifications')
-    .select('id, church_id, created_by, title, body, audience_type')
+    .select(
+      'id, church_id, created_by, title, body, audience_type, target_staff_roles, include_all_members',
+    )
     .eq('status', 'scheduled')
     .is('sent_at', null)
     .lte('send_at', nowIso)
@@ -55,13 +58,18 @@ export async function GET(req: Request) {
     if (claimErr || !claimed) continue;
 
     try {
+      const targetRoles = row.target_staff_roles as StaffRole[] | null;
+      const useRoles = Array.isArray(targetRoles) && targetRoles.length > 0;
+
       const { recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
         admin,
         churchId: row.church_id as string,
         title: row.title as string,
         body: row.body as string,
         sentBy: row.created_by as string,
-        audienceType: (row.audience_type as AudienceType) ?? 'all_members',
+        audienceType: useRoles ? undefined : ((row.audience_type as AudienceType) ?? 'all_members'),
+        targetStaffRoles: useRoles ? targetRoles : undefined,
+        includeAllMembers: Boolean(row.include_all_members),
         excludeFromPushUserId: row.created_by as string,
       });
 

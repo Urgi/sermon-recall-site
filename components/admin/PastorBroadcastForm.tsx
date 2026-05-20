@@ -3,33 +3,41 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useId, useState } from 'react';
 
-import {
-  audienceTypeLabel,
-  BROADCAST_AUDIENCE_OPTIONS,
-  type AudienceType,
-} from '@/lib/admin/workflow-status';
+import type { StaffRole } from '@/lib/auth/permissions';
+import { formatTargetStaffRoles } from '@/lib/push/broadcast-audience';
+import { BroadcastRoleAudience } from '@/components/admin/BroadcastRoleAudience';
+
+const DEFAULT_ROLES: StaffRole[] = ['owner', 'admin_pastor', 'associate_pastor'];
 
 export function PastorBroadcastForm() {
   const router = useRouter();
   const formId = useId();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [audienceType, setAudienceType] = useState<AudienceType>('all_members');
+  const [targetStaffRoles, setTargetStaffRoles] = useState<StaffRole[]>(DEFAULT_ROLES);
+  const [includeAllMembers, setIncludeAllMembers] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pushWarnings, setPushWarnings] = useState<string[] | null>(null);
   const [pending, setPending] = useState(false);
 
-  const onSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!title.trim() || !body.trim()) {
-      setError('Title and message are required.');
-      return;
-    }
-    setShowConfirm(true);
-  }, [title, body]);
+  const onSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      setError(null);
+      if (!title.trim() || !body.trim()) {
+        setError('Title and message are required.');
+        return;
+      }
+      if (targetStaffRoles.length === 0 && !includeAllMembers) {
+        setError('Select at least one team role or all members.');
+        return;
+      }
+      setShowConfirm(true);
+    },
+    [title, body, targetStaffRoles, includeAllMembers],
+  );
 
   async function confirmSend() {
     setShowConfirm(false);
@@ -50,7 +58,8 @@ export function PastorBroadcastForm() {
         body: JSON.stringify({
           title: title.trim(),
           body: body.trim(),
-          audienceType,
+          targetStaffRoles,
+          includeAllMembers,
           idempotencyKey,
         }),
       });
@@ -68,13 +77,11 @@ export function PastorBroadcastForm() {
         return;
       }
       const n = data.recipientCount ?? 0;
-      setPushWarnings(
-        data.pushTicketErrors?.length ? data.pushTicketErrors : null,
-      );
+      setPushWarnings(data.pushTicketErrors?.length ? data.pushTicketErrors : null);
       setSuccess(
         data.duplicate
           ? 'Already sent (duplicate prevented).'
-          : data.warning ?? `Sent to ${n} staff member${n === 1 ? '' : 's'} with push enabled.`,
+          : data.warning ?? `Sent to ${n} people. Track opens in notification history below.`,
       );
       if (!data.duplicate) {
         setTitle('');
@@ -86,6 +93,13 @@ export function PastorBroadcastForm() {
       setError('Network error.');
     }
   }
+
+  const audienceSummary = [
+    formatTargetStaffRoles(targetStaffRoles),
+    includeAllMembers ? 'all members' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <>
@@ -103,7 +117,7 @@ export function PastorBroadcastForm() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="admin-input mt-1"
-            placeholder="e.g. Women's retreat signup closes Friday"
+            placeholder="e.g. Board meeting Tuesday"
           />
         </div>
         <div>
@@ -119,38 +133,24 @@ export function PastorBroadcastForm() {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="admin-input mt-1"
-            placeholder="Your message to the church…"
+            placeholder="Your message…"
           />
         </div>
-        <div>
-          <label htmlFor="broadcast-audience" className="admin-label">
-            Audience
-          </label>
-          <select
-            id="broadcast-audience"
-            value={audienceType}
-            onChange={(e) => setAudienceType(e.target.value as AudienceType)}
-            className="admin-input mt-1"
-          >
-            {BROADCAST_AUDIENCE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          {audienceType === 'staff_associate_and_elder' ? (
-            <p className="admin-hint mt-1.5 text-[12px] leading-snug">
-              Only active team members with roles <strong>Associate pastor</strong> or{' '}
-              <strong>Elder</strong> (from Team). They must use the mobile app with notifications
-              enabled to receive the push.
-            </p>
-          ) : null}
-        </div>
+
+        <BroadcastRoleAudience
+          selected={targetStaffRoles}
+          includeAllMembers={includeAllMembers}
+          onSelectedChange={setTargetStaffRoles}
+          onIncludeAllMembersChange={setIncludeAllMembers}
+          disabled={pending}
+        />
+
         {title && body ? (
           <div className="admin-card-nested p-4">
             <p className="admin-hint text-xs font-semibold uppercase">Preview</p>
             <p className="mt-2 font-semibold text-admin-fg-strong">{title}</p>
             <p className="admin-body mt-1">{body}</p>
+            <p className="admin-hint mt-2 text-[12px]">To: {audienceSummary}</p>
           </div>
         ) : null}
         <button type="submit" disabled={pending} className="admin-btn-primary">
@@ -179,9 +179,8 @@ export function PastorBroadcastForm() {
               Send notification now?
             </h3>
             <p className="admin-body mt-2">
-              This will immediately push to{' '}
-              <strong>{audienceTypeLabel(audienceType).toLowerCase()}</strong> who have the app with
-              notifications enabled. This cannot be undone.
+              This will push to: <span className="font-medium">{audienceSummary}</span>. Recipients
+              tap to read the full message in the app; you can see who opened it in history.
             </p>
             <div className="admin-card-nested mt-4 p-3">
               <p className="font-semibold text-admin-fg-strong">{title}</p>
