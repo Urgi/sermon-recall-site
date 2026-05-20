@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { writeAuditLog } from '@/lib/audit/log';
-import type { AudienceType } from '@/lib/admin/workflow-status';
+import { parseAudienceType } from '@/lib/admin/workflow-status';
 import { authorizeApiPermission } from '@/lib/auth/server';
 import { sendPastorBroadcastAndLog } from '@/lib/push/pastor-broadcast-send';
 import { checkRateLimit } from '@/lib/rate-limit';
@@ -30,8 +30,7 @@ export async function POST(req: Request) {
     typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : '';
   const messageBody =
     typeof body.body === 'string' ? body.body.trim().slice(0, BODY_MAX) : '';
-  const audienceType =
-    body.audienceType === 'pastors_only' ? 'pastors_only' : ('all_members' as AudienceType);
+  const audienceType = parseAudienceType(body.audienceType);
   const idempotencyKey =
     typeof body.idempotencyKey === 'string' ? body.idempotencyKey.trim().slice(0, 64) : '';
 

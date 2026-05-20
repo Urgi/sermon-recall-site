@@ -3,7 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useId, useState } from 'react';
 
-type AudienceType = 'all_members' | 'pastors_only';
+import {
+  audienceTypeLabel,
+  BROADCAST_AUDIENCE_OPTIONS,
+  type AudienceType,
+} from '@/lib/admin/workflow-status';
 
 export function PastorBroadcastForm() {
   const router = useRouter();
@@ -70,7 +74,7 @@ export function PastorBroadcastForm() {
       setSuccess(
         data.duplicate
           ? 'Already sent (duplicate prevented).'
-          : data.warning ?? `Sent to ${n} device${n === 1 ? '' : 's'}.`,
+          : data.warning ?? `Sent to ${n} staff member${n === 1 ? '' : 's'} with push enabled.`,
       );
       if (!data.duplicate) {
         setTitle('');
@@ -128,9 +132,19 @@ export function PastorBroadcastForm() {
             onChange={(e) => setAudienceType(e.target.value as AudienceType)}
             className="admin-input mt-1"
           >
-            <option value="all_members">All members with push enabled</option>
-            <option value="pastors_only">Pastors / staff only</option>
+            {BROADCAST_AUDIENCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
+          {audienceType === 'staff_associate_and_elder' ? (
+            <p className="admin-hint mt-1.5 text-[12px] leading-snug">
+              Only active team members with roles <strong>Associate pastor</strong> or{' '}
+              <strong>Elder</strong> (from Team). They must use the mobile app with notifications
+              enabled to receive the push.
+            </p>
+          ) : null}
         </div>
         {title && body ? (
           <div className="admin-card-nested p-4">
@@ -166,8 +180,8 @@ export function PastorBroadcastForm() {
             </h3>
             <p className="admin-body mt-2">
               This will immediately push to{' '}
-              {audienceType === 'pastors_only' ? 'pastors/staff' : 'all members'} with registered
-              devices. This cannot be undone.
+              <strong>{audienceTypeLabel(audienceType).toLowerCase()}</strong> who have the app with
+              notifications enabled. This cannot be undone.
             </p>
             <div className="admin-card-nested mt-4 p-3">
               <p className="font-semibold text-admin-fg-strong">{title}</p>

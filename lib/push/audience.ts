@@ -10,6 +10,34 @@ export type ResolveAudienceParams = {
   excludeUserId?: string;
 };
 
+const STAFF_ASSOCIATE_ELDER_ROLES = new Set(['associate_pastor', 'elder']);
+
+function activeMembership(
+  memberships:
+    | { role: string; status: string }
+    | { role: string; status: string }[]
+    | null
+    | undefined,
+): { role: string; status: string } | null {
+  if (!memberships) return null;
+  const list = Array.isArray(memberships) ? memberships : [memberships];
+  return list.find((m) => m.status === 'active') ?? null;
+}
+
+function collectPushTokens(
+  embed:
+    | { expo_push_token: string }
+    | { expo_push_token: string }[]
+    | null
+    | undefined,
+): string[] {
+  if (!embed) return [];
+  if (Array.isArray(embed)) {
+    return embed.map((e) => e.expo_push_token).filter(Boolean);
+  }
+  return embed.expo_push_token ? [embed.expo_push_token] : [];
+}
+
 export async function resolveAudienceTokens(
   params: ResolveAudienceParams,
 ): Promise<{ tokens: string[]; recipientCount: number }> {
@@ -34,37 +62,42 @@ export async function resolveAudienceTokens(
   }
 
   const tokens: string[] = [];
+  const seenUsers = new Set<string>();
+
   for (const r of rows) {
-    if (params.audienceType === 'pastors_only') {
-      const memberships = r.church_memberships as
+    const userId = r.id as string;
+    const mem = activeMembership(
+      r.church_memberships as
         | { role: string; status: string }
         | { role: string; status: string }[]
-        | null;
-      const mem = Array.isArray(memberships) ? memberships[0] : memberships;
-      const isStaff =
+        | null,
+    );
+
+    if (params.audienceType === 'staff_associate_and_elder') {
+      if (!mem?.role || !STAFF_ASSOCIATE_ELDER_ROLES.has(mem.role)) continue;
+    } else if (params.audienceType === 'pastors_only') {
+      const isLeadership =
         r.role === 'pastor' ||
         r.role === 'admin' ||
-        (mem?.status === 'active' &&
+        (mem?.role &&
           ['owner', 'admin_pastor', 'associate_pastor'].includes(mem.role));
-      if (!isStaff) continue;
+      if (!isLeadership) continue;
     }
+
+    if (seenUsers.has(userId)) continue;
+    seenUsers.add(userId);
 
     const embed = r.user_push_tokens as
       | { expo_push_token: string }
       | { expo_push_token: string }[]
       | null
       | undefined;
-    if (!embed) continue;
-    if (Array.isArray(embed)) {
-      for (const e of embed) {
-        if (e.expo_push_token) tokens.push(e.expo_push_token);
-      }
-    } else if (embed.expo_push_token) {
-      tokens.push(embed.expo_push_token);
+    for (const tok of collectPushTokens(embed)) {
+      tokens.push(tok);
     }
   }
 
-  return { tokens, recipientCount: tokens.length };
+  return { tokens, recipientCount: seenUsers.size };
 }
 
 export async function sendAudiencePush(params: {

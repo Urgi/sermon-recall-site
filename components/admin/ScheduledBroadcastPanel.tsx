@@ -3,6 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
+import {
+  audienceTypeLabel,
+  BROADCAST_AUDIENCE_OPTIONS,
+  type AudienceType,
+} from '@/lib/admin/workflow-status';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Row = {
@@ -32,7 +37,7 @@ export function ScheduledBroadcastPanel() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sendLocal, setSendLocal] = useState('');
-  const [audienceType, setAudienceType] = useState<'all_members' | 'pastors_only'>('all_members');
+  const [audienceType, setAudienceType] = useState<AudienceType>('all_members');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -146,11 +151,14 @@ export function ScheduledBroadcastPanel() {
           <label className="admin-label">Audience</label>
           <select
             value={audienceType}
-            onChange={(e) => setAudienceType(e.target.value as 'all_members' | 'pastors_only')}
+            onChange={(e) => setAudienceType(e.target.value as AudienceType)}
             className="admin-input mt-1"
           >
-            <option value="all_members">All members</option>
-            <option value="pastors_only">Pastors / staff</option>
+            {BROADCAST_AUDIENCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
         <div>
@@ -193,7 +201,9 @@ export function ScheduledBroadcastPanel() {
               <li key={r.id} className="admin-card-nested flex flex-wrap items-start justify-between gap-2 px-3 py-2 text-[13px]">
                 <div>
                   <p className="font-medium text-admin-fg-strong">{r.title}</p>
-                  <p className="admin-hint">{formatLocal(r.send_at)} · {r.audience_type.replace(/_/g, ' ')}</p>
+                  <p className="admin-hint">
+                    {formatLocal(r.send_at)} · {audienceTypeLabel(r.audience_type)}
+                  </p>
                 </div>
                 <button
                   type="button"

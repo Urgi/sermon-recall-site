@@ -15,7 +15,25 @@ export type NotificationStatus =
   | 'failed'
   | 'cancelled';
 
-export type AudienceType = 'all_members' | 'pastors_only';
+export type AudienceType = 'all_members' | 'pastors_only' | 'staff_associate_and_elder';
+
+export const BROADCAST_AUDIENCE_OPTIONS: { value: AudienceType; label: string }[] = [
+  { value: 'all_members', label: 'All members with push enabled' },
+  { value: 'staff_associate_and_elder', label: 'Associate pastors & elders' },
+  { value: 'pastors_only', label: 'Leadership (owner, admin & associate pastors)' },
+];
+
+export function parseAudienceType(value: unknown): AudienceType {
+  if (value === 'pastors_only') return 'pastors_only';
+  if (value === 'staff_associate_and_elder') return 'staff_associate_and_elder';
+  return 'all_members';
+}
+
+export function audienceTypeLabel(type: string): string {
+  const found = BROADCAST_AUDIENCE_OPTIONS.find((o) => o.value === type);
+  if (found) return found.label;
+  return type.replace(/_/g, ' ');
+}
 
 export function workflowStatusLabel(status: SermonWorkflowStatus): string {
   return status.replace(/_/g, ' ');
