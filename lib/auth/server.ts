@@ -118,6 +118,46 @@ export async function authorizeApiPermission(
   return { ok: true, ctx };
 }
 
+/** For API routes that only require belonging to a church (e.g. member QR share). */
+export async function authorizeApiWithChurch(): Promise<
+  | { ok: true; ctx: StaffAuthContext }
+  | { ok: false; response: NextResponse }
+> {
+  const supabase = createServerSupabaseClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user?.email) {
+    return { ok: false, response: NextResponse.json({ error: 'Unauthorized.' }, { status: 401 }) };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('users')
+    .select('id, church_id, full_name, role')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { ok: false, response: NextResponse.json({ error: 'Profile not found.' }, { status: 403 }) };
+  }
+
+  const ctx = await buildStaffAuthContext(
+    { id: user.id, email: user.email },
+    profile as UserProfile,
+  );
+
+  if (!ctx.profile.church_id) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'You must belong to a church.' }, { status: 403 }),
+    };
+  }
+
+  return { ok: true, ctx };
+}
+
 export async function getChurchForProfile(
   churchId: string | null,
 ): Promise<ChurchSummary | null> {

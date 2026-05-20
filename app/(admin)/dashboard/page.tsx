@@ -4,8 +4,11 @@ import { canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { parsePastorEngagement } from '@/lib/engagement/types';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { ChurchQrCard } from '@/components/admin/ChurchQrCard';
 import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
 import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
+import { buildMemberJoinUrl } from '@/lib/church/member-join';
+import { qrPngDataUrl } from '@/lib/church/qr';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
 import { ScheduledBroadcastPanel } from '@/components/admin/ScheduledBroadcastPanel';
 import { PastorEngagementSection } from '@/components/admin/PastorEngagementSection';
@@ -41,6 +44,13 @@ export default async function DashboardPage({ searchParams }: Props) {
 
   const churchMemberPositive =
     engagementParsed != null ? engagementParsed.member_count > 0 : Boolean(profile.church_id);
+
+  let memberJoinUrl: string | null = null;
+  let memberQrDataUrl: string | null = null;
+  if (church?.church_code) {
+    memberJoinUrl = buildMemberJoinUrl(church.church_code);
+    memberQrDataUrl = await qrPngDataUrl(memberJoinUrl);
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -92,11 +102,28 @@ export default async function DashboardPage({ searchParams }: Props) {
           </section>
         </div>
       ) : (
-        <section className="admin-card p-6">
-          <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">Your church</h2>
-          <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
-          <p className="admin-hint mt-1 font-mono">Member code: {church?.church_code ?? '—'}</p>
-        </section>
+        <>
+          <section className="admin-card p-6">
+            <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">Your church</h2>
+            <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
+            <p className="admin-hint mt-1 font-mono">Member code: {church?.church_code ?? '—'}</p>
+          </section>
+          {church?.church_code && memberJoinUrl && memberQrDataUrl ? (
+            <section className="admin-card p-6">
+              <h2 className="admin-section-title">Member join QR</h2>
+              <p className="admin-body mt-2">
+                Share this QR in bulletins, slides, or email so members can join your church in the
+                app.
+              </p>
+              <ChurchQrCard
+                churchName={church.name}
+                churchCode={church.church_code}
+                joinUrl={memberJoinUrl}
+                qrDataUrl={memberQrDataUrl}
+              />
+            </section>
+          ) : null}
+        </>
       )}
 
       {profile.church_id && canPublish ? (
