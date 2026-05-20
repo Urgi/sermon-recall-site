@@ -23,6 +23,7 @@ export type ChurchSummary = {
   id: string;
   name: string;
   church_code: string;
+  owner_user_id: string | null;
 };
 
 export type AuthContext = {
@@ -63,6 +64,31 @@ export function staffHasPermission(
 ): boolean {
   const role = staffRole ?? legacyRoleToStaffRole(profile.role);
   return hasPermission(role, permission);
+}
+
+/** Sidebar / team page entry — broader than invite-only. */
+export function canAccessTeamNav(
+  profile: UserProfile,
+  staffRole: StaffRole | null,
+  options?: { ownerUserId?: string | null; userId?: string },
+): boolean {
+  if (
+    options?.ownerUserId &&
+    options?.userId &&
+    options.ownerUserId === options.userId
+  ) {
+    return true;
+  }
+  if (profile.role === 'admin' || profile.role === 'pastor' || staffRole === 'owner') {
+    return true;
+  }
+  return (
+    staffHasPermission(staffRole, profile, 'can_invite_users') ||
+    staffHasPermission(staffRole, profile, 'can_approve_users') ||
+    staffHasPermission(staffRole, profile, 'can_manage_team') ||
+    staffRole === 'associate_pastor' ||
+    staffRole === 'elder'
+  );
 }
 
 export type { Permission, StaffRole };

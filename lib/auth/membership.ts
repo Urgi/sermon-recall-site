@@ -2,6 +2,7 @@ import type { MembershipStatus, StaffAuthContext, UserProfile } from '@/lib/auth
 import {
   canManageSermonsFromStaff,
   legacyRoleToStaffRole,
+  STAFF_ROLE_RANK,
   type StaffRole,
 } from '@/lib/auth/permissions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -40,9 +41,16 @@ export function resolveStaffRole(
   profile: UserProfile,
   membership: ChurchMembershipRow | null,
 ): StaffRole | null {
-  if (membership?.status === 'active') return membership.role;
-  if (membership?.status === 'pending') return membership.role;
-  return legacyRoleToStaffRole(profile.role);
+  const legacy = legacyRoleToStaffRole(profile.role);
+  let fromMembership: StaffRole | null = null;
+  if (membership?.status === 'active' || membership?.status === 'pending') {
+    fromMembership = membership.role;
+  }
+  if (!fromMembership) return legacy;
+  if (!legacy) return fromMembership;
+  return STAFF_ROLE_RANK[fromMembership] >= STAFF_ROLE_RANK[legacy]
+    ? fromMembership
+    : legacy;
 }
 
 export function isApprovedStaff(

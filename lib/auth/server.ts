@@ -165,7 +165,7 @@ export async function getChurchForProfile(
   const supabase = createServerSupabaseClient();
   const { data } = await supabase
     .from('churches')
-    .select('id, name, church_code')
+    .select('id, name, church_code, owner_user_id')
     .eq('id', churchId)
     .single();
   return data as ChurchSummary | null;

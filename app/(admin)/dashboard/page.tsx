@@ -1,7 +1,8 @@
 import Link from 'next/link';
 
-import { canManageSermonsWithStaff } from '@/lib/auth/profile';
+import { canAccessTeamNav, canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
+import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
 import { parsePastorEngagement } from '@/lib/engagement/types';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { ChurchQrCard } from '@/components/admin/ChurchQrCard';
@@ -16,7 +17,7 @@ import { PastorEngagementSection } from '@/components/admin/PastorEngagementSect
 type Props = { searchParams: { staff?: string; error?: string } };
 
 export default async function DashboardPage({ searchParams }: Props) {
-  const { profile, staffRole, membership, isApprovedStaff } = await requireAdminSession();
+  const { user, profile, staffRole, membership, isApprovedStaff } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
   const supabase = createServerSupabaseClient();
 
@@ -30,6 +31,10 @@ export default async function DashboardPage({ searchParams }: Props) {
   }
 
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
+  const canViewTeam = canAccessTeamNav(profile, staffRole, {
+    ownerUserId: church?.owner_user_id,
+    userId: user.id,
+  });
 
   let engagementParsed = null as ReturnType<typeof parsePastorEngagement>;
   if (profile.church_id && canPublish) {
@@ -107,7 +112,29 @@ export default async function DashboardPage({ searchParams }: Props) {
             <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">Your church</h2>
             <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
             <p className="admin-hint mt-1 font-mono">Member code: {church?.church_code ?? '—'}</p>
+            {canViewTeam ? (
+              <Link
+                href="/team"
+                className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline"
+              >
+                Manage team →
+              </Link>
+            ) : null}
           </section>
+          {church && !church.owner_user_id && canPublish ? (
+            <section className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-6">
+              <h2 className="admin-section-title text-sky-900 dark:text-sky-100">
+                Claim lead pastor
+              </h2>
+              <p className="admin-body mt-2 text-sky-900/90 dark:text-sky-100/85">
+                This church has no lead pastor yet. Claim the role to unlock the Team page and invite
+                staff.
+              </p>
+              <div className="mt-4">
+                <ClaimLeadPastorButton />
+              </div>
+            </section>
+          ) : null}
           {church?.church_code && memberJoinUrl && memberQrDataUrl ? (
             <section className="admin-card p-6">
               <h2 className="admin-section-title">Member join QR</h2>

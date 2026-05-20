@@ -1,7 +1,6 @@
 import Link from 'next/link';
 
-import { staffHasPermission } from '@/lib/auth/profile';
-import { canManageSermonsWithStaff } from '@/lib/auth/profile';
+import { canAccessTeamNav, canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
@@ -11,10 +10,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { user, profile, staffRole } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
   const pastorCapable = canManageSermonsWithStaff(profile, staffRole);
-  const canManageTeam =
-    pastorCapable &&
-    (staffHasPermission(staffRole, profile, 'can_invite_users') ||
-      staffHasPermission(staffRole, profile, 'can_approve_users'));
+  const canViewTeam = canAccessTeamNav(profile, staffRole, {
+    ownerUserId: church?.owner_user_id,
+    userId: user.id,
+  });
 
   const label =
     profile.full_name?.trim() ||
@@ -52,7 +51,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               New sermon
             </Link>
           ) : null}
-          {canManageTeam ? (
+          {canViewTeam ? (
             <Link
               href="/team"
               className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
@@ -97,6 +96,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="text-xs font-medium text-admin-link hover:underline"
             >
               Sermons
+            </Link>
+            {canViewTeam ? (
+              <Link
+                href="/team"
+                className="text-xs font-medium text-admin-link hover:underline"
+              >
+                Team
+              </Link>
+            ) : null}
+            <Link
+              href="/notifications"
+              className="text-xs font-medium text-admin-link hover:underline"
+            >
+              Notify
             </Link>
             <Link
               href="/settings"

@@ -1,16 +1,15 @@
-import { staffHasPermission } from '@/lib/auth/profile';
-import { requireApprovedStaffSession } from '@/lib/auth/server';
+import { canAccessTeamNav } from '@/lib/auth/profile';
+import { getChurchForProfile, requireApprovedStaffSession } from '@/lib/auth/server';
 import { TeamDashboard } from '@/components/admin/TeamDashboard';
 
 export default async function TeamPage() {
   const ctx = await requireApprovedStaffSession();
+  const church = await getChurchForProfile(ctx.profile.church_id);
 
-  const canView =
-    staffHasPermission(ctx.staffRole, ctx.profile, 'can_invite_users') ||
-    staffHasPermission(ctx.staffRole, ctx.profile, 'can_approve_users') ||
-    staffHasPermission(ctx.staffRole, ctx.profile, 'can_manage_team') ||
-    ctx.staffRole === 'associate_pastor' ||
-    ctx.staffRole === 'elder';
+  const canView = canAccessTeamNav(ctx.profile, ctx.staffRole, {
+    ownerUserId: church?.owner_user_id,
+    userId: ctx.user.id,
+  });
 
   if (!ctx.profile.church_id) {
     return (
