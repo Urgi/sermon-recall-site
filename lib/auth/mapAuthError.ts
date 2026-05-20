@@ -14,7 +14,7 @@ export function mapAuthError(message: string): string {
     return 'Cannot reach the server. Check your internet connection and try again.';
   }
   if (m.includes('rate limit') || m.includes('too many requests') || m.includes('over_email_send')) {
-    return 'Too many emails sent recently. Wait about an hour, or confirm your user in Supabase Dashboard → Authentication → Users.';
+    return 'Too many sign-up or email attempts from this device. Wait 15–60 minutes, or delete the test user in Supabase → Authentication → Users, then try again.';
   }
   if (m.includes('redirect') || m.includes('redirect_to')) {
     return 'Email could not be sent: admin callback URL is not allowlisted in Supabase → Authentication → URL configuration.';

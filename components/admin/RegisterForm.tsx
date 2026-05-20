@@ -27,11 +27,70 @@ export function RegisterForm() {
       return;
     }
     setPending(true);
+    const trimmedEmail = email.trim();
+
+    try {
+      const res = await fetch('/api/auth/register-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password,
+          fullName: fullName.trim() || undefined,
+        }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        useClientSignup?: boolean;
+        message?: string;
+      };
+
+      if (res.ok && json.ok) {
+        const supabase = createBrowserSupabaseClient();
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password,
+        });
+        setPending(false);
+        if (signInError) {
+          queueAppToast({
+            variant: 'success',
+            message:
+              json.message ??
+              'Account created. Sign in with your email and password.',
+          });
+          router.push('/login');
+          return;
+        }
+        queueAppToast({
+          variant: 'success',
+          message: 'Account created. Taking you to your dashboard…',
+        });
+        router.refresh();
+        router.push('/dashboard?welcome=1');
+        return;
+      }
+
+      if (json.useClientSignup) {
+        await clientSignUpFallback(trimmedEmail, password);
+        return;
+      }
+
+      setPending(false);
+      setError(json.error ?? mapAuthError('Something went wrong. Please try again.'));
+    } catch {
+      setPending(false);
+      setError('Network error. Check your connection and try again.');
+    }
+  }
+
+  async function clientSignUpFallback(trimmedEmail: string, password: string) {
     const supabase = createBrowserSupabaseClient();
     const redirectTo = getAdminEmailRedirectUrl();
 
     const { data, error: signError } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: trimmedEmail,
       password,
       options: {
         emailRedirectTo: redirectTo || undefined,
