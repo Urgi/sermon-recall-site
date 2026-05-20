@@ -69,19 +69,55 @@ export function LoginForm({ nextPath }: Props) {
     }
     setResendPending(true);
     setResendNotice(null);
-    const supabase = createBrowserSupabaseClient();
-    const redirectTo = getAdminEmailRedirectUrl();
-    const { error: resendError } = await supabase.auth.resend({
-      type: 'signup',
-      email: email.trim(),
-      options: { emailRedirectTo: redirectTo },
-    });
-    setResendPending(false);
-    if (resendError) {
-      setResendNotice(mapAuthError(resendError.message));
-      return;
+    try {
+      const res = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const json = (await res.json()) as {
+        message?: string;
+        error?: string;
+        alreadyConfirmed?: boolean;
+        useClientFallback?: boolean;
+      };
+
+      if (res.ok && json.message) {
+        setResendNotice(json.message);
+        return;
+      }
+
+      if (json.useClientFallback) {
+        const redirectTo = getAdminEmailRedirectUrl();
+        if (!redirectTo) {
+          setResendNotice(
+            json.error ??
+              'Missing site URL configuration. Set NEXT_PUBLIC_SITE_URL on the server.',
+          );
+          return;
+        }
+        const supabase = createBrowserSupabaseClient();
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: email.trim(),
+          options: { emailRedirectTo: redirectTo },
+        });
+        if (resendError) {
+          setResendNotice(mapAuthError(resendError.message));
+          return;
+        }
+        setResendNotice(
+          'Confirmation requested via Supabase mail (limited deliverability). Check inbox and spam in 5–10 minutes.',
+        );
+        return;
+      }
+
+      setResendNotice(json.error ?? 'Could not send confirmation email. Try again later.');
+    } catch {
+      setResendNotice('Network error. Check your connection and try again.');
+    } finally {
+      setResendPending(false);
     }
-    setResendNotice('Confirmation email sent. Check your inbox and spam folder.');
   }
 
   return (

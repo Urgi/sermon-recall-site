@@ -15,3 +15,15 @@ export function getAdminEmailRedirectUrl(nextPath?: string): string {
   }
   return `${base}/auth/callback`;
 }
+
+/** Server-side redirect for auth emails (no `window`). */
+export function getAdminEmailRedirectUrlServer(nextPath?: string): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
+  const vercel = process.env.VERCEL_URL?.trim();
+  const base = configured || (vercel ? `https://${vercel}` : '');
+  if (!base) return '';
+  if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
+    return `${base}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  }
+  return `${base}/auth/callback`;
+}

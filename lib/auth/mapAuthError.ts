@@ -13,8 +13,11 @@ export function mapAuthError(message: string): string {
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
     return 'Cannot reach the server. Check your internet connection and try again.';
   }
-  if (m.includes('rate limit') || m.includes('too many requests')) {
-    return 'Too many attempts. Please wait a few minutes and try again.';
+  if (m.includes('rate limit') || m.includes('too many requests') || m.includes('over_email_send')) {
+    return 'Too many emails sent recently. Wait about an hour, or confirm your user in Supabase Dashboard → Authentication → Users.';
+  }
+  if (m.includes('redirect') || m.includes('redirect_to')) {
+    return 'Email could not be sent: admin callback URL is not allowlisted in Supabase → Authentication → URL configuration.';
   }
   return 'Something went wrong. Please try again.';
 }
