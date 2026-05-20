@@ -16,11 +16,29 @@ export function getAdminEmailRedirectUrl(nextPath?: string): string {
   return `${base}/auth/callback`;
 }
 
-/** Server-side redirect for auth emails (no `window`). */
-export function getAdminEmailRedirectUrlServer(nextPath?: string): string {
+function normalizeOrigin(origin: string | null | undefined): string | null {
+  if (!origin?.trim()) return null;
+  try {
+    const url = new URL(origin.trim());
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.origin.replace(/\/$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Server-side redirect for auth emails (no `window`).
+ * Prefer NEXT_PUBLIC_SITE_URL; else the browser Origin from the request; else VERCEL_URL.
+ */
+export function getAdminEmailRedirectUrlServer(
+  nextPath?: string,
+  requestOrigin?: string | null,
+): string {
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
+  const fromRequest = normalizeOrigin(requestOrigin);
   const vercel = process.env.VERCEL_URL?.trim();
-  const base = configured || (vercel ? `https://${vercel}` : '');
+  const base = configured || fromRequest || (vercel ? `https://${vercel}` : '');
   if (!base) return '';
   if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
     return `${base}/auth/callback?next=${encodeURIComponent(nextPath)}`;

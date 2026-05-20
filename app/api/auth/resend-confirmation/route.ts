@@ -26,12 +26,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
   }
 
-  const redirectTo = getAdminEmailRedirectUrlServer();
+  const requestOrigin = request.headers.get('origin');
+  const redirectTo = getAdminEmailRedirectUrlServer(undefined, requestOrigin);
   if (!redirectTo) {
     return NextResponse.json(
       {
         error:
-          'Server is missing NEXT_PUBLIC_SITE_URL. Set it to your admin URL (e.g. https://admin.sermonrecall.com) in Vercel and redeploy.',
+          'Could not determine your admin site URL. Add NEXT_PUBLIC_SITE_URL in Vercel (your pastor login URL, e.g. https://admin.sermonrecall.com). This is not the same as NEXT_PUBLIC_SUPABASE_URL.',
       },
       { status: 503 },
     );
