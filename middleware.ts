@@ -6,7 +6,11 @@ export async function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isProtected = path.startsWith('/dashboard') || path.startsWith('/sermons');
-  const isAuthPage = path === '/login' || path === '/register';
+  const isAuthPage =
+    path === '/login' ||
+    path === '/register' ||
+    path === '/forgot-password' ||
+    path === '/reset-password';
 
   if (!user && isProtected) {
     const loginUrl = request.nextUrl.clone();
@@ -18,12 +22,21 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isAuthPage) {
-    const dash = request.nextUrl.clone();
-    dash.pathname = '/dashboard';
-    dash.search = '';
-    const redirect = NextResponse.redirect(dash);
-    copyResponseCookies(supabaseResponse, redirect);
-    return redirect;
+    const loginParams = request.nextUrl.searchParams;
+    const stayOnLogin =
+      path === '/login' &&
+      (loginParams.get('confirmed') === '1' ||
+        loginParams.get('setup') === 'failed' ||
+        loginParams.get('email_sent') === '1');
+    const allowResetPassword = path === '/reset-password';
+    if (!stayOnLogin && !allowResetPassword) {
+      const dash = request.nextUrl.clone();
+      dash.pathname = '/dashboard';
+      dash.search = '';
+      const redirect = NextResponse.redirect(dash);
+      copyResponseCookies(supabaseResponse, redirect);
+      return redirect;
+    }
   }
 
   return supabaseResponse;

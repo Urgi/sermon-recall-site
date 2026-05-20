@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -15,10 +17,15 @@ export function LoginForm({ nextPath }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [resendPending, setResendPending] = useState(false);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setResendNotice(null);
+    setShowResend(false);
     setPending(true);
     try {
       const supabase = createBrowserSupabaseClient();
@@ -27,23 +34,44 @@ export function LoginForm({ nextPath }: Props) {
         password,
       });
       if (signError) {
-        setError(signError.message);
+        const msg = signError.message.toLowerCase();
+        setError(mapAuthError(signError.message));
+        if (msg.includes('not confirmed')) {
+          setShowResend(true);
+        }
         return;
       }
       router.refresh();
       router.push(nextPath);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('fetch') || err instanceof TypeError) {
-        setError(
-          'Cannot reach Supabase (network). Check internet and VPN, and that site/.env has the correct NEXT_PUBLIC_SUPABASE_URL (https://…supabase.co). Dev tip: NODE_OPTIONS=--dns-result-order=ipv4first npm run dev',
-        );
-      } else {
-        setError(msg || 'Sign-in failed.');
-      }
+      setError(mapAuthError(msg));
     } finally {
       setPending(false);
     }
+  }
+
+  async function onResendConfirmation() {
+    if (!email.trim()) {
+      setResendNotice('Enter your email above, then try again.');
+      return;
+    }
+    setResendPending(true);
+    setResendNotice(null);
+    const supabase = createBrowserSupabaseClient();
+    const redirectTo =
+      typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: redirectTo },
+    });
+    setResendPending(false);
+    if (resendError) {
+      setResendNotice(mapAuthError(resendError.message));
+      return;
+    }
+    setResendNotice('Confirmation email sent. Check your inbox and spam folder.');
   }
 
   return (
@@ -58,29 +86,51 @@ export function LoginForm({ nextPath }: Props) {
           type="email"
           autoComplete="email"
           required
+          disabled={pending}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       <div>
-        <label htmlFor="login-password" className="block text-[13px] font-medium text-[#94a3b8]">
-          Password
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="login-password" className="block text-[13px] font-medium text-[#94a3b8]">
+            Password
+          </label>
+          <Link href="/forgot-password" className="text-[12px] text-[#38bdf8] hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <input
           id="login-password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
+          disabled={pending}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">
           {error}
+        </p>
+      ) : null}
+      {showResend ? (
+        <button
+          type="button"
+          disabled={resendPending || pending}
+          onClick={() => void onResendConfirmation()}
+          className="text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+        >
+          {resendPending ? 'Sending…' : 'Resend confirmation email'}
+        </button>
+      ) : null}
+      {resendNotice ? (
+        <p className="text-[13px] text-[#86efac]" role="status">
+          {resendNotice}
         </p>
       ) : null}
       <button

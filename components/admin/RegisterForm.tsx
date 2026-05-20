@@ -1,9 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterForm() {
   const router = useRouter();
@@ -12,18 +16,26 @@ export function RegisterForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setNotice(null);
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`);
+      return;
+    }
     setPending(true);
     const supabase = createBrowserSupabaseClient();
+    const redirectTo =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
     const { data, error: signError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
+        emailRedirectTo: redirectTo,
         data: {
           full_name: fullName.trim() || undefined,
         },
@@ -31,7 +43,13 @@ export function RegisterForm() {
     });
     setPending(false);
     if (signError) {
-      setError(signError.message);
+      setError(mapAuthError(signError.message));
+      return;
+    }
+    if (data.user?.identities?.length === 0) {
+      setError(
+        'An account with this email already exists. Try signing in or reset your password.',
+      );
       return;
     }
     if (data.session) {
@@ -39,9 +57,7 @@ export function RegisterForm() {
       router.push('/dashboard');
       return;
     }
-    setNotice(
-      'Check your email to confirm your account, then sign in. If confirmations are disabled in Supabase, try signing in now.',
-    );
+    router.push('/login?email_sent=1');
   }
 
   return (
@@ -55,9 +71,10 @@ export function RegisterForm() {
           name="fullName"
           type="text"
           autoComplete="name"
+          disabled={pending}
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       <div>
@@ -70,9 +87,10 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           required
+          disabled={pending}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       <div>
@@ -85,20 +103,25 @@ export function RegisterForm() {
           type="password"
           autoComplete="new-password"
           required
-          minLength={6}
+          minLength={MIN_PASSWORD_LENGTH}
+          disabled={pending}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
+        <p className="mt-1 text-[12px] text-[#64748b]">At least {MIN_PASSWORD_LENGTH} characters</p>
       </div>
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">
           {error}
-        </p>
-      ) : null}
-      {notice ? (
-        <p className="text-[13px] leading-relaxed text-[#86efac]" role="status">
-          {notice}
+          {error.includes('already exists') ? (
+            <>
+              {' '}
+              <Link href="/forgot-password" className="text-[#38bdf8] hover:underline">
+                Reset password
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
       <button

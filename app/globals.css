@@ -145,4 +145,19 @@
       min-height: min(72vh, 720px);
     }
   }
+
+  @keyframes app-toast-slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .app-toast-enter {
+    animation: app-toast-slide-down 0.35s ease-out;
+  }
 }

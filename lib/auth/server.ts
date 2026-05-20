@@ -21,7 +21,7 @@ export async function requireAdminSession(): Promise<AuthContext> {
     .single();
 
   if (profileError || !profile) {
-    redirect('/login');
+    redirect('/login?setup=failed');
   }
 
   return {
