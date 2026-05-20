@@ -5,6 +5,7 @@ import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
 import { parsePastorEngagement } from '@/lib/engagement/types';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { ChurchMemberQrInline } from '@/components/admin/ChurchMemberQrInline';
 import { ChurchQrCard } from '@/components/admin/ChurchQrCard';
 import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
 import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
@@ -109,17 +110,32 @@ export default async function DashboardPage({ searchParams }: Props) {
       ) : (
         <>
           <section className="admin-card p-6">
-            <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">Your church</h2>
-            <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
-            <p className="admin-hint mt-1 font-mono">Member code: {church?.church_code ?? '—'}</p>
-            {canViewTeam ? (
-              <Link
-                href="/team"
-                className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline"
-              >
-                Manage team →
-              </Link>
-            ) : null}
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">
+                  Your church
+                </h2>
+                <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
+                <p className="admin-hint mt-1 font-mono">
+                  Code: {church?.church_code ?? '—'}
+                </p>
+                {canViewTeam ? (
+                  <Link
+                    href="/team"
+                    className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline"
+                  >
+                    Manage team →
+                  </Link>
+                ) : null}
+              </div>
+              {church?.church_code && memberQrDataUrl ? (
+                <ChurchMemberQrInline
+                  churchName={church.name}
+                  churchCode={church.church_code}
+                  qrDataUrl={memberQrDataUrl}
+                />
+              ) : null}
+            </div>
           </section>
           {church && !church.owner_user_id && canPublish ? (
             <section className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-6">
@@ -137,16 +153,16 @@ export default async function DashboardPage({ searchParams }: Props) {
           ) : null}
           {church?.church_code && memberJoinUrl && memberQrDataUrl ? (
             <section className="admin-card p-6">
-              <h2 className="admin-section-title">Member join QR</h2>
+              <h2 className="admin-section-title">Share with members</h2>
               <p className="admin-body mt-2">
-                Share this QR in bulletins, slides, or email so members can join your church in the
-                app.
+                Copy a join link, email instructions, or send directly to a member.
               </p>
               <ChurchQrCard
                 churchName={church.name}
                 churchCode={church.church_code}
                 joinUrl={memberJoinUrl}
                 qrDataUrl={memberQrDataUrl}
+                toolsOnly
               />
             </section>
           ) : null}

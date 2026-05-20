@@ -13,9 +13,17 @@ type Props = {
   churchCode: string;
   joinUrl: string;
   qrDataUrl: string;
+  /** When true, only share tools (QR shown elsewhere on the page). */
+  toolsOnly?: boolean;
 };
 
-export function ChurchQrCard({ churchName, churchCode, joinUrl, qrDataUrl }: Props) {
+export function ChurchQrCard({
+  churchName,
+  churchCode,
+  joinUrl,
+  qrDataUrl,
+  toolsOnly = false,
+}: Props) {
   const code = normalizeChurchCode(churchCode);
   const downloadName = useMemo(
     () => `sermon-recall-${code.replace(/[^a-zA-Z0-9_-]/g, '_')}-qr.png`,
@@ -91,19 +99,27 @@ export function ChurchQrCard({ churchName, churchCode, joinUrl, qrDataUrl }: Pro
   });
 
   return (
-    <div className="mt-4 flex flex-col gap-6 sm:flex-row sm:items-start">
-      <div className="shrink-0 rounded-xl border border-admin bg-white p-3 dark:bg-[#f8fafc]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={qrDataUrl}
-          alt={`QR code to join ${churchName}`}
-          width={240}
-          height={240}
-          className="block h-[240px] w-[240px]"
-        />
-      </div>
+    <div
+      className={
+        toolsOnly
+          ? 'mt-4 space-y-4'
+          : 'mt-4 flex flex-col gap-6 sm:flex-row sm:items-start'
+      }
+    >
+      {!toolsOnly ? (
+        <div className="shrink-0 rounded-xl border border-admin bg-white p-3 dark:bg-[#f8fafc]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={qrDataUrl}
+            alt={`QR code to join ${churchName}`}
+            width={240}
+            height={240}
+            className="block h-[240px] w-[240px]"
+          />
+        </div>
+      ) : null}
 
-      <div className="min-w-0 flex-1 space-y-4">
+      <div className={toolsOnly ? 'space-y-4' : 'min-w-0 flex-1 space-y-4'}>
         <p className="admin-body text-[14px] leading-relaxed">
           Members scan this code or open the link, then sign in on the Sermon Recall app and enter
           code <span className="font-mono font-semibold text-admin-fg-strong">{code}</span>.
