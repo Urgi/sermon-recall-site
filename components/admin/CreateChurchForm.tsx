@@ -34,6 +34,10 @@ export function CreateChurchForm() {
         setError('Enter a church name.');
       } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) {
         setError('That church code is already taken. Pick another.');
+      } else if (msg.includes('cannot_change_role') || msg.includes('cannot_change_church_id')) {
+        setError(
+          'Could not finish setup. Sign out, sign in again, and try once more. If it persists, contact support.',
+        );
       } else {
         setError(msg);
       }
