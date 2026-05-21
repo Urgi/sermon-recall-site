@@ -58,17 +58,10 @@ export async function checkRateLimit(
 
 export async function pruneStalePushTokens(
   admin: SupabaseClient,
-  staleTokenErrors: string[],
-  tokenByErrorIndex: string[],
+  staleTokens: string[],
 ): Promise<void> {
-  const stale = new Set<string>();
-  staleTokenErrors.forEach((err, i) => {
-    if (err === 'DeviceNotRegistered' || err.includes('DeviceNotRegistered')) {
-      const tok = tokenByErrorIndex[i];
-      if (tok) stale.add(tok);
-    }
-  });
-  if (stale.size === 0) return;
+  const unique = Array.from(new Set(staleTokens.filter(Boolean)));
+  if (unique.length === 0) return;
 
-  await admin.from('user_push_tokens').delete().in('expo_push_token', Array.from(stale));
+  await admin.from('user_push_tokens').delete().in('expo_push_token', unique);
 }

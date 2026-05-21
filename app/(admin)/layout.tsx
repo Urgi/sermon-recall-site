@@ -1,19 +1,27 @@
 import Link from 'next/link';
 
-import { canAccessTeamNav, canManageSermonsWithStaff } from '@/lib/auth/profile';
+import {
+  canAccessTeamNav,
+  canManageSermonsWithStaff,
+  staffHasPermission,
+} from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, profile, staffRole } = await requireAdminSession();
+  const { user, profile, staffRole, isApprovedStaff } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
   const pastorCapable = canManageSermonsWithStaff(profile, staffRole);
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
     ownerUserId: church?.owner_user_id,
     userId: user.id,
   });
+  const canViewNotifications =
+    isApprovedStaff &&
+    (staffHasPermission(staffRole, profile, 'can_send_notifications') ||
+      staffHasPermission(staffRole, profile, 'can_schedule_notifications'));
 
   const label =
     profile.full_name?.trim() ||
@@ -105,12 +113,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Team
               </Link>
             ) : null}
-            <Link
-              href="/notifications"
-              className="text-xs font-medium text-admin-link hover:underline"
-            >
-              Notify
-            </Link>
+            {canViewNotifications ? (
+              <Link
+                href="/notifications"
+                className="text-xs font-medium text-admin-link hover:underline"
+              >
+                Notify
+              </Link>
+            ) : null}
             <Link
               href="/settings"
               className="text-xs font-medium text-admin-link hover:underline"

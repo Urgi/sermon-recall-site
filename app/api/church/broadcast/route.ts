@@ -69,13 +69,27 @@ export async function POST(req: Request) {
 
   const { data: existingIdem } = await admin
     .from('notification_idempotency')
-    .select('id')
+    .select('id, broadcast_id')
     .eq('church_id', churchId)
     .eq('idempotency_key', idempotencyKey)
     .maybeSingle();
 
+  if (existingIdem?.broadcast_id) {
+    const { data: priorLog } = await admin
+      .from('church_broadcast_log')
+      .select('recipient_count')
+      .eq('id', existingIdem.broadcast_id)
+      .maybeSingle();
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      broadcastId: existingIdem.broadcast_id,
+      recipientCount: priorLog?.recipient_count ?? 0,
+    });
+  }
+
   if (existingIdem) {
-    return NextResponse.json({ ok: true, duplicate: true, recipientCount: 0 });
+    await admin.from('notification_idempotency').delete().eq('id', existingIdem.id);
   }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -97,12 +111,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many sends. Try again later.' }, { status: 429 });
   }
 
-  await admin.from('notification_idempotency').insert({
-    church_id: churchId,
-    idempotency_key: idempotencyKey,
-    created_by: userId,
-  });
-
   const { broadcastId, recipientCount, pushTicketErrors } = await sendPastorBroadcastAndLog({
     admin,
     churchId,
@@ -114,6 +122,15 @@ export async function POST(req: Request) {
     includeAllMembers,
     excludeFromPushUserId: userId,
   });
+
+  if (broadcastId) {
+    await admin.from('notification_idempotency').insert({
+      church_id: churchId,
+      idempotency_key: idempotencyKey,
+      created_by: userId,
+      broadcast_id: broadcastId,
+    });
+  }
 
   await writeAuditLog({
     churchId,

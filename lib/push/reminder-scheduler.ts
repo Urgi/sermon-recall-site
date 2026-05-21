@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { ExpoPushMessage } from '@/lib/push/expo-push';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
+import { pruneStalePushTokens } from '@/lib/rate-limit';
 
 export type ReminderTickResult = {
   morningSent: number;
@@ -278,6 +279,7 @@ export async function runDevotionalReminders(
         data: {
           kind: 'devotional_reminder',
           sermonId: sermon.id,
+          devotionalId: target.id,
           dayNumber: cycleDay,
           slot: 'morning',
         },
@@ -295,6 +297,7 @@ export async function runDevotionalReminders(
         data: {
           kind: 'devotional_reminder',
           sermonId: sermon.id,
+          devotionalId: target.id,
           dayNumber: cycleDay,
           slot: 'midday',
         },
@@ -306,7 +309,8 @@ export async function runDevotionalReminders(
     const reserved = await tryReserveDedupe(admin, uid, dedupeKey);
     if (!reserved) continue;
 
-    await sendExpoPushMessages([msg]);
+    const { staleTokens } = await sendExpoPushMessages([msg]);
+    await pruneStalePushTokens(admin, staleTokens);
     if (kind === 'morning') morningSent += 1;
     else if (kind === 'midday') middaySent += 1;
     else customHourSent += 1;

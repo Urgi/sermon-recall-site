@@ -1,12 +1,15 @@
 import Link from 'next/link';
 
-import { canManageSermons } from '@/lib/auth/profile';
+import { staffHasPermission } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistory';
 
 export default async function NotificationsHistoryPage() {
-  const { profile } = await requireAdminSession();
-  const canPublish = canManageSermons(profile.role);
+  const { profile, staffRole, isApprovedStaff } = await requireAdminSession();
+  const canViewHistory =
+    isApprovedStaff &&
+    (staffHasPermission(staffRole, profile, 'can_send_notifications') ||
+      staffHasPermission(staffRole, profile, 'can_schedule_notifications'));
 
   if (!profile.church_id) {
     return (
@@ -20,12 +23,13 @@ export default async function NotificationsHistoryPage() {
     );
   }
 
-  if (!canPublish) {
+  if (!canViewHistory) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
         <h1 className="text-2xl font-bold text-admin-fg-strong">Notification history</h1>
         <p className="text-[15px] leading-relaxed text-admin-muted">
-          Pastor or admin role is required to view church notification history.
+          Your church role does not include sending or scheduling notifications. Ask a lead pastor to
+          adjust your permissions on the Team page.
         </p>
         <Link href="/dashboard" className="text-[#38bdf8] hover:underline">
           Back to dashboard
@@ -62,4 +66,3 @@ export default async function NotificationsHistoryPage() {
     </div>
   );
 }
-

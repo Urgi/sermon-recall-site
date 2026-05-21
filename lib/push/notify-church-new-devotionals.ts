@@ -1,4 +1,5 @@
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
+import { pruneStalePushTokens } from '@/lib/rate-limit';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export type NotifyChurchNewDevotionalsParams = {
@@ -76,5 +77,6 @@ async function notifyChurchNewDevotionalsInner(
     },
   }));
 
-  await sendExpoPushMessages(messages);
+  const { staleTokens } = await sendExpoPushMessages(messages);
+  await pruneStalePushTokens(admin, staleTokens);
 }

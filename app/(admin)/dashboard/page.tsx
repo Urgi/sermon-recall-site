@@ -1,6 +1,10 @@
 import Link from 'next/link';
 
-import { canAccessTeamNav, canManageSermonsWithStaff } from '@/lib/auth/profile';
+import {
+  canAccessTeamNav,
+  canManageSermonsWithStaff,
+  staffHasPermission,
+} from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
 import { parsePastorEngagement } from '@/lib/engagement/types';
@@ -32,6 +36,11 @@ export default async function DashboardPage({ searchParams }: Props) {
   }
 
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
+  const canSendNotifications =
+    isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
+  const canScheduleNotifications =
+    isApprovedStaff && staffHasPermission(staffRole, profile, 'can_schedule_notifications');
+  const canNotifyChurch = canSendNotifications || canScheduleNotifications;
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
     ownerUserId: church?.owner_user_id,
     userId: user.id,
@@ -173,18 +182,20 @@ export default async function DashboardPage({ searchParams }: Props) {
         <PastorEngagementSection engagement={engagementParsed} churchHasMembers={churchMemberPositive} />
       ) : null}
 
-      {profile.church_id && canPublish ? (
-        <section className="admin-card p-6">
+      {profile.church_id && canNotifyChurch ? (
+        <section id="notify-church" className="admin-card p-6">
           <h2 className="admin-section-title">Notify your church</h2>
           <p className="admin-body mt-2">
             Send a one-time push or schedule for later. Members also receive automatic devotional
             reminders for published sermon cycles.
           </p>
           <div className="mt-4 space-y-8">
-            <PastorBroadcastForm />
-            <div className="border-t border-admin pt-8">
-              <ScheduledBroadcastPanel />
-            </div>
+            {canSendNotifications ? <PastorBroadcastForm /> : null}
+            {canScheduleNotifications ? (
+              <div className={canSendNotifications ? 'border-t border-admin pt-8' : undefined}>
+                <ScheduledBroadcastPanel />
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

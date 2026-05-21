@@ -210,9 +210,9 @@ export async function sendAudiencePush(params: {
   title: string;
   body: string;
   data?: Record<string, unknown>;
-}): Promise<{ pushTicketErrors: string[]; tokenOrder: string[] }> {
+}): Promise<{ pushTicketErrors: string[]; staleTokens: string[] }> {
   if (params.tokens.length === 0) {
-    return { pushTicketErrors: [], tokenOrder: [] };
+    return { pushTicketErrors: [], staleTokens: [] };
   }
 
   const messages: ExpoPushMessage[] = params.tokens.map((to) => ({
@@ -223,6 +223,6 @@ export async function sendAudiencePush(params: {
     data: params.data,
   }));
 
-  const { ticketErrors } = await sendExpoPushMessages(messages);
-  return { pushTicketErrors: ticketErrors, tokenOrder: params.tokens };
+  const { ticketErrors, staleTokens } = await sendExpoPushMessages(messages);
+  return { pushTicketErrors: ticketErrors, staleTokens };
 }

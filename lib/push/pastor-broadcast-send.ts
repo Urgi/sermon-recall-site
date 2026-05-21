@@ -73,7 +73,7 @@ export async function sendPastorBroadcastAndLog(
 
   let pushTicketErrors: string[] = [];
   if (tokens.length > 0) {
-    const { pushTicketErrors: errs, tokenOrder } = await sendAudiencePush({
+    const { pushTicketErrors: errs, staleTokens } = await sendAudiencePush({
       tokens,
       title: params.title,
       body: params.body,
@@ -84,7 +84,7 @@ export async function sendPastorBroadcastAndLog(
       },
     });
     pushTicketErrors = errs;
-    await pruneStalePushTokens(params.admin, errs, tokenOrder);
+    await pruneStalePushTokens(params.admin, staleTokens);
   }
 
   return { broadcastId, recipientCount, pushTicketErrors };
