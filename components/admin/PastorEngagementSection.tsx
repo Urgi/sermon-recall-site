@@ -55,8 +55,8 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
         <p className="admin-body mt-1">
           <strong className="font-medium text-[var(--admin-fg-secondary)]">Opened</strong> counts
           members who opened that day in the app (or already had reading progress).{' '}
-          <strong className="font-medium text-[var(--admin-fg-secondary)]">Completed</strong> is
-          “Mark day complete.” Weekly figures use the last 7 days in UTC, same as before.
+          <strong className="font-medium text-[var(--admin-fg-secondary)]">Completed</strong> means
+          the member marked that devotional done. Weekly figures use the last 7 days in UTC.
         </p>
       </div>
 
