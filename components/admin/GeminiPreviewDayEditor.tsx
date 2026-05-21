@@ -1,11 +1,11 @@
 'use client';
 
-import type { GeminiDevotionalDay } from '@/lib/gemini/devotional-days';
+import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 
 type Props = {
   sermonTitle: string;
-  day: GeminiDevotionalDay;
-  onPatch: (patch: Partial<GeminiDevotionalDay>) => void;
+  day: DevotionalDay;
+  onPatch: (patch: Partial<DevotionalDay>) => void;
   defaultOpen?: boolean;
   /** Use `block` when nesting inside another list item (e.g. new sermon wizard). */
   variant?: 'list-item' | 'block';

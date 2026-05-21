@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const auth = await authorizeApiPermission('can_submit_for_approval');
   if (!auth.ok) return auth.response;
 
-  const { parseDaysFromClientPayload } = await import('@/lib/gemini/devotional-days');
+  const { parseDaysFromClientPayload } = await import('@/lib/devotionals/devotional-days');
   let normalized;
   try {
     normalized = parseDaysFromClientPayload(body.days);

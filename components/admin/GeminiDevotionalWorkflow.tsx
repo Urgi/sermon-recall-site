@@ -1,6 +1,6 @@
 'use client';
 
-import type { GeminiDevotionalDay } from '@/lib/gemini/devotional-days';
+import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import {
   canPublishWorkflow,
@@ -34,7 +34,7 @@ export function GeminiDevotionalWorkflow({
   canSubmit,
 }: Props) {
   const router = useRouter();
-  const [previewDays, setPreviewDays] = useState<GeminiDevotionalDay[] | null>(null);
+  const [previewDays, setPreviewDays] = useState<DevotionalDay[] | null>(null);
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -56,7 +56,7 @@ export function GeminiDevotionalWorkflow({
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         hint?: string;
-        days?: GeminiDevotionalDay[];
+        days?: DevotionalDay[];
       };
       if (!res.ok) {
         const msg = data.error ?? 'Generation failed.';
@@ -180,7 +180,7 @@ export function GeminiDevotionalWorkflow({
             disabled={generating || !hasTranscript || !canRegen}
             className="rounded-lg bg-violet-600 px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {generating ? 'Generating preview…' : 'Generate preview with Gemini'}
+            {generating ? 'Generating preview…' : 'Generate preview with AI'}
           </button>
           {!hasTranscript ? (
             <p className="admin-hint text-amber-700 dark:text-amber-200/90">

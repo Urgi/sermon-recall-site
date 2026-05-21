@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { authorizeApiPermission } from '@/lib/auth/server';
-import { parseDaysFromClientPayload } from '@/lib/gemini/devotional-days';
+import { parseDaysFromClientPayload } from '@/lib/devotionals/devotional-days';
 import { writeAuditLog } from '@/lib/audit/log';
 import { notifyChurchNewDevotionals } from '@/lib/push/notify-church-new-devotionals';
 import { createServerSupabaseClient } from '@/lib/supabase/server';

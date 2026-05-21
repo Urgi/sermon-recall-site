@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-/** Shown while Gemini builds or rebuilds the six-day set. */
+/** Shown while AI builds or rebuilds the six-day set. */
 export const DEVOTIONAL_GENERATION_HINTS = [
   'Grounding each day in your sermon…',
   'Tuning tone for a clear, encouraging read…',

@@ -4,8 +4,8 @@ import { useState } from 'react';
 
 import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerationHints';
 import { GeminiPreviewDayEditor } from '@/components/admin/GeminiPreviewDayEditor';
-import type { GeminiDevotionalDay } from '@/lib/gemini/devotional-days';
-import { parseDaysFromClientPayload } from '@/lib/gemini/devotional-days';
+import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
+import { parseDaysFromClientPayload } from '@/lib/devotionals/devotional-days';
 
 type Props = {
   churchId: string;
@@ -13,14 +13,14 @@ type Props = {
   pastorName: string;
   sermonDate: string;
   transcript: string;
-  days: GeminiDevotionalDay[];
-  onDaysChange: (next: GeminiDevotionalDay[]) => void;
+  days: DevotionalDay[];
+  onDaysChange: (next: DevotionalDay[]) => void;
   onBack: () => void;
   finishing: boolean;
   onAddSermon: () => void | Promise<void>;
 };
 
-function MemberDayPreview({ day, sermonTitle }: { day: GeminiDevotionalDay; sermonTitle: string }) {
+function MemberDayPreview({ day, sermonTitle }: { day: DevotionalDay; sermonTitle: string }) {
   return (
     <div className="space-y-2 rounded-lg border border-emerald-500/20 bg-[#050a08] p-4">
       <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/90">
@@ -68,11 +68,11 @@ export function NewSermonDevotionalReviewStep({
   const [regenBusyDay, setRegenBusyDay] = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  function patchDay(dayNumber: number, patch: Partial<GeminiDevotionalDay>) {
+  function patchDay(dayNumber: number, patch: Partial<DevotionalDay>) {
     onDaysChange(days.map((d) => (d.day_number === dayNumber ? { ...d, ...patch } : d)));
   }
 
-  async function regenerateDay(day: GeminiDevotionalDay) {
+  async function regenerateDay(day: DevotionalDay) {
     const instruction = (regenPrompt[day.day_number] ?? '').trim();
     if (!instruction) {
       setLocalError(`Add a short instruction for Day ${day.day_number} before regenerating.`);
@@ -102,7 +102,7 @@ export function NewSermonDevotionalReviewStep({
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         hint?: string;
-        day?: GeminiDevotionalDay;
+        day?: DevotionalDay;
       };
       if (!res.ok) {
         setLocalError(
@@ -158,7 +158,7 @@ export function NewSermonDevotionalReviewStep({
 
               <div>
                 <label className="block text-[13px] font-medium text-admin-muted">
-                  Regenerate this day (optional prompt for Gemini)
+                  Regenerate this day (optional instructions for AI)
                 </label>
                 <textarea
                   value={regenPrompt[d.day_number] ?? ''}
@@ -176,7 +176,7 @@ export function NewSermonDevotionalReviewStep({
                   onClick={() => void regenerateDay(d)}
                   className="mt-2 rounded-lg border border-violet-500/40 bg-violet-950/30 px-3 py-2 text-[13px] font-medium text-violet-200 hover:bg-violet-900/40 disabled:opacity-50"
                 >
-                  {regenBusyDay === d.day_number ? 'Regenerating…' : 'Regenerate with Gemini'}
+                  {regenBusyDay === d.day_number ? 'Regenerating…' : 'Regenerate with AI'}
                 </button>
               </div>
 

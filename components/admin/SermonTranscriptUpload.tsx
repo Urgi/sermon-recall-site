@@ -120,7 +120,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         Upload a <strong className="font-medium text-[#cbd5e1]">.txt</strong> (saved directly) or{' '}
         <strong className="font-medium text-[#cbd5e1]">audio / video</strong> (sent through OpenAI
         transcription — set <code className="text-[11px] text-violet-200">OPENAI_API_KEY</code> on
-        the server). Max about 50 MB. Then run Gemini generation as usual.
+        the server). Max about 50 MB. Then generate devotionals as usual.
       </p>
       <label className="mt-3 inline-block">
         <input

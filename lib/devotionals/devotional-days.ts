@@ -1,6 +1,6 @@
-/** Shape returned by Gemini and accepted by publish API (no DB ids). */
+/** Shape returned by AI generation and accepted by publish API (no DB ids). */
 
-export type GeminiDevotionalDay = {
+export type DevotionalDay = {
   day_number: number;
   title: string;
   main_content: string;
@@ -11,6 +11,9 @@ export type GeminiDevotionalDay = {
   /** Short retrieval question answered before reading the day’s content (required; distinct per day). */
   pre_prompt: string;
 };
+
+/** @deprecated Use DevotionalDay — kept for gradual import renames. */
+export type GeminiDevotionalDay = DevotionalDay;
 
 const MAX_TITLE = 600;
 const MAX_MAIN = 48_000;
@@ -24,23 +27,32 @@ export function clampMinutes(n: number | undefined): number {
   return Math.min(12, Math.max(3, Math.round(n)));
 }
 
-/** Parse model JSON string (same rules as generate route). */
-export function parseDaysFromModelJson(raw: string): GeminiDevotionalDay[] {
+function unwrapDaysPayload(parsed: unknown): unknown {
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && typeof parsed === 'object') {
+    const days = (parsed as { days?: unknown }).days;
+    if (Array.isArray(days)) return days;
+  }
+  return parsed;
+}
+
+/** Parse model JSON string. */
+export function parseDaysFromModelJson(raw: string): DevotionalDay[] {
   let text = raw.trim();
   if (text.startsWith('```')) {
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '');
   }
   const parsed = JSON.parse(text) as unknown;
-  return normalizeDaysArray(parsed);
+  return normalizeDaysArray(unwrapDaysPayload(parsed));
 }
 
 /** Validate body from client before insert. */
-export function parseDaysFromClientPayload(days: unknown): GeminiDevotionalDay[] {
+export function parseDaysFromClientPayload(days: unknown): DevotionalDay[] {
   return normalizeDaysArray(days);
 }
 
 /** Parse a single day from model JSON (regenerate-one-day API). */
-export function parseSingleDayFromModelJson(raw: string, expectedDayNumber: number): GeminiDevotionalDay {
+export function parseSingleDayFromModelJson(raw: string, expectedDayNumber: number): DevotionalDay {
   let text = raw.trim();
   if (text.startsWith('```')) {
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/m, '');
@@ -53,7 +65,7 @@ export function parseSingleDayFromModelJson(raw: string, expectedDayNumber: numb
   return normalizeSingleDay(day, expectedDayNumber);
 }
 
-function normalizeSingleDay(item: unknown, expectedDayNumber: number): GeminiDevotionalDay {
+function normalizeSingleDay(item: unknown, expectedDayNumber: number): DevotionalDay {
   if (!item || typeof item !== 'object') {
     throw new Error('Expected a devotional day object.');
   }
@@ -118,14 +130,14 @@ function normalizeSingleDay(item: unknown, expectedDayNumber: number): GeminiDev
   };
 }
 
-function normalizeDaysArray(parsed: unknown): GeminiDevotionalDay[] {
+function normalizeDaysArray(parsed: unknown): DevotionalDay[] {
   if (!Array.isArray(parsed)) {
     throw new Error('Expected an array of 6 devotionals.');
   }
   if (parsed.length !== 6) {
     throw new Error(`Expected 6 devotionals, got ${parsed.length}.`);
   }
-  const out: GeminiDevotionalDay[] = [];
+  const out: DevotionalDay[] = [];
   const seen = new Set<number>();
   for (let i = 0; i < parsed.length; i++) {
     const item = parsed[i] as Record<string, unknown>;
