@@ -139,9 +139,6 @@ export function ChurchQrCard({
           <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">
             Email join instructions
           </p>
-          <p className="admin-body text-[13px]">
-            Sends an email with the QR image and steps (uses Resend when configured).
-          </p>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="email"
