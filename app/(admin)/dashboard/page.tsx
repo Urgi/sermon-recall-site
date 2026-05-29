@@ -16,7 +16,6 @@ import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { qrPngDataUrl } from '@/lib/church/qr';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
-import { ScheduledBroadcastPanel } from '@/components/admin/ScheduledBroadcastPanel';
 import { PastorEngagementSection } from '@/components/admin/PastorEngagementSection';
 
 type Props = { searchParams: { staff?: string; error?: string } };
@@ -38,9 +37,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
   const canSendNotifications =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
-  const canScheduleNotifications =
-    isApprovedStaff && staffHasPermission(staffRole, profile, 'can_schedule_notifications');
-  const canNotifyChurch = canSendNotifications || canScheduleNotifications;
+  const canNotifyChurch = canSendNotifications;
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
     ownerUserId: church?.owner_user_id,
     userId: user.id,
@@ -186,16 +183,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         <section id="notify-church" className="admin-card p-6">
           <h2 className="admin-section-title">Notify your church</h2>
           <p className="admin-body mt-2">
-            Send a one-time push or schedule for later. Members also receive automatic devotional
-            reminders for published sermon cycles.
+            Send a one-time push to your church. Members also receive automatic devotional reminders
+            for published sermon cycles.
           </p>
-          <div className="mt-4 space-y-8">
+          <div className="mt-4">
             {canSendNotifications ? <PastorBroadcastForm /> : null}
-            {canScheduleNotifications ? (
-              <div className={canSendNotifications ? 'border-t border-admin pt-8' : undefined}>
-                <ScheduledBroadcastPanel />
-              </div>
-            ) : null}
           </div>
         </section>
       ) : null}

@@ -19,9 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     userId: user.id,
   });
   const canViewNotifications =
-    isApprovedStaff &&
-    (staffHasPermission(staffRole, profile, 'can_send_notifications') ||
-      staffHasPermission(staffRole, profile, 'can_schedule_notifications'));
+    isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
 
   const label =
     profile.full_name?.trim() ||
