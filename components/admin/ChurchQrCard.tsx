@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-import {
-  buildMemberJoinEmailHtml,
-  buildMemberJoinEmailText,
-  normalizeChurchCode,
-} from '@/lib/church/member-join';
+import { normalizeChurchCode } from '@/lib/church/member-join';
 
 type Props = {
   churchName: string;
@@ -86,18 +82,6 @@ export function ChurchQrCard({
     }
   }
 
-  const emailHtml = buildMemberJoinEmailHtml({
-    churchName,
-    churchCode: code,
-    joinUrl,
-    qrDataUrl,
-  });
-  const emailText = buildMemberJoinEmailText({
-    churchName,
-    churchCode: code,
-    joinUrl,
-  });
-
   return (
     <div
       className={
@@ -129,13 +113,6 @@ export function ChurchQrCard({
           <button type="button" onClick={downloadPng} className="admin-btn-secondary text-[13px]">
             Download PNG
           </button>
-          <a
-            href="/api/church/qr-image"
-            className="admin-btn-secondary inline-flex items-center text-[13px] no-underline"
-            download
-          >
-            High-res PNG
-          </a>
           <button
             type="button"
             onClick={() => copyText('Join link', joinUrl)}
@@ -150,23 +127,7 @@ export function ChurchQrCard({
           >
             Copy code
           </button>
-          <button
-            type="button"
-            onClick={() => copyText('Email HTML', emailHtml)}
-            className="admin-btn-secondary text-[13px]"
-          >
-            Copy email HTML
-          </button>
-          <button
-            type="button"
-            onClick={() => copyText('Plain email text', emailText)}
-            className="admin-btn-secondary text-[13px]"
-          >
-            Copy email text
-          </button>
         </div>
-
-        <p className="admin-hint break-all font-mono text-[12px]">{joinUrl}</p>
 
         {copyNotice ? (
           <p className="text-[13px] text-emerald-600 dark:text-emerald-400" role="status">
