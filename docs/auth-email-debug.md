@@ -5,10 +5,13 @@
 | Environment | What happens |
 |-------------|----------------|
 | **Local** (`supabase start`) | Emails go to **Inbucket**, not Gmail/Yahoo → http://127.0.0.1:54324 |
-| **Hosted + no Resend** | Supabase built-in mail (~**2/hour**) — often dropped or spam |
-| **Hosted + Resend** | `/api/auth/resend-confirmation` sends via Resend (reliable) |
+| **Hosted** | Supabase sends a **confirmation code** email — paste template from `supabase/templates/confirmation.html` |
 
-`NEXT_PUBLIC_SUPABASE_URL` is **not** your website URL. Confirmation links need `NEXT_PUBLIC_SITE_URL` or `https://admin.sermonrecall.com` in Supabase redirect URLs.
+`NEXT_PUBLIC_SUPABASE_URL` is **not** your website URL. Password reset links still use `NEXT_PUBLIC_SITE_URL` and `/auth/callback?next=reset-password`.
+
+**Signup confirmation** uses a code on `/verify-email` (admin) or `/verify-email` in the mobile app — not email links.
+
+**Password reset** uses a code on `/reset-password` (admin + mobile) — not email links.
 
 ## Local diagnostic UI
 
@@ -22,8 +25,8 @@ Open: **http://localhost:3000/dev/auth-email**
 
 1. Enter the test email (e.g. `shashoturi@gmail.com`)
 2. **Check config** — env vars, user confirmed?, hints
-3. **Dry run** — shows `debugActionLink` (dev only)
-4. Register/resend on login — then check **Inbucket** for Supabase-native mail
+3. **Dry run** — register, then check **Inbucket** for the OTP email
+4. Confirm at **http://localhost:3000/verify-email** with the code
 
 `.env.local` for local site:
 
@@ -40,24 +43,24 @@ RESEND_API_KEY=re_...   # optional locally; use Inbucket without it
 Vercel env:
 
 - `NEXT_PUBLIC_SITE_URL=https://admin.sermonrecall.com`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `RESEND_API_KEY`
-- `INVITE_EMAIL_FROM=Sermon Recall <dev@afaantech.com>`
+- `SUPABASE_SERVICE_ROLE_KEY` (cron, invites — not required for pastor signup OTP)
 
-Supabase → **Authentication → URL configuration**:
+Supabase → **Authentication → Email templates**:
+- **Confirm signup** — code-only body from `supabase/templates/confirmation.html` (`{{ .Token }}`)
+- **Reset password** — code-only body from `supabase/templates/recovery.html` (`{{ .Token }}`)
+
+Supabase → **Authentication → URL configuration** (optional legacy / invite links only):
 
 - Site URL: `https://admin.sermonrecall.com`
 - Redirect: `https://admin.sermonrecall.com/auth/callback`, `https://admin.sermonrecall.com/**`
 
-Resend dashboard → **Emails** — see sent/bounced.
-
-Login resend success copy should say **“sent from Sermon Recall”** — if you only see generic “check spam”, production is on old code or falling back to Supabase mail.
+Login **Resend confirmation code** uses Supabase Auth directly (same as mobile).
 
 ## Turn off confirm (no email required)
 
 **Authentication → Sign In / Providers → Email** → disable **Confirm email** (not the Templates tab).
 
-Pastors can also register via `/api/auth/register-admin` (auto-confirmed) when `SUPABASE_SERVICE_ROLE_KEY` is set.
+Pastors register on `/register` → `/verify-email` with the emailed code. Legacy `/api/auth/register-admin` (auto-confirmed) is unused by the UI.
 
 ## Manual unblock
 

@@ -12,6 +12,8 @@ export default function LoginPage({
     typeof searchParams.next === 'string' && searchParams.next.startsWith('/')
       ? searchParams.next
       : '/dashboard';
+  const initialEmail = typeof searchParams.email === 'string' ? searchParams.email : '';
+  const linkRejected = searchParams.error === 'use_code';
 
   return (
     <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-8 shadow-lg shadow-black/20">
@@ -22,11 +24,15 @@ export default function LoginPage({
       <p className="mt-2 text-[14px] leading-relaxed text-[#94a3b8]">
         Sign in with the email and password for your church admin account.
       </p>
-      <LoginForm nextPath={next} />
+      <LoginForm nextPath={next} initialEmail={initialEmail} linkRejected={linkRejected} />
       <p className="mt-6 text-center text-[13px] text-[#64748b]">
         No account?{' '}
         <Link href="/register" className="text-[#38bdf8] hover:underline">
           Register
+        </Link>
+        {' · '}
+        <Link href="/verify-email" className="text-[#38bdf8] hover:underline">
+          Enter confirmation code
         </Link>
       </p>
     </div>

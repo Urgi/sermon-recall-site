@@ -70,10 +70,12 @@ export async function POST(req: Request) {
 
   const hasExisting = (existingCount ?? 0) > 0;
 
-  if (approvalRequired && wf === 'approved') {
-    if (!hasExisting) {
-      return NextResponse.json({ error: 'No devotionals to publish.' }, { status: 409 });
-    }
+  const publishExistingOnly =
+    hasExisting &&
+    ((!approvalRequired && wf !== 'published') || (approvalRequired && wf === 'approved'));
+
+  if (publishExistingOnly) {
+    // Devotionals already in DB — mark sermon published without re-inserting.
   } else {
     let normalized;
     try {

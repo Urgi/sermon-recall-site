@@ -10,8 +10,8 @@ const EMAIL_RE =
 const MIN_PASSWORD_LENGTH = 8;
 
 /**
- * Pastor admin registration via service role — confirms email immediately so
- * sign-up is not blocked by Supabase Auth email/signup rate limits during testing.
+ * Legacy pastor registration via service role — auto-confirms email (skips OTP flow).
+ * Prefer client signUp + /verify-email for new registrations.
  */
 export async function POST(request: Request) {
   let body: { email?: string; password?: string; fullName?: string };

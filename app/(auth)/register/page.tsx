@@ -16,9 +16,8 @@ export default function RegisterPage() {
         with its code, same as in the mobile app.
       </p>
       <p className="mt-3 rounded-lg border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-[13px] leading-relaxed text-sky-100">
-        When you confirm your email, stay in <strong>this browser</strong>. If Chrome asks to open the
-        Sermon Recall member app, choose <strong>Stay in browser</strong> — pastor setup is only on
-        the admin website.
+        After you register, we email a confirmation code. Enter it on the next screen before you
+        can sign in.
       </p>
       <RegisterForm />
       <p className="mt-6 text-center text-[13px] text-[#64748b]">

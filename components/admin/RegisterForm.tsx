@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
-import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { SIGNUP_CODE_SENT_MESSAGE } from '@/lib/auth/signup-email-messages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -30,39 +30,29 @@ export function RegisterForm() {
     const trimmedEmail = email.trim();
 
     try {
-      const res = await fetch('/api/auth/register-admin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: trimmedEmail,
-          password,
-          fullName: fullName.trim() || undefined,
-        }),
+      const supabase = createBrowserSupabaseClient();
+      const { data, error: signError } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim() || undefined,
+            signup_portal: 'admin_web',
+          },
+        },
       });
-      const json = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        useClientSignup?: boolean;
-        message?: string;
-      };
 
-      if (res.ok && json.ok) {
-        const supabase = createBrowserSupabaseClient();
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password,
-        });
-        setPending(false);
-        if (signInError) {
-          queueAppToast({
-            variant: 'success',
-            message:
-              json.message ??
-              'Account created. Sign in with your email and password.',
-          });
-          router.push('/login');
-          return;
-        }
+      if (signError) {
+        setError(mapAuthError(signError.message));
+        return;
+      }
+      if (data.user?.identities?.length === 0) {
+        setError(
+          'An account with this email already exists. Try signing in or reset your password.',
+        );
+        return;
+      }
+      if (data.session) {
         queueAppToast({
           variant: 'success',
           message: 'Account created. Taking you to your dashboard…',
@@ -72,60 +62,13 @@ export function RegisterForm() {
         return;
       }
 
-      if (json.useClientSignup) {
-        await clientSignUpFallback(trimmedEmail, password);
-        return;
-      }
-
-      setPending(false);
-      setError(json.error ?? mapAuthError('Something went wrong. Please try again.'));
+      queueAppToast({ variant: 'success', message: SIGNUP_CODE_SENT_MESSAGE });
+      router.push(`/verify-email?email=${encodeURIComponent(trimmedEmail)}`);
     } catch {
-      setPending(false);
       setError('Network error. Check your connection and try again.');
+    } finally {
+      setPending(false);
     }
-  }
-
-  async function clientSignUpFallback(trimmedEmail: string, password: string) {
-    const supabase = createBrowserSupabaseClient();
-    const redirectTo = getAdminEmailRedirectUrl();
-
-    const { data, error: signError } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: {
-        emailRedirectTo: redirectTo || undefined,
-        data: {
-          full_name: fullName.trim() || undefined,
-          signup_portal: 'admin_web',
-        },
-      },
-    });
-    setPending(false);
-    if (signError) {
-      setError(mapAuthError(signError.message));
-      return;
-    }
-    if (data.user?.identities?.length === 0) {
-      setError(
-        'An account with this email already exists. Try signing in or reset your password.',
-      );
-      return;
-    }
-    if (data.session) {
-      queueAppToast({
-        variant: 'success',
-        message: 'Account created. Taking you to your dashboard…',
-      });
-      router.refresh();
-      router.push('/dashboard?welcome=1');
-      return;
-    }
-    queueAppToast({
-      variant: 'success',
-      message:
-        'We sent a confirmation link to your email. Open it in this browser (Chrome/Safari) — do not open the member app when prompted. Check spam if needed.',
-    });
-    router.push('/login?email_sent=1');
   }
 
   return (

@@ -4,17 +4,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { USE_CODE_NOT_LINK_MESSAGE } from '@/lib/auth/signup-email-messages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
   nextPath: string;
+  initialEmail?: string;
+  linkRejected?: boolean;
 };
 
-export function LoginForm({ nextPath }: Props) {
+export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -47,7 +49,7 @@ export function LoginForm({ nextPath }: Props) {
       if (signError) {
         const msg = signError.message.toLowerCase();
         setError(mapAuthError(signError.message));
-        if (msg.includes('not confirmed')) {
+        if (msg.includes('not confirmed') || msg.includes('confirm')) {
           setShowResend(true);
         }
         return;
@@ -70,57 +72,16 @@ export function LoginForm({ nextPath }: Props) {
     setResendPending(true);
     setResendNotice(null);
     try {
-      const res = await fetch('/api/auth/resend-confirmation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+      const supabase = createBrowserSupabaseClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
       });
-      const json = (await res.json()) as {
-        message?: string;
-        error?: string;
-        alreadyConfirmed?: boolean;
-        useClientFallback?: boolean;
-        sentVia?: string;
-        redirectTo?: string;
-      };
-
-      if (res.ok && json.message) {
-        const via = json.sentVia ? ` (via ${json.sentVia})` : '';
-        setResendNotice(`${json.message}${via}`);
+      if (resendError) {
+        setResendNotice(mapAuthError(resendError.message));
         return;
       }
-
-      if (json.useClientFallback) {
-        const redirectTo = getAdminEmailRedirectUrl();
-        if (!redirectTo) {
-          setResendNotice(
-            json.error ??
-              'Missing site URL configuration. Set NEXT_PUBLIC_SITE_URL on the server.',
-          );
-          return;
-        }
-        const supabase = createBrowserSupabaseClient();
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email: email.trim(),
-          options: { emailRedirectTo: redirectTo },
-        });
-        if (resendError) {
-          setResendNotice(mapAuthError(resendError.message));
-          return;
-        }
-        setResendNotice(
-          `Supabase built-in mail only (~2/hour). ${json.error ?? 'Check spam or use /dev/auth-email locally.'}`,
-        );
-        return;
-      }
-
-      const detail = json.error ?? 'Could not send confirmation email.';
-      setResendNotice(
-        process.env.NODE_ENV === 'development'
-          ? `${detail} Open /dev/auth-email for diagnostics.`
-          : detail,
-      );
+      setResendNotice('Confirmation code sent. Check inbox and spam.');
     } catch {
       setResendNotice('Network error. Check your connection and try again.');
     } finally {
@@ -128,8 +89,18 @@ export function LoginForm({ nextPath }: Props) {
     }
   }
 
+  const verifyHref = email.trim()
+    ? `/verify-email?email=${encodeURIComponent(email.trim())}`
+    : '/verify-email';
+
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      {linkRejected ? (
+        <p className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100" role="alert">
+          {USE_CODE_NOT_LINK_MESSAGE}
+        </p>
+      ) : null}
+
       <div>
         <label htmlFor="login-email" className="block text-[13px] font-medium text-[#94a3b8]">
           Email
@@ -173,14 +144,19 @@ export function LoginForm({ nextPath }: Props) {
         </p>
       ) : null}
       {showResend ? (
-        <button
-          type="button"
-          disabled={resendPending || pending}
-          onClick={() => void onResendConfirmation()}
-          className="text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
-        >
-          {resendPending ? 'Sending…' : 'Resend confirmation email'}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={resendPending || pending}
+            onClick={() => void onResendConfirmation()}
+            className="text-left text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+          >
+            {resendPending ? 'Sending…' : 'Resend confirmation code'}
+          </button>
+          <Link href={verifyHref} className="text-[13px] font-medium text-[#38bdf8] hover:underline">
+            Enter confirmation code
+          </Link>
+        </div>
       ) : null}
       {resendNotice ? (
         <p className="text-[13px] text-[#86efac]" role="status">

@@ -1,56 +1,39 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
-import { getAdminEmailRedirectUrl } from '@/lib/auth/admin-callback-url';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { PASSWORD_RESET_CODE_SENT_MESSAGE } from '@/lib/auth/signup-email-messages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function ForgotPasswordForm() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [sent, setSent] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const supabase = createBrowserSupabaseClient();
-    const redirectTo = getAdminEmailRedirectUrl('/reset-password');
-
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
-    });
-    setPending(false);
-    if (resetError) {
-      setError(mapAuthError(resetError.message));
-      return;
+    const trimmedEmail = email.trim();
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+      if (resetError) {
+        setError(mapAuthError(resetError.message));
+        return;
+      }
+      queueAppToast({ variant: 'success', message: PASSWORD_RESET_CODE_SENT_MESSAGE });
+      router.push(`/reset-password?email=${encodeURIComponent(trimmedEmail)}`);
+    } catch {
+      setError('Network error. Check your connection and try again.');
+    } finally {
+      setPending(false);
     }
-    setSent(true);
-    queueAppToast({
-      variant: 'success',
-      message:
-        'If an account exists for that email, we sent password reset instructions. Check your inbox and spam folder.',
-    });
-  }
-
-  if (sent) {
-    return (
-      <div className="mt-6 space-y-4">
-        <p className="text-[14px] leading-relaxed text-[#86efac]" role="status">
-          Check your email for a reset link. It expires after a short time — request another if needed.
-        </p>
-        <Link
-          href="/login"
-          className="inline-block text-[14px] font-medium text-[#38bdf8] hover:underline"
-        >
-          Back to sign in
-        </Link>
-      </div>
-    );
   }
 
   return (
@@ -80,11 +63,15 @@ export function ForgotPasswordForm() {
         disabled={pending}
         className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
       >
-        {pending ? 'Sending…' : 'Send reset link'}
+        {pending ? 'Sending…' : 'Send reset code'}
       </button>
       <p className="text-center text-[13px] text-[#64748b]">
         <Link href="/login" className="text-[#38bdf8] hover:underline">
           Back to sign in
+        </Link>
+        {' · '}
+        <Link href="/reset-password" className="text-[#38bdf8] hover:underline">
+          Already have a code?
         </Link>
       </p>
     </form>

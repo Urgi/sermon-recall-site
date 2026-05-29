@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
-import type { Permission, StaffAuthContext, ChurchSummary, UserProfile } from '@/lib/auth/profile';
+import type { Permission, StaffAuthContext, ChurchSummary, ChurchSettingsRow, UserProfile } from '@/lib/auth/profile';
 import { staffHasPermission } from '@/lib/auth/profile';
 import { buildStaffAuthContext } from '@/lib/auth/membership';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -169,4 +169,17 @@ export async function getChurchForProfile(
     .eq('id', churchId)
     .single();
   return data as ChurchSummary | null;
+}
+
+export async function getChurchSettingsForProfile(
+  churchId: string | null,
+): Promise<ChurchSettingsRow | null> {
+  if (!churchId) return null;
+  const supabase = createServerSupabaseClient();
+  const { data } = await supabase
+    .from('churches')
+    .select('id, name, church_code, pastor_name, timezone, require_devotional_approval')
+    .eq('id', churchId)
+    .single();
+  return data as ChurchSettingsRow | null;
 }

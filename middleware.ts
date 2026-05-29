@@ -14,6 +14,7 @@ export async function middleware(request: NextRequest) {
   const isAuthPage =
     path === '/login' ||
     path === '/register' ||
+    path === '/verify-email' ||
     path === '/forgot-password' ||
     path === '/reset-password';
 

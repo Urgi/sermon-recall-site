@@ -88,12 +88,6 @@ export const PERMISSION_MATRIX_ROWS: PermissionMatrixRow[] = [
     tooltip: 'Send immediate push notifications to members.',
   },
   {
-    id: 'schedule_notifications',
-    label: 'Schedule notifications',
-    permissions: ['can_schedule_notifications'],
-    tooltip: 'Schedule push notifications for a future time.',
-  },
-  {
     id: 'manage_church_settings',
     label: 'Manage church settings',
     permissions: ['can_manage_church_settings'],

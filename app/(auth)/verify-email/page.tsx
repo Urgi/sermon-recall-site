@@ -1,12 +1,12 @@
-import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
+import { VerifyEmailForm } from '@/components/admin/VerifyEmailForm';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 
-export default function ResetPasswordPage({
+export default function VerifyEmailPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const initialEmail = typeof searchParams.email === 'string' ? searchParams.email : '';
+  const email = typeof searchParams.email === 'string' ? searchParams.email : '';
   const linkRejected = searchParams.error === 'use_code';
 
   return (
@@ -14,8 +14,8 @@ export default function ResetPasswordPage({
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
-      <h1 className="text-xl font-bold text-white">Choose a new password</h1>
-      <ResetPasswordForm initialEmail={initialEmail} linkRejected={linkRejected} />
+      <h1 className="text-xl font-bold text-white">Confirm your email</h1>
+      <VerifyEmailForm initialEmail={email} linkRejected={linkRejected} />
     </div>
   );
 }

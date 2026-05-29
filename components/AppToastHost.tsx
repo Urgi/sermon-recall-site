@@ -9,10 +9,13 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type VisibleToast = PendingAppToast & { id: number };
 
-const AUTO_DISMISS_MS = 9000;
+import {
+  SIGNUP_CODE_SENT_MESSAGE,
+  USE_CODE_NOT_LINK_MESSAGE,
+  USE_RESET_CODE_NOT_LINK_MESSAGE,
+} from '@/lib/auth/signup-email-messages';
 
-const EMAIL_SENT_MESSAGE =
-  'We sent a confirmation link to your email. Open it on this device, then sign in. Check spam if nothing arrives in a few minutes.';
+const AUTO_DISMISS_MS = 9000;
 
 const CONFIRMED_MESSAGE =
   'Your email is confirmed! Sign in below, or we will take you to your dashboard if you are already signed in.';
@@ -22,7 +25,7 @@ const WELCOME_MESSAGE =
 
 function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | null {
   if (searchParams.get('email_sent') === '1') {
-    return { message: EMAIL_SENT_MESSAGE, variant: 'success' };
+    return { message: SIGNUP_CODE_SENT_MESSAGE, variant: 'success' };
   }
   if (searchParams.get('welcome') === '1') {
     return { message: WELCOME_MESSAGE, variant: 'success' };
@@ -40,16 +43,26 @@ function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | nu
   const error = searchParams.get('error');
   if (error === 'missing_auth_code') {
     return {
-      message:
-        'This confirmation link is incomplete. Open the full link from your email again (try a different browser if it keeps failing).',
+      message: 'Open the verify email screen and enter the confirmation code from your email.',
       variant: 'error',
+      href: '/verify-email',
+      hrefLabel: 'Enter confirmation code',
     };
   }
-  if (error === 'confirmation_failed' || error === 'wrong_client') {
+  if (error === 'confirmation_failed' || error === 'use_code') {
     return {
-      message:
-        'This confirmation link must open in your browser on the admin website (not the member app). Sign in here after confirming, or open the email link in Chrome/Safari and choose Stay in browser.',
+      message: USE_CODE_NOT_LINK_MESSAGE,
       variant: 'error',
+      href: '/verify-email',
+      hrefLabel: 'Enter confirmation code',
+    };
+  }
+  if (error === 'reset_use_code') {
+    return {
+      message: USE_RESET_CODE_NOT_LINK_MESSAGE,
+      variant: 'error',
+      href: '/reset-password',
+      hrefLabel: 'Enter reset code',
     };
   }
   if (searchParams.get('setup') === 'failed') {

@@ -26,6 +26,15 @@ export type ChurchSummary = {
   owner_user_id: string | null;
 };
 
+export type ChurchSettingsRow = {
+  id: string;
+  name: string;
+  church_code: string;
+  pastor_name: string | null;
+  timezone: string;
+  require_devotional_approval: boolean;
+};
+
 export type AuthContext = {
   user: Pick<User, 'id' | 'email'>;
   profile: UserProfile;

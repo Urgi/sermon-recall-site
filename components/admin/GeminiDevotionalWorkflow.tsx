@@ -172,6 +172,21 @@ export function GeminiDevotionalWorkflow({
         </button>
       ) : null}
 
+      {!approvalRequired &&
+      canPublish &&
+      hasExistingDevotionals &&
+      workflowStatus !== 'published' &&
+      workflowStatus !== 'approved' ? (
+        <button
+          type="button"
+          onClick={() => void publishApproved()}
+          disabled={publishing}
+          className="admin-btn-primary"
+        >
+          {publishing ? 'Publishing…' : 'Publish devotionals to app'}
+        </button>
+      ) : null}
+
       {!previewDays && workflowStatus !== 'approved' ? (
         <div className="space-y-2">
           <button
