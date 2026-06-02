@@ -4,15 +4,15 @@ import path from 'node:path';
 
 import { CHUNK_DURATION_SEC } from '@/lib/transcription/constants';
 
-function ffmpegPath(): string {
+export function ffmpegPath(): string {
   return process.env.FFMPEG_PATH?.trim() || 'ffmpeg';
 }
 
-function ytDlpPath(): string {
+export function ytDlpPath(): string {
   return process.env.YT_DLP_PATH?.trim() || 'yt-dlp';
 }
 
-function run(cmd: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+export function run(cmd: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
@@ -42,52 +42,6 @@ export async function probeDurationSeconds(filePath: string): Promise<number> {
     throw new Error('Invalid audio duration.');
   }
   return sec;
-}
-
-function ytDlpDownloadArgs(url: string, template: string): string[] {
-  const args = [
-    '--no-playlist',
-    '--no-warnings',
-    '-f',
-    'bestaudio/best',
-    '-o',
-    template,
-    // Helps on some hosts; datacenter IPs (Railway) often still need cookies — see YT_DLP_COOKIES_FILE.
-    '--extractor-args',
-    'youtube:player_client=android,web',
-  ];
-  const cookiesFile = process.env.YT_DLP_COOKIES_FILE?.trim();
-  if (cookiesFile) {
-    args.push('--cookies', cookiesFile);
-  }
-  const extra = process.env.YT_DLP_EXTRA_ARGS?.trim();
-  if (extra) {
-    args.push(...extra.split(/\s+/).filter(Boolean));
-  }
-  args.push(url);
-  return args;
-}
-
-export async function downloadYouTubeAudio(url: string, outDir: string): Promise<string> {
-  await fs.mkdir(outDir, { recursive: true });
-  const template = path.join(outDir, 'youtube.%(ext)s');
-  try {
-    await run(ytDlpPath(), ytDlpDownloadArgs(url, template));
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/not a bot|Sign in to confirm|Precondition check failed/i.test(msg)) {
-      throw new Error(
-        'YouTube blocked download from this server. Upload an MP3/M4A file instead, or set YT_DLP_COOKIES_FILE on the worker (exported YouTube cookies).',
-      );
-    }
-    throw e;
-  }
-  const files = await fs.readdir(outDir);
-  const audio = files.find((f) => f.startsWith('youtube.'));
-  if (!audio) {
-    throw new Error('YouTube download produced no file.');
-  }
-  return path.join(outDir, audio);
 }
 
 /** Normalize to mono 64 kbps MP3 for transcription. */

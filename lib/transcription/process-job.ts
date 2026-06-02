@@ -11,11 +11,11 @@ import {
   type TranscriptionJobRow,
 } from '@/lib/transcription/constants';
 import {
-  downloadYouTubeAudio,
   normalizeToMp3,
   probeDurationSeconds,
   splitMp3IntoChunks,
 } from '@/lib/transcription/ffmpeg';
+import { downloadYouTubeAudio } from '@/lib/transcription/youtube-download';
 import { transcribeAudioBuffer } from '@/lib/stt/transcribe';
 
 type ProgressFn = (chunksDone: number, chunksTotal: number) => Promise<void>;

@@ -26,6 +26,7 @@ import {
   failTranscriptionJob,
   processTranscriptionJob,
 } from '@/lib/transcription/process-job';
+import { materializeYoutubeCookiesAtStartup } from '@/lib/transcription/youtube-cookies';
 
 const POLL_MS = Number(process.env.WORKER_POLL_MS ?? 2000);
 const WORKER_ID =
@@ -70,6 +71,7 @@ async function claimJob(admin: SupabaseClient): Promise<TranscriptionJobRow | nu
 }
 
 async function runLoop() {
+  await materializeYoutubeCookiesAtStartup();
   const admin = requireEnv();
   console.info(
     `[worker] transcription worker ${WORKER_ID} started (poll ${POLL_MS}ms, recommended replicas: ${RECOMMENDED_WORKER_REPLICAS})`,
