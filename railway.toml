@@ -1,0 +1,9 @@
+# Worker-only Railway service — admin Next.js app stays on Vercel.
+# https://docs.railway.com/config-as-code
+
+[build]
+buildCommand = "npm ci"
+
+[deploy]
+startCommand = "npm run worker:transcription"
+restartPolicyType = "ON_FAILURE"

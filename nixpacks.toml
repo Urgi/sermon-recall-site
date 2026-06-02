@@ -1,6 +1,8 @@
 # Transcription worker on Railway — not the Next.js admin app (that stays on Vercel).
 # Installs ffmpeg + yt-dlp; skips `next build`.
 
+providers = []
+
 [phases.setup]
 aptPkgs = ["ffmpeg", "yt-dlp"]
 
