@@ -2,7 +2,8 @@
 # https://docs.railway.com/config-as-code
 
 [build]
-buildCommand = "npm ci"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.worker"
 
 [deploy]
 startCommand = "npm run worker:transcription"
