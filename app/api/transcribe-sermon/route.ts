@@ -23,8 +23,8 @@ function safeStoragePath(userId: string, sermonId: string, raw: string): string 
 }
 
 /**
- * Download a file from `sermon-media` (path `{userId}/{sermonId}/...`), transcribe with OpenAI
- * Whisper (audio/video) or read plain text, then save as `sermons.transcript`.
+ * Legacy sync transcription on Vercel (120s cap). Prefer POST /api/transcription/jobs + worker.
+ * Kept for small dev tests only.
  */
 export async function POST(req: Request) {
   let body: { sermonId?: string; storagePath?: string };

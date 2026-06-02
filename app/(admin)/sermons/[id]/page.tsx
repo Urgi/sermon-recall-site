@@ -12,8 +12,8 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { EditableDevotionalPreview } from '@/components/admin/EditableDevotionalPreview';
 import { GeminiDevotionalWorkflow } from '@/components/admin/GeminiDevotionalWorkflow';
 import { SermonWorkflowPanel } from '@/components/admin/SermonWorkflowPanel';
-import { SeedStubDevotionalsButton } from '@/components/admin/SeedStubDevotionalsButton';
 import { DemoSimulateEarlyDaysPanel } from '@/components/admin/DemoSimulateEarlyDaysPanel';
+import { SermonTranscriptLinkCard } from '@/components/admin/SermonTranscriptLinkCard';
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
 
@@ -92,22 +92,23 @@ export default async function SermonDetailPage({ params }: Props) {
           />
         ) : null}
 
-        {canEdit ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
-        {sermon.transcript ? (
-          <div className="admin-card mt-6 p-5">
-            <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">
-              Sermon script & notes
-            </h2>
-            <p className="admin-body mt-2 whitespace-pre-wrap">{sermon.transcript}</p>
-          </div>
-        ) : null}
+        {canEdit && !hasTranscript ? <SermonTranscriptUpload sermonId={sermon.id} /> : null}
       </div>
+
+      {hasTranscript ? (
+        <section>
+          <SermonTranscriptLinkCard
+            sermonId={sermon.id}
+            characterCount={sermon.transcript!.trim().length}
+          />
+        </section>
+      ) : null}
 
       <section>
         <h2 className="admin-section-title">Six-day devotionals</h2>
         <p className="admin-body mt-1">
           {canEdit
-            ? 'Generate a preview, submit for approval if required, then publish.'
+            ? 'We build a preview automatically when your sermon text is ready. Submit or publish when you’re happy with it.'
             : 'Read-only view.'}
         </p>
 
@@ -115,7 +116,11 @@ export default async function SermonDetailPage({ params }: Props) {
           <div className="mt-4 admin-card p-5">
             <GeminiDevotionalWorkflow
               sermonId={sermon.id}
+              churchId={profile.church_id!}
               sermonTitle={sermon.title}
+              pastorName={sermon.pastor_name ?? ''}
+              sermonDate={sermon.sermon_date ?? ''}
+              transcript={sermon.transcript ?? ''}
               hasTranscript={hasTranscript}
               hasExistingDevotionals={days.length > 0}
               approvalRequired={approvalRequired}
@@ -127,14 +132,11 @@ export default async function SermonDetailPage({ params }: Props) {
         ) : null}
 
         {days.length === 0 ? (
-          <div className="admin-card mt-4 border-dashed p-8 text-center">
-            <p className="admin-body">No devotionals yet.</p>
-            {canEdit ? (
-              <div className="mt-6">
-                <SeedStubDevotionalsButton sermonId={sermon.id} />
-              </div>
-            ) : null}
-          </div>
+          canEdit ? null : (
+            <div className="admin-card mt-4 border-dashed p-8 text-center">
+              <p className="admin-body">No devotionals yet.</p>
+            </div>
+          )
         ) : (
           <ul className="mt-4 space-y-6">
             {days.map((d) => (

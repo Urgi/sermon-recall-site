@@ -3,16 +3,18 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase/client';
-import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
+import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
+import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
+import { TRANSCRIPTION_LENGTH_HINT } from '@/lib/transcription/constants';
+import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
 type Props = {
   churchId: string;
 };
 
-type InputKind = 'text' | 'file';
+type InputKind = 'text' | 'file' | 'youtube';
 
 function safeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120) || 'upload';
@@ -26,6 +28,8 @@ export function NewSermonForm({ churchId }: Props) {
   const [sermonDate, setSermonDate] = useState('');
   const [scriptOrNotes, setScriptOrNotes] = useState('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [queuedJobId, setQueuedJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [mediaProgress, setMediaProgress] = useState<{
@@ -38,13 +42,43 @@ export function NewSermonForm({ churchId }: Props) {
     setInputKind(next);
     setError(null);
     setMediaProgress(null);
-    if (next === 'text') setMediaFile(null);
-    if (next === 'file') setScriptOrNotes('');
+    setQueuedJobId(null);
+    if (next === 'text') {
+      setMediaFile(null);
+      setYoutubeUrl('');
+    }
+    if (next === 'file') {
+      setScriptOrNotes('');
+      setYoutubeUrl('');
+    }
+    if (next === 'youtube') {
+      setScriptOrNotes('');
+      setMediaFile(null);
+    }
+  }
+
+  async function queueTranscription(
+    sermonId: string,
+    payload: { sourceType: 'storage'; storagePath: string } | { sourceType: 'youtube'; youtubeUrl: string },
+  ): Promise<string | null> {
+    const res = await fetch('/api/transcription/jobs', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sermonId, ...payload }),
+    });
+    const json = (await res.json()) as { error?: string; jobId?: string };
+    if (!res.ok) {
+      setError(json.error ?? 'Could not queue transcription.');
+      return null;
+    }
+    return json.jobId ?? null;
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setQueuedJobId(null);
 
     const t = title.trim();
     if (!t) {
@@ -59,7 +93,7 @@ export function NewSermonForm({ churchId }: Props) {
       if (inputKind === 'text') {
         const notes = scriptOrNotes.trim();
         if (!notes) {
-          setError('Paste sermon text, or switch to “Audio / video / .txt file”.');
+          setError('Paste sermon text, or choose another source.');
           return;
         }
 
@@ -72,6 +106,7 @@ export function NewSermonForm({ churchId }: Props) {
             sermon_date: sermonDate || null,
             transcript: notes,
             status: 'processing' as const,
+            transcript_status: 'completed',
           })
           .select('id')
           .single();
@@ -84,6 +119,42 @@ export function NewSermonForm({ churchId }: Props) {
           router.push(`/sermons/${data.id}`);
           router.refresh();
         }
+        return;
+      }
+
+      if (inputKind === 'youtube') {
+        const url = youtubeUrl.trim();
+        if (!url) {
+          setError('Enter a YouTube URL.');
+          return;
+        }
+
+        const { data: created, error: insertError } = await supabase
+          .from('sermons')
+          .insert({
+            church_id: churchId,
+            title: t,
+            pastor_name: pastorName.trim() || null,
+            sermon_date: sermonDate || null,
+            transcript: null,
+            status: 'processing' as const,
+            transcript_status: 'queued',
+          })
+          .select('id')
+          .single();
+
+        if (insertError || !created?.id) {
+          setError(insertError?.message ?? 'Could not create sermon.');
+          return;
+        }
+
+        const jobId = await queueTranscription(created.id, {
+          sourceType: 'youtube',
+          youtubeUrl: url,
+        });
+        if (!jobId) return;
+        setQueuedJobId(jobId);
+        router.push(`/sermons/${created.id}`);
         return;
       }
 
@@ -119,6 +190,7 @@ export function NewSermonForm({ churchId }: Props) {
             sermon_date: sermonDate || null,
             transcript: text,
             status: 'processing' as const,
+            transcript_status: 'completed',
           })
           .select('id')
           .single();
@@ -143,19 +215,16 @@ export function NewSermonForm({ churchId }: Props) {
           sermon_date: sermonDate || null,
           transcript: null,
           status: 'processing' as const,
+          transcript_status: 'queued',
         })
         .select('id')
         .single();
 
-      if (insertError) {
-        setError(insertError.message);
+      if (insertError || !created?.id) {
+        setError(insertError?.message ?? 'Could not create sermon.');
         return;
       }
-      const sermonId = created?.id;
-      if (!sermonId) {
-        setError('Could not create sermon.');
-        return;
-      }
+      const sermonId = created.id;
 
       setMediaProgress({
         phase: 'upload',
@@ -179,20 +248,13 @@ export function NewSermonForm({ churchId }: Props) {
         bytes: mediaFile.size,
       });
 
-      const res = await fetch('/api/transcribe-sermon', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sermonId, storagePath: path }),
+      const jobId = await queueTranscription(sermonId, {
+        sourceType: 'storage',
+        storagePath: path,
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? 'Transcription failed.');
-        return;
-      }
-
+      if (!jobId) return;
+      setQueuedJobId(jobId);
       router.push(`/sermons/${sermonId}`);
-      router.refresh();
     } catch {
       setError('Something went wrong.');
     } finally {
@@ -209,10 +271,12 @@ export function NewSermonForm({ churchId }: Props) {
 
   const submitLabel =
     pending && inputKind === 'file' && mediaFile && fileNeedsTranscribe(mediaFile)
-      ? 'Transcribing…'
-      : pending
-        ? 'Saving…'
-        : 'Add sermon';
+      ? 'Uploading…'
+      : pending && inputKind === 'youtube'
+        ? 'Queuing…'
+        : pending
+          ? 'Saving…'
+          : 'Add sermon';
 
   return (
     <form onSubmit={(ev) => void onSubmit(ev)} className="mx-auto max-w-3xl space-y-5">
@@ -252,9 +316,7 @@ export function NewSermonForm({ churchId }: Props) {
       <fieldset className="admin-fieldset space-y-3">
         <legend>Sermon source</legend>
         <p className="admin-hint leading-relaxed">
-          Choose one: paste text, or upload a file. Audio and video are transcribed on the server (
-          <code className="text-[11px] text-violet-600 dark:text-violet-200">OPENAI_API_KEY</code>
-          ).
+          Paste text, upload audio or video, or paste a YouTube link. {TRANSCRIPTION_LENGTH_HINT}
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -276,7 +338,17 @@ export function NewSermonForm({ churchId }: Props) {
               onChange={() => onModeChange('file')}
               className="text-sky-500"
             />
-            Audio / video / .txt file
+            Audio / video / .txt
+          </label>
+          <label className="admin-radio-choice">
+            <input
+              type="radio"
+              name="inputKind"
+              checked={inputKind === 'youtube'}
+              onChange={() => onModeChange('youtube')}
+              className="text-sky-500"
+            />
+            YouTube URL
           </label>
         </div>
 
@@ -296,13 +368,15 @@ export function NewSermonForm({ churchId }: Props) {
               className="admin-input mt-2 resize-y leading-relaxed placeholder:text-[var(--admin-dim)]"
             />
           </div>
-        ) : (
+        ) : null}
+
+        {inputKind === 'file' ? (
           <div>
             <span className="admin-label">
               File <span className="text-red-500">*</span>
             </span>
             <p className="admin-hint mt-1">
-              .txt is saved directly; audio or video is uploaded then transcribed (may take a minute).
+              .txt is saved directly; audio or video is uploaded then queued for transcription.
             </p>
             <label className="mt-2 inline-block">
               <input
@@ -328,7 +402,24 @@ export function NewSermonForm({ churchId }: Props) {
               </p>
             ) : null}
           </div>
-        )}
+        ) : null}
+
+        {inputKind === 'youtube' ? (
+          <div>
+            <label htmlFor="sermon-youtube" className="admin-label">
+              YouTube URL <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="sermon-youtube"
+              name="youtubeUrl"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=…"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              className="admin-input mt-1"
+            />
+          </div>
+        ) : null}
       </fieldset>
 
       {error ? (
@@ -341,6 +432,13 @@ export function NewSermonForm({ churchId }: Props) {
           phase={mediaProgress.phase}
           phaseStartedAt={mediaProgress.phaseStartedAt}
           fileBytes={mediaProgress.bytes}
+        />
+      ) : null}
+      {queuedJobId ? (
+        <TranscriptionJobPoller
+          jobId={queuedJobId}
+          fileBytes={mediaFile?.size}
+          onComplete={() => router.refresh()}
         />
       ) : null}
       <div className="flex flex-wrap gap-3 pt-2">

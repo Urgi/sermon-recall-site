@@ -1,9 +1,8 @@
 /**
- * OpenAI /audio/transcriptions has no progress API. We surface upload vs transcribe phases
- * and a time+size-based estimate so the UI isn't a silent spinner.
+ * Groq / worker pipeline has no fine-grained progress API. Heuristic for upload vs transcribe phases.
  */
 
-export type TranscribePhase = 'upload' | 'transcribe';
+export type TranscribePhase = 'upload' | 'transcribe' | 'devotionals';
 
 export type TranscribeProgressView = {
   percent: number;
@@ -18,12 +17,15 @@ function fmtSec(totalSec: number): string {
   return m > 0 ? `${m}m ${r}s` : `${r}s`;
 }
 
-/**
- * Expected transcribe-only duration (seconds), clamped. Tunable heuristic.
- */
+/** Expected transcribe-only duration (seconds) — Groq worker path is much faster than legacy Whisper. */
 export function estimateTranscribeSeconds(fileBytes: number): number {
   const mb = fileBytes / (1024 * 1024);
-  return Math.round(Math.max(25, Math.min(600, 18 + mb * 22)));
+  return Math.round(Math.max(20, Math.min(180, 12 + mb * 3)));
+}
+
+/** Expected six-day preview generation (seconds). */
+export function estimateDevotionalSeconds(): number {
+  return 55;
 }
 
 export function buildTranscribeProgressView(
@@ -32,7 +34,7 @@ export function buildTranscribeProgressView(
   fileBytes: number,
 ): TranscribeProgressView {
   if (phase === 'upload') {
-    const p = Math.min(22, 3 + Math.floor(phaseElapsedSec * 6));
+    const p = Math.min(18, 3 + Math.floor(phaseElapsedSec * 5));
     return {
       percent: p,
       title: 'Uploading file',
@@ -43,27 +45,53 @@ export function buildTranscribeProgressView(
     };
   }
 
+  if (phase === 'devotionals') {
+    const est = estimateDevotionalSeconds();
+    const t = Math.min(1, phaseElapsedSec / est);
+    const percent = 62 + Math.floor(t * 37);
+    const remaining = Math.max(0, est - phaseElapsedSec);
+
+    let detail: string;
+    if (phaseElapsedSec < 3) {
+      detail = 'Drafting all six days from your sermon…';
+    } else if (remaining > 20) {
+      detail = `Often about ${fmtSec(remaining * 0.6)}–${fmtSec(remaining * 1.1)} left (estimate).`;
+    } else if (remaining > 5) {
+      detail = `Often about ${fmtSec(remaining)} left (estimate).`;
+    } else if (remaining > 0) {
+      detail = 'Almost done — polishing the six-day preview…';
+    } else {
+      detail = 'Still generating — complex sermons can take a little longer.';
+    }
+
+    return {
+      percent: Math.min(percent, 99),
+      title: 'Building six-day preview',
+      detail,
+    };
+  }
+
   const est = estimateTranscribeSeconds(fileBytes);
   const t = Math.min(1, phaseElapsedSec / est);
-  const percent = 22 + Math.floor(t * 77);
+  const percent = 18 + Math.floor(t * 44);
   const remaining = Math.max(0, est - phaseElapsedSec);
 
   let detail: string;
   if (phaseElapsedSec < 3) {
-    detail = 'Starting Whisper transcription on the server…';
-  } else if (remaining > 90) {
-    detail = `Rough guess: ${fmtSec(remaining * 0.7)}–${fmtSec(remaining * 1.4)} left (depends on load).`;
-  } else if (remaining > 15) {
+    detail = 'Worker is preparing and transcribing with Groq…';
+  } else if (remaining > 60) {
+    detail = `Often ${fmtSec(remaining * 0.5)}–${fmtSec(remaining * 1.2)} left (YouTube downloads take longer).`;
+  } else if (remaining > 10) {
     detail = `Often about ${fmtSec(remaining)} left (estimate).`;
   } else if (remaining > 0) {
     detail = 'Almost done — wrapping up…';
   } else {
-    detail = 'Still processing — long files can exceed the estimate.';
+    detail = 'Still processing — large files or YouTube can exceed the estimate.';
   }
 
   return {
-    percent: Math.min(percent, 99),
-    title: 'Transcribing with OpenAI',
+    percent: Math.min(percent, 61),
+    title: 'Transcribing sermon',
     detail,
   };
 }

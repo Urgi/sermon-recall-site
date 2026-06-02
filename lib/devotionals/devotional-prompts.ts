@@ -24,7 +24,7 @@ Requirements:
 - Tone: warm, clear, non-academic, suitable for busy adults (~3–6 minute read each).
 - Each day needs a distinct title (include "Day N —" prefix in the title).
 - Scripture: prefer one primary reference per day in scripture_reference; optional short scripture_text quote if it fits (may be null).
-- main_content: 2–4 short paragraphs per day (plain text, no markdown headings).
+- main_content: 2–4 short paragraphs per day (plain text, no markdown headings). Separate each paragraph with a blank line.
 - reflection_question: one open question for journaling or discussion.
 - estimated_minutes: integer 3–6.
 - pre_prompt (REQUIRED for every day): one short sentence the member answers from memory BEFORE reading that day’s main_content. Ground it in the sermon transcript and in that day’s specific angle (title/theme)—not generic filler. It must be a retrieval question (recall, paraphrase, or “what did the preacher say about…”), not a preview of the reading. Do not copy or closely paraphrase sentences from main_content; do not quote scripture you will show later. Use a different angle than the reflection_question. All six pre_prompt strings must be clearly different from each other (no duplicates or near-duplicates).
@@ -77,6 +77,7 @@ ${params.instruction}
 Rules:
 - Return ONLY valid JSON (no markdown fences): one object with keys day_number, title, main_content, scripture_reference (string or null), scripture_text (string or null), reflection_question, estimated_minutes (integer 3–6), pre_prompt (required string).
 - day_number must be exactly ${params.dayNumber}.
+- main_content: 2–4 short paragraphs separated by blank lines.
 - pre_prompt: one short retrieval question from memory before reading; must not preview main_content; must differ from reflection_question; must differ from every sibling pre_prompt above.
 
 --- SERMON SOURCE ---

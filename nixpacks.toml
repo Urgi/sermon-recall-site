@@ -1,0 +1,14 @@
+# Transcription worker on Railway — not the Next.js admin app (that stays on Vercel).
+# Installs ffmpeg + yt-dlp; skips `next build`.
+
+[phases.setup]
+aptPkgs = ["ffmpeg", "yt-dlp"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "npm run worker:transcription"

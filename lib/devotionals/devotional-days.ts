@@ -22,6 +22,56 @@ const MAX_SCRIPTURE_TEXT = 8_000;
 const MAX_REFLECTION = 2_000;
 const MAX_PRE_PROMPT = 2_000;
 
+/** Minimum paragraphs in main_content (blank line between paragraphs). */
+export const MIN_BODY_PARAGRAPHS = 2;
+
+export function countBodyParagraphs(text: string): number {
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean).length;
+}
+
+export function validateBodyParagraphs(
+  text: string,
+  min: number = MIN_BODY_PARAGRAPHS,
+): string | null {
+  const count = countBodyParagraphs(text);
+  if (count < min) {
+    return `Body needs at least ${min} paragraphs (separate with a blank line). Currently ${count}.`;
+  }
+  return null;
+}
+
+/** Coerce AI output into blank-line-separated paragraphs when possible. */
+export function normalizeBodyParagraphs(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+  if (countBodyParagraphs(trimmed) >= MIN_BODY_PARAGRAPHS) {
+    return trimmed;
+  }
+
+  const singleNewlineBlocks = trimmed
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (singleNewlineBlocks.length >= MIN_BODY_PARAGRAPHS) {
+    return singleNewlineBlocks.join('\n\n');
+  }
+
+  if (singleNewlineBlocks.length === 1) {
+    const sentences =
+      singleNewlineBlocks[0].match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)?.map((s) => s.trim()) ??
+      [];
+    if (sentences.length >= MIN_BODY_PARAGRAPHS) {
+      const mid = Math.ceil(sentences.length / 2);
+      return [sentences.slice(0, mid).join(' '), sentences.slice(mid).join(' ')].join('\n\n');
+    }
+  }
+
+  return trimmed;
+}
+
 export function clampMinutes(n: number | undefined): number {
   if (typeof n !== 'number' || Number.isNaN(n)) return 4;
   return Math.min(12, Math.max(3, Math.round(n)));
@@ -76,7 +126,9 @@ function normalizeSingleDay(item: unknown, expectedDayNumber: number): Devotiona
       : expectedDayNumber;
 
   const title = typeof row.title === 'string' ? row.title.trim() : '';
-  const main_content = typeof row.main_content === 'string' ? row.main_content.trim() : '';
+  const main_content = normalizeBodyParagraphs(
+    typeof row.main_content === 'string' ? row.main_content.trim() : '',
+  );
   const reflection_question =
     typeof row.reflection_question === 'string' ? row.reflection_question.trim() : '';
   const pre_prompt_raw = typeof row.pre_prompt === 'string' ? row.pre_prompt.trim() : '';
@@ -85,6 +137,8 @@ function normalizeSingleDay(item: unknown, expectedDayNumber: number): Devotiona
   }
   if (title.length > MAX_TITLE) throw new Error(`Day ${n} title is too long.`);
   if (main_content.length > MAX_MAIN) throw new Error(`Day ${n} content is too long.`);
+  const bodyParagraphError = validateBodyParagraphs(main_content);
+  if (bodyParagraphError) throw new Error(`Day ${n}: ${bodyParagraphError}`);
   if (reflection_question.length > MAX_REFLECTION) {
     throw new Error(`Day ${n} reflection question is too long.`);
   }
@@ -150,7 +204,9 @@ function normalizeDaysArray(parsed: unknown): DevotionalDay[] {
     seen.add(n);
 
     const title = typeof item.title === 'string' ? item.title.trim() : '';
-    const main_content = typeof item.main_content === 'string' ? item.main_content.trim() : '';
+    const main_content = normalizeBodyParagraphs(
+      typeof item.main_content === 'string' ? item.main_content.trim() : '',
+    );
     const reflection_question =
       typeof item.reflection_question === 'string' ? item.reflection_question.trim() : '';
     const pre_prompt_raw =
@@ -162,6 +218,8 @@ function normalizeDaysArray(parsed: unknown): DevotionalDay[] {
     }
     if (title.length > MAX_TITLE) throw new Error(`Day ${n} title is too long.`);
     if (main_content.length > MAX_MAIN) throw new Error(`Day ${n} content is too long.`);
+    const bodyParagraphError = validateBodyParagraphs(main_content);
+    if (bodyParagraphError) throw new Error(`Day ${n}: ${bodyParagraphError}`);
     if (reflection_question.length > MAX_REFLECTION) {
       throw new Error(`Day ${n} reflection question is too long.`);
     }

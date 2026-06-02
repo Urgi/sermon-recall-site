@@ -3,8 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
+import { TRANSCRIPTION_LENGTH_HINT } from '@/lib/transcription/constants';
+import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
 function safeFileName(name: string): string {
@@ -20,6 +22,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [queuedJobId, setQueuedJobId] = useState<string | null>(null);
   const [mediaProgress, setMediaProgress] = useState<{
     phase: TranscribePhase;
     phaseStartedAt: number;
@@ -33,6 +36,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
 
     setError(null);
     setDone(null);
+    setQueuedJobId(null);
     setBusy(true);
     setMediaProgress(null);
 
@@ -56,7 +60,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         }
         const { error: upErr } = await supabase
           .from('sermons')
-          .update({ transcript: trimmed })
+          .update({ transcript: trimmed, transcript_status: 'completed' })
           .eq('id', sermonId);
         if (upErr) {
           setError(upErr.message);
@@ -89,22 +93,20 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         bytes: file.size,
       });
 
-      const res = await fetch('/api/transcribe-sermon', {
+      const res = await fetch('/api/transcription/jobs', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sermonId, storagePath: path }),
+        body: JSON.stringify({ sermonId, sourceType: 'storage', storagePath: path }),
       });
-      const json = (await res.json()) as { error?: string; charCount?: number };
-      if (!res.ok) {
-        setError(json.error ?? 'Transcription failed.');
+      const json = (await res.json()) as { error?: string; jobId?: string };
+      if (!res.ok || !json.jobId) {
+        setError(json.error ?? 'Could not queue transcription.');
         return;
       }
 
-      setDone(
-        `Transcript saved (${typeof json.charCount === 'number' ? json.charCount.toLocaleString() : '?'} characters).`,
-      );
-      router.refresh();
+      setQueuedJobId(json.jobId);
+      setDone('Transcription queued — processing in the background.');
     } catch {
       setError('Something went wrong.');
     } finally {
@@ -118,9 +120,8 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       <p className="text-[13px] font-semibold text-sky-200">Add sermon from file</p>
       <p className="mt-1 text-[12px] leading-relaxed text-[#94a3b8]">
         Upload a <strong className="font-medium text-[#cbd5e1]">.txt</strong> (saved directly) or{' '}
-        <strong className="font-medium text-[#cbd5e1]">audio / video</strong> (sent through OpenAI
-        transcription — set <code className="text-[11px] text-violet-200">OPENAI_API_KEY</code> on
-        the server). Max about 50 MB. Then generate devotionals as usual.
+        <strong className="font-medium text-[#cbd5e1]">audio / video</strong> (queued for
+        transcription). {TRANSCRIPTION_LENGTH_HINT} Then generate devotionals as usual.
       </p>
       <label className="mt-3 inline-block">
         <input
@@ -140,6 +141,17 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
             phase={mediaProgress.phase}
             phaseStartedAt={mediaProgress.phaseStartedAt}
             fileBytes={mediaProgress.bytes}
+          />
+        </div>
+      ) : null}
+      {queuedJobId ? (
+        <div className="mt-4">
+          <TranscriptionJobPoller
+            jobId={queuedJobId}
+            onComplete={() => {
+              setDone('Transcript saved.');
+              router.refresh();
+            }}
           />
         </div>
       ) : null}

@@ -1,18 +1,30 @@
 'use client';
 
+import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerationHints';
+import { DevotionalPreviewReviewList } from '@/components/admin/DevotionalPreviewReviewList';
+import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
+import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
+import {
+  clearPreviewDays,
+  loadPreviewDays,
+  savePreviewDays,
+} from '@/lib/devotionals/preview-session';
 import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import {
-  canPublishWorkflow,
   canRegenerateWorkflow,
   canSubmitForApproval,
 } from '@/lib/admin/workflow-status';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type Props = {
   sermonId: string;
+  churchId: string;
   sermonTitle: string;
+  pastorName: string;
+  sermonDate: string;
+  transcript: string;
   hasTranscript: boolean;
   hasExistingDevotionals: boolean;
   approvalRequired: boolean;
@@ -21,11 +33,13 @@ type Props = {
   canSubmit: boolean;
 };
 
-const EXCERPT = 180;
-
 export function GeminiDevotionalWorkflow({
   sermonId,
+  churchId,
   sermonTitle,
+  pastorName,
+  sermonDate,
+  transcript,
   hasTranscript,
   hasExistingDevotionals,
   approvalRequired,
@@ -36,16 +50,46 @@ export function GeminiDevotionalWorkflow({
   const router = useRouter();
   const [previewDays, setPreviewDays] = useState<DevotionalDay[] | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [generatingStartedAt, setGeneratingStartedAt] = useState<number | null>(null);
+  const [transcriptionJobId, setTranscriptionJobId] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoGenerateAttempted = useRef(false);
 
   const canRegen = canRegenerateWorkflow(workflowStatus);
 
-  async function generatePreview() {
+  useEffect(() => {
+    const stored = loadPreviewDays(sermonId);
+    if (stored?.length === 6) {
+      setPreviewDays(stored);
+      autoGenerateAttempted.current = true;
+    }
+  }, [sermonId]);
+
+  useEffect(() => {
+    if (hasTranscript || hasExistingDevotionals) return;
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch(
+        `/api/transcription/jobs?sermonId=${encodeURIComponent(sermonId)}`,
+        { credentials: 'include' },
+      );
+      const json = (await res.json()) as { job?: { id: string; status: string } | null };
+      if (!cancelled && json.job?.id && json.job.status !== 'failed') {
+        setTranscriptionJobId(json.job.id);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasExistingDevotionals, hasTranscript, sermonId]);
+
+  const generatePreview = useCallback(async () => {
     if (!hasTranscript || !canRegen) return;
     setError(null);
     setGenerating(true);
+    setGeneratingStartedAt(Date.now());
     try {
       const res = await fetch('/api/generate-devotionals', {
         method: 'POST',
@@ -67,11 +111,20 @@ export function GeminiDevotionalWorkflow({
         setError('Unexpected response from server.');
         return;
       }
+      savePreviewDays(sermonId, data.days);
       setPreviewDays(data.days);
     } finally {
       setGenerating(false);
+      setGeneratingStartedAt(null);
     }
-  }
+  }, [canRegen, hasTranscript, sermonId]);
+
+  useEffect(() => {
+    if (autoGenerateAttempted.current) return;
+    if (!hasTranscript || hasExistingDevotionals || !canRegen || previewDays) return;
+    autoGenerateAttempted.current = true;
+    void generatePreview();
+  }, [canRegen, generatePreview, hasExistingDevotionals, hasTranscript, previewDays]);
 
   async function publish() {
     if (!previewDays?.length && workflowStatus !== 'approved') return;
@@ -100,6 +153,7 @@ export function GeminiDevotionalWorkflow({
         return;
       }
       setPreviewDays(null);
+      clearPreviewDays(sermonId);
       router.refresh();
     } finally {
       setPublishing(false);
@@ -127,6 +181,7 @@ export function GeminiDevotionalWorkflow({
         return;
       }
       setPreviewDays(null);
+      clearPreviewDays(sermonId);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -155,9 +210,13 @@ export function GeminiDevotionalWorkflow({
   }
 
   function discardPreview() {
+    clearPreviewDays(sermonId);
     setPreviewDays(null);
     setError(null);
   }
+
+  const awaitingTranscript = !hasTranscript && !hasExistingDevotionals;
+  const pipelineActive = awaitingTranscript && Boolean(transcriptionJobId);
 
   return (
     <div className="space-y-4">
@@ -187,31 +246,58 @@ export function GeminiDevotionalWorkflow({
         </button>
       ) : null}
 
-      {!previewDays && workflowStatus !== 'approved' ? (
+      {awaitingTranscript ? (
+        pipelineActive ? (
+          <TranscriptionJobPoller
+            jobId={transcriptionJobId!}
+            sermonId={sermonId}
+            onPreviewReady={(days) => setPreviewDays(days)}
+            onComplete={() => router.refresh()}
+          />
+        ) : (
+          <div className="admin-card p-4" role="status">
+            <p className="text-[14px] font-medium text-[var(--admin-accent)]">
+              Waiting for sermon text…
+            </p>
+            <p className="admin-hint mt-2 text-[13px] leading-relaxed">
+              When transcription finishes, the same progress bar will continue into your six-day
+              preview. Nothing is published until you approve it.
+            </p>
+          </div>
+        )
+      ) : null}
+
+      {generating && !previewDays && generatingStartedAt != null ? (
+        <div className="space-y-2" role="status" aria-live="polite">
+          <TranscribeProgressPanel
+            phase="devotionals"
+            phaseStartedAt={generatingStartedAt}
+            fileBytes={0}
+          />
+          <DevotionalGenerationHints active variant="six-day" />
+        </div>
+      ) : null}
+
+      {!previewDays && !generating && !pipelineActive && hasTranscript && canRegen && !hasExistingDevotionals ? (
         <div className="space-y-2">
           <button
             type="button"
             onClick={() => void generatePreview()}
-            disabled={generating || !hasTranscript || !canRegen}
-            className="rounded-lg bg-violet-600 px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-violet-600 px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-violet-500"
           >
-            {generating ? 'Generating preview…' : 'Generate preview with AI'}
+            Generate preview with AI
           </button>
-          {!hasTranscript ? (
-            <p className="admin-hint text-amber-700 dark:text-amber-200/90">
-              Add sermon script or notes on this page first.
-            </p>
-          ) : !canRegen ? (
-            <p className="admin-hint">Cannot regenerate while in review or published.</p>
-          ) : (
-            <p className="admin-hint">
-              {approvalRequired
-                ? 'Submit for approval when ready. Nothing goes live until approved and published.'
-                : 'Publish when ready — members see content after you publish.'}
-            </p>
-          )}
+          <p className="admin-hint text-[13px]">
+            Preview generation did not start automatically. Click to try again.
+          </p>
         </div>
-      ) : previewDays ? (
+      ) : null}
+
+      {!previewDays && !generating && hasTranscript && !canRegen ? (
+        <p className="admin-hint">Cannot regenerate while in review or published.</p>
+      ) : null}
+
+      {previewDays ? (
         <div className="admin-card space-y-4 p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -220,6 +306,9 @@ export function GeminiDevotionalWorkflow({
               </p>
               <p className="admin-hint mt-1">
                 Review all six days before submitting or publishing.
+                {approvalRequired
+                  ? ' Nothing goes live until approved and published.'
+                  : ' Publish when ready — members see content after you publish.'}
               </p>
             </div>
             {canRegen ? (
@@ -234,27 +323,16 @@ export function GeminiDevotionalWorkflow({
             ) : null}
           </div>
 
-          <ul className="space-y-3">
-            {previewDays.map((d) => (
-              <li key={d.day_number} className="admin-card-nested p-4">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-admin-accent">
-                  Day {d.day_number}
-                </p>
-                <p className="admin-hint mt-1">{sermonTitle}</p>
-                <p className="mt-2 text-[16px] font-semibold text-admin-fg-strong">{d.title}</p>
-                {d.scripture_reference ? (
-                  <p className="mt-2 text-[13px] font-medium text-sky-600 dark:text-sky-300">
-                    {d.scripture_reference}
-                  </p>
-                ) : null}
-                <p className="admin-body mt-2 text-[13px]">
-                  {d.main_content.length > EXCERPT
-                    ? `${d.main_content.slice(0, EXCERPT).trim()}…`
-                    : d.main_content}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <DevotionalPreviewReviewList
+            churchId={churchId}
+            sermonTitle={sermonTitle}
+            pastorName={pastorName}
+            sermonDate={sermonDate}
+            transcript={transcript}
+            days={previewDays}
+            onDaysChange={setPreviewDays}
+            disabled={generating || publishing || submitting}
+          />
 
           <div className="flex flex-wrap gap-3 pt-2">
             {approvalRequired && canSubmit && canSubmitForApproval(workflowStatus) ? (
