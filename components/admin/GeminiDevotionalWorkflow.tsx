@@ -14,6 +14,7 @@ import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import {
   canRegenerateWorkflow,
   canSubmitForApproval,
+  devotionalPreviewLockedHint,
 } from '@/lib/admin/workflow-status';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -103,6 +104,7 @@ export function GeminiDevotionalWorkflow({
         days?: DevotionalDay[];
       };
       if (!res.ok) {
+        if (res.status === 409) return;
         const msg = data.error ?? 'Generation failed.';
         setError(data.hint ? `${msg} ${data.hint}` : msg);
         return;
@@ -251,6 +253,7 @@ export function GeminiDevotionalWorkflow({
           <TranscriptionJobPoller
             jobId={transcriptionJobId!}
             sermonId={sermonId}
+            generateDevotionalsAfter={canRegen}
             onPreviewReady={(days) => setPreviewDays(days)}
             onComplete={() => router.refresh()}
           />
@@ -294,7 +297,14 @@ export function GeminiDevotionalWorkflow({
       ) : null}
 
       {!previewDays && !generating && hasTranscript && !canRegen ? (
-        <p className="admin-hint">Cannot regenerate while in review or published.</p>
+        <div
+          className="rounded-lg border border-[#38bdf8]/25 bg-[#05070a]/40 px-4 py-3"
+          role="status"
+        >
+          <p className="text-[13px] leading-relaxed text-[var(--admin-fg)]/85">
+            {devotionalPreviewLockedHint(workflowStatus)}
+          </p>
+        </div>
       ) : null}
 
       {previewDays ? (

@@ -125,6 +125,12 @@ export function TranscriptionJobPoller({
           days?: DevotionalDay[];
         };
         if (cancelled) return;
+        if (res.status === 409) {
+          setPipelinePhase('done');
+          onComplete?.();
+          router.refresh();
+          return;
+        }
         if (!res.ok || !data.days?.length) {
           const msg = data.error ?? 'Devotional preview generation failed.';
           setError(data.hint ? `${msg} ${data.hint}` : msg);

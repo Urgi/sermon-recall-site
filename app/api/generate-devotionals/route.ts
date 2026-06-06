@@ -65,7 +65,7 @@ export async function POST(req: Request) {
   const wf = (sermon.workflow_status as SermonWorkflowStatus) ?? 'draft';
   if (!canRegenerateWorkflow(wf)) {
     return NextResponse.json(
-      { error: 'Cannot regenerate while sermon is in review or published.' },
+      { locked: true, workflowStatus: wf },
       { status: 409 },
     );
   }

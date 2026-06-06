@@ -23,7 +23,7 @@ Requirements:
 - Day 1 should welcome people into the theme; days 2–5 deepen application; day 6 sends people forward with hope and one concrete commitment.
 - Tone: warm, clear, non-academic, suitable for busy adults (~3–6 minute read each).
 - Each day needs a distinct title (include "Day N —" prefix in the title).
-- Scripture: prefer one primary reference per day in scripture_reference; optional short scripture_text quote if it fits (may be null).
+- Scripture: one primary reference per day in scripture_reference. When scripture_reference is set, scripture_text is REQUIRED — include the full verse text (1–3 sentences), not just the reference.
 - main_content: 2–4 short paragraphs per day (plain text, no markdown headings). Separate each paragraph with a blank line.
 - reflection_question: one open question for journaling or discussion.
 - estimated_minutes: integer 3–6.
@@ -77,7 +77,8 @@ ${params.instruction}
 Rules:
 - Return ONLY valid JSON (no markdown fences): one object with keys day_number, title, main_content, scripture_reference (string or null), scripture_text (string or null), reflection_question, estimated_minutes (integer 3–6), pre_prompt (required string).
 - day_number must be exactly ${params.dayNumber}.
-- main_content: 2–4 short paragraphs separated by blank lines.
+- main_content: 2–4 short paragraphs separated by blank lines. Do not repeat the full scripture_text in main_content — reference it briefly instead.
+- When scripture_reference is set, scripture_text is REQUIRED with the full verse passage.
 - pre_prompt: one short retrieval question from memory before reading; must not preview main_content; must differ from reflection_question; must differ from every sibling pre_prompt above.
 
 --- SERMON SOURCE ---
