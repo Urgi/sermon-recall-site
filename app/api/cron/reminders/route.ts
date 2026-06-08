@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { authorizeCronRequest } from '@/lib/cron-auth';
 import { runDevotionalReminders } from '@/lib/push/reminder-scheduler';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
@@ -12,10 +13,12 @@ export const maxDuration = 60;
  * Requires SUPABASE_SERVICE_ROLE_KEY + CRON_SECRET.
  */
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  const authResult = authorizeCronRequest(req);
+  if (!authResult.ok) {
+    return NextResponse.json(
+      { error: authResult.error, secretConfigured: authResult.secretConfigured },
+      { status: authResult.status },
+    );
   }
 
   const admin = createServiceRoleClient();
@@ -28,12 +31,7 @@ export async function GET(req: Request) {
 
   try {
     const result = await runDevotionalReminders(admin);
-    return NextResponse.json({
-      ok: true,
-      morningSent: result.morningSent,
-      middaySent: result.middaySent,
-      customHourSent: result.customHourSent,
-    });
+    return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
     console.warn('[cron/reminders]', msg);

@@ -12,12 +12,23 @@ export type ReminderTickResult = {
   middaySent: number;
   customHourSent: number;
   skippedNoServiceRole: boolean;
+  diagnostics: {
+    publishedChurches: number;
+    pushTokens: number;
+    devotionals: number;
+    skippedNotifyOff: number;
+    skippedNoSermon: number;
+    skippedAllComplete: number;
+    skippedWrongHour: number;
+    skippedDedupe: number;
+    serverTime: string;
+  };
 };
 
 const DEFAULT_TZ = 'America/New_York';
 
-const DEFAULT_MORNING_START = 8;
-const DEFAULT_MORNING_END = 10;
+const DEFAULT_MORNING_START = 6;
+const DEFAULT_MORNING_END = 7;
 
 const MIDDAY_HOUR_START = 12;
 const MIDDAY_HOUR_END = 14;
@@ -92,12 +103,36 @@ async function tryReserveDedupe(
   return false;
 }
 
+function emptyResult(
+  now: Date,
+  partial: Partial<ReminderTickResult['diagnostics']> = {},
+): ReminderTickResult {
+  return {
+    morningSent: 0,
+    middaySent: 0,
+    customHourSent: 0,
+    skippedNoServiceRole: false,
+    diagnostics: {
+      publishedChurches: 0,
+      pushTokens: 0,
+      devotionals: 0,
+      skippedNotifyOff: 0,
+      skippedNoSermon: 0,
+      skippedAllComplete: 0,
+      skippedWrongHour: 0,
+      skippedDedupe: 0,
+      serverTime: now.toISOString(),
+      ...partial,
+    },
+  };
+}
+
 /**
  * Hourly cron: reminds members of the first incomplete devotional they can open today
  * (calendar window + post-week catch-up, aligned with the mobile app).
  *
  * - Users with `devotional_notify_hour` set get one ping that hour (church timezone).
- * - Others get default morning (8–10) and midday (12–14) windows.
+ * - Others get default morning (6:00) and midday (12–14) windows.
  */
 export async function runDevotionalReminders(
   admin: SupabaseClient,
@@ -106,11 +141,15 @@ export async function runDevotionalReminders(
   let morningSent = 0;
   let middaySent = 0;
   let customHourSent = 0;
+  let skippedNotifyOff = 0;
+  let skippedNoSermon = 0;
+  let skippedAllComplete = 0;
+  let skippedWrongHour = 0;
+  let skippedDedupe = 0;
 
   const { data: sermonRows } = await admin
     .from('sermons')
     .select('id, church_id, sermon_date, created_at, title')
-    .eq('status', 'ready')
     .eq('workflow_status', 'published')
     .order('created_at', { ascending: false });
 
@@ -123,7 +162,7 @@ export async function runDevotionalReminders(
 
   const sermonIdList = Array.from(latestSermonByChurch.values()).map((s) => s.id);
   if (sermonIdList.length === 0) {
-    return { morningSent, middaySent, customHourSent, skippedNoServiceRole: false };
+    return emptyResult(now, { publishedChurches: 0, pushTokens: 0, devotionals: 0 });
   }
 
   const { data: devRows } = await admin
@@ -145,7 +184,11 @@ export async function runDevotionalReminders(
   const { data: tokenRows } = await admin.from('user_push_tokens').select('expo_push_token, user_id');
 
   if (!tokenRows?.length || allDevotionalIds.length === 0) {
-    return { morningSent, middaySent, customHourSent, skippedNoServiceRole: false };
+    return emptyResult(now, {
+      publishedChurches: latestSermonByChurch.size,
+      pushTokens: tokenRows?.length ?? 0,
+      devotionals: allDevotionalIds.length,
+    });
   }
 
   const userIds = Array.from(new Set(tokenRows.map((t) => t.user_id as string)));
@@ -212,18 +255,27 @@ export async function runDevotionalReminders(
 
     const profile = profileMap.get(uid);
     const churchId = profile?.church_id;
-    if (!churchId || !profile.notifyEnabled) continue;
+    if (!churchId || !profile.notifyEnabled) {
+      if (profile && !profile.notifyEnabled) skippedNotifyOff += 1;
+      continue;
+    }
 
     const tz = profile.tz ?? DEFAULT_TZ;
     const sermon = latestSermonByChurch.get(churchId);
-    if (!sermon) continue;
+    if (!sermon) {
+      skippedNoSermon += 1;
+      continue;
+    }
 
     const todayStr = localDateInTz(now, tz);
     const anchorStr = anchorDateString(sermon, tz);
     const maxDay = maxUnlockedDayNumber(anchorStr, todayStr);
     const completedSet = completedByUser.get(uid) ?? new Set<string>();
     const target = firstIncompleteInWindow(sermon.id, maxDay, devsBySermon, completedSet);
-    if (!target) continue;
+    if (!target) {
+      skippedAllComplete += 1;
+      continue;
+    }
 
     const hour = localHourInTz(now, tz);
     const shortTitle =
@@ -254,6 +306,7 @@ export async function runDevotionalReminders(
           data: {
             kind: 'devotional_reminder',
             sermonId: sermon.id,
+            devotionalId: target.id,
             dayNumber: cycleDay,
             slot: 'preferred_hour',
           },
@@ -304,10 +357,16 @@ export async function runDevotionalReminders(
       };
     }
 
-    if (!msg || !dedupeKey || !kind) continue;
+    if (!msg || !dedupeKey || !kind) {
+      skippedWrongHour += 1;
+      continue;
+    }
 
     const reserved = await tryReserveDedupe(admin, uid, dedupeKey);
-    if (!reserved) continue;
+    if (!reserved) {
+      skippedDedupe += 1;
+      continue;
+    }
 
     const { staleTokens } = await sendExpoPushMessages([msg]);
     await pruneStalePushTokens(admin, staleTokens);
@@ -316,5 +375,21 @@ export async function runDevotionalReminders(
     else customHourSent += 1;
   }
 
-  return { morningSent, middaySent, customHourSent, skippedNoServiceRole: false };
+  return {
+    morningSent,
+    middaySent,
+    customHourSent,
+    skippedNoServiceRole: false,
+    diagnostics: {
+      publishedChurches: latestSermonByChurch.size,
+      pushTokens: tokenRows.length,
+      devotionals: allDevotionalIds.length,
+      skippedNotifyOff,
+      skippedNoSermon,
+      skippedAllComplete,
+      skippedWrongHour,
+      skippedDedupe,
+      serverTime: now.toISOString(),
+    },
+  };
 }

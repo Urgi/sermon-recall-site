@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { authorizeCronRequest } from '@/lib/cron-auth';
 import type { AudienceType } from '@/lib/admin/workflow-status';
 import type { StaffRole } from '@/lib/auth/permissions';
 import { sendPastorBroadcastAndLog } from '@/lib/push/pastor-broadcast-send';
@@ -9,10 +10,12 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+  const authResult = authorizeCronRequest(req);
+  if (!authResult.ok) {
+    return NextResponse.json(
+      { error: authResult.error, secretConfigured: authResult.secretConfigured },
+      { status: authResult.status },
+    );
   }
 
   const admin = createServiceRoleClient();
