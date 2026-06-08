@@ -3,7 +3,7 @@
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.worker"
+dockerfilePath = "worker/Dockerfile"
 
 [deploy]
 startCommand = "npm run worker:transcription"
