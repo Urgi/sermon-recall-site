@@ -21,6 +21,8 @@ export type ReminderTickResult = {
     skippedAllComplete: number;
     skippedWrongHour: number;
     skippedDedupe: number;
+    skippedNoProfile: number;
+    profileLoadError: string | null;
     serverTime: string;
   };
 };
@@ -121,6 +123,8 @@ function emptyResult(
       skippedAllComplete: 0,
       skippedWrongHour: 0,
       skippedDedupe: 0,
+      skippedNoProfile: 0,
+      profileLoadError: null,
       serverTime: now.toISOString(),
       ...partial,
     },
@@ -146,6 +150,7 @@ export async function runDevotionalReminders(
   let skippedAllComplete = 0;
   let skippedWrongHour = 0;
   let skippedDedupe = 0;
+  let skippedNoProfile = 0;
 
   const { data: sermonRows } = await admin
     .from('sermons')
@@ -193,12 +198,22 @@ export async function runDevotionalReminders(
 
   const userIds = Array.from(new Set(tokenRows.map((t) => t.user_id as string)));
 
-  const { data: profiles } = await admin
+  const { data: profiles, error: profilesError } = await admin
     .from('users')
     .select(
-      'id, church_id, devotional_notify_hour, devotional_notify_enabled, churches(timezone)',
+      'id, church_id, devotional_notify_hour, devotional_notify_enabled, churches!users_church_id_fkey(timezone)',
     )
     .in('id', userIds);
+
+  if (profilesError) {
+    console.warn('[reminders] load profiles', profilesError.message);
+    return emptyResult(now, {
+      publishedChurches: latestSermonByChurch.size,
+      pushTokens: tokenRows.length,
+      devotionals: allDevotionalIds.length,
+      profileLoadError: profilesError.message,
+    });
+  }
 
   const profileMap = new Map<
     string,
@@ -254,9 +269,13 @@ export async function runDevotionalReminders(
     if (!token) continue;
 
     const profile = profileMap.get(uid);
-    const churchId = profile?.church_id;
+    if (!profile) {
+      skippedNoProfile += 1;
+      continue;
+    }
+    const churchId = profile.church_id;
     if (!churchId || !profile.notifyEnabled) {
-      if (profile && !profile.notifyEnabled) skippedNotifyOff += 1;
+      if (!profile.notifyEnabled) skippedNotifyOff += 1;
       continue;
     }
 
@@ -389,6 +408,8 @@ export async function runDevotionalReminders(
       skippedAllComplete,
       skippedWrongHour,
       skippedDedupe,
+      skippedNoProfile,
+      profileLoadError: null,
       serverTime: now.toISOString(),
     },
   };
