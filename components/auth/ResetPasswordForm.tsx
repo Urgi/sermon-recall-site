@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import {
   PASSWORD_UPDATED_MESSAGE,
@@ -153,34 +154,30 @@ export function ResetPasswordForm({ initialEmail = '', linkRejected = false }: P
         <label htmlFor="new-password" className="block text-[13px] font-medium text-[#94a3b8]">
           New password
         </label>
-        <input
+        <PasswordInput
           id="new-password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
           disabled={pending}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       <div>
         <label htmlFor="confirm-password" className="block text-[13px] font-medium text-[#94a3b8]">
           Confirm password
         </label>
-        <input
+        <PasswordInput
           id="confirm-password"
           name="confirmPassword"
-          type="password"
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
           disabled={pending}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       {error ? (

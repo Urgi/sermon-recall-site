@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { USE_CODE_NOT_LINK_MESSAGE } from '@/lib/auth/signup-email-messages';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -126,16 +127,14 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             Forgot password?
           </Link>
         </div>
-        <input
+        <PasswordInput
           id="login-password"
           name="password"
-          type="password"
           autoComplete="current-password"
           required
           disabled={pending}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       {error ? (

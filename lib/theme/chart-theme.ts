@@ -23,7 +23,7 @@ export function getAdminChartTheme(resolved: 'dark' | 'light'): AdminChartTheme 
         labelColor: '#0f172a',
       },
       barOpened: '#38bdf8',
-      barCompleted: '#0284c7',
+      barCompleted: '#4ade80',
     };
   }
   return {
@@ -36,6 +36,6 @@ export function getAdminChartTheme(resolved: 'dark' | 'light'): AdminChartTheme 
       labelColor: '#e2e8f0',
     },
     barOpened: '#7dd3fc',
-    barCompleted: '#38bdf8',
+    barCompleted: '#86efac',
   };
 }

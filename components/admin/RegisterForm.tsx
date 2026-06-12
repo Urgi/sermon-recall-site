@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
+import { PasswordInput } from '@/components/auth/PasswordInput';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { SIGNUP_CODE_SENT_MESSAGE } from '@/lib/auth/signup-email-messages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
@@ -108,17 +109,15 @@ export function RegisterForm() {
         <label htmlFor="reg-password" className="block text-[13px] font-medium text-[#94a3b8]">
           Password
         </label>
-        <input
+        <PasswordInput
           id="reg-password"
           name="password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
           disabled={pending}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
         <p className="mt-1 text-[12px] text-[#64748b]">At least {MIN_PASSWORD_LENGTH} characters</p>
       </div>
