@@ -124,18 +124,7 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
                   }}
                   labelStyle={{ color: chart.tooltip.labelColor }}
                 />
-                <Legend
-                  wrapperStyle={{ color: chart.legendColor, fontSize: 12 }}
-                  payload={[
-                    { value: 'Opened', type: 'square', color: chart.barOpened, id: 'opened' },
-                    {
-                      value: 'Completed',
-                      type: 'square',
-                      color: chart.barCompleted,
-                      id: 'completed',
-                    },
-                  ]}
-                />
+                <Legend wrapperStyle={{ color: chart.legendColor, fontSize: 12 }} />
                 <Bar
                   name="Opened"
                   dataKey="opened"

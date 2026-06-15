@@ -7,9 +7,12 @@ import { AppToastHost } from '@/components/AppToastHost';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Sermon Recall — Church admin',
+  title: {
+    default: 'Sermon Recall',
+    template: '%s | Sermon Recall',
+  },
   description:
-    'Pastor web portal: sermon ingestion, devotional review, and congregation engagement for Sermon Recall.',
+    'Sermon Recall helps churches turn Sunday sermons into a six-day devotional journey for members, with a pastor admin portal and mobile app.',
   icons: {
     icon: '/sermonrecalllogo/logo.png',
     apple: '/sermonrecalllogo/logo.png',
