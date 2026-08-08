@@ -68,6 +68,18 @@ export default function SupportPage() {
           </div>
 
           <div>
+            <h2 className="text-lg font-semibold text-white">FAQ</h2>
+            <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
+              See answers to common questions about joining, devotionals, notifications, and
+              privacy in our{' '}
+              <Link href="/faq" className="text-[#38bdf8] hover:underline">
+                FAQ
+              </Link>
+              .
+            </p>
+          </div>
+
+          <div>
             <h2 className="text-lg font-semibold text-white">Privacy</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
               Read our{' '}

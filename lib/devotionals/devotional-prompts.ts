@@ -1,11 +1,19 @@
 /** Prompts for OpenAI six-day generation and single-day regeneration. */
 
+import {
+  DEFAULT_APP_LANGUAGE,
+  type AppLanguage,
+  generationLanguageInstruction,
+} from '@/lib/i18n/languages';
+
 export function buildSixDayGenerationPrompt(params: {
   sermonTitle: string;
   pastorName: string | null;
   sermonDate: string | null;
   transcript: string;
+  language?: AppLanguage;
 }): string {
+  const language = params.language ?? DEFAULT_APP_LANGUAGE;
   const meta = [
     params.sermonTitle && `Sermon title: ${params.sermonTitle}`,
     params.pastorName && `Speaker: ${params.pastorName}`,
@@ -17,6 +25,8 @@ export function buildSixDayGenerationPrompt(params: {
   return `You create faithful, encouraging Protestant devotionals for church members based ONLY on the sermon content below.
 
 ${meta}
+
+${generationLanguageInstruction(language)}
 
 Requirements:
 - Output EXACTLY 6 devotionals (days 1 through 6).
@@ -45,7 +55,9 @@ export function buildSingleDayRegenerationPrompt(params: {
   currentDayJson: string;
   otherDaysPrePrompts: string[];
   instruction: string;
+  language?: AppLanguage;
 }): string {
+  const language = params.language ?? DEFAULT_APP_LANGUAGE;
   const meta = [
     params.sermonTitle && `Sermon title: ${params.sermonTitle}`,
     params.pastorName && `Speaker: ${params.pastorName}`,
@@ -62,6 +74,8 @@ export function buildSingleDayRegenerationPrompt(params: {
   return `You revise ONE devotional day for a church member app. Output must stay faithful to the sermon transcript and Protestant devotional tone (warm, clear, non-academic).
 
 ${meta}
+
+${generationLanguageInstruction(language)}
 
 The member flow for this day: they see a short pre_prompt (memory retrieval), then optional scripture, then main_content, then a reflection_question.
 

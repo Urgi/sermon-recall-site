@@ -1,3 +1,5 @@
+import { type AppLanguage, languagePromptName, normalizeAppLanguage } from '@/lib/i18n/languages';
+
 const DEFAULT_MODEL_CANDIDATES = ['gpt-4o-mini', 'gpt-4.1-mini'] as const;
 
 export function getOpenAIApiKeyFromEnv(): string | null {
@@ -16,11 +18,21 @@ export type OpenAIJsonFailure = {
   status: number;
 };
 
+function systemMessageForLanguage(language?: AppLanguage): string {
+  const code = normalizeAppLanguage(language);
+  const name = languagePromptName(code);
+  if (code === 'en') {
+    return 'You are a careful editorial assistant for a church devotional app. Respond with valid JSON only. Write member-facing text in English.';
+  }
+  return `You are a careful editorial assistant for a church devotional app. Respond with valid JSON only. Write all member-facing string values in ${name} (${code}). Keep JSON keys in English.`;
+}
+
 /**
  * Chat Completions with JSON object response (OpenAI structured output).
  */
 export async function runOpenAIJsonPrompt(
   prompt: string,
+  options?: { language?: AppLanguage },
 ): Promise<{ text: string } | OpenAIJsonFailure> {
   const apiKey = getOpenAIApiKeyFromEnv();
   if (!apiKey) {
@@ -32,6 +44,7 @@ export async function runOpenAIJsonPrompt(
 
   const candidates = openaiDevotionalModelCandidates();
   const explicitModel = Boolean(process.env.OPENAI_DEVOTIONAL_MODEL?.trim());
+  const systemContent = systemMessageForLanguage(options?.language);
 
   for (let i = 0; i < candidates.length; i++) {
     const model = candidates[i];
@@ -49,8 +62,7 @@ export async function runOpenAIJsonPrompt(
           messages: [
             {
               role: 'system',
-              content:
-                'You are a careful editorial assistant for a church devotional app. Respond with valid JSON only.',
+              content: systemContent,
             },
             { role: 'user', content: prompt },
           ],
@@ -59,7 +71,7 @@ export async function runOpenAIJsonPrompt(
 
       if (!res.ok) {
         const detail = await res.text();
-        const notFound = res.status === 404 || detail.includes('model') && detail.includes('not');
+        const notFound = res.status === 404 || (detail.includes('model') && detail.includes('not'));
         if (!explicitModel && notFound && i < candidates.length - 1) {
           continue;
         }

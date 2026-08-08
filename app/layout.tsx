@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: '%s | Sermon Recall',
   },
   description:
-    'Sermon Recall helps churches turn Sunday sermons into a six-day devotional journey for members, with a pastor admin portal and mobile app.',
+    "Sermon Recall helps churches turn Saturday/Sunday's message into a six-day devotional journey for members, with a pastor admin portal and mobile app.",
   icons: {
     icon: '/sermonrecalllogo/logo.png',
     apple: '/sermonrecalllogo/logo.png',

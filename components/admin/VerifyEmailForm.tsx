@@ -139,6 +139,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         <label htmlFor="verify-code" className="block text-[13px] font-medium text-[#94a3b8]">
           Confirmation code
         </label>
+        <p className="mt-0.5 text-[12px] text-[#64748b]">6-digit code from your email (check spam).</p>
         <input
           id="verify-code"
           name="code"
@@ -149,7 +150,8 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           required
           disabled={pending}
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\s/g, ''))}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+          placeholder="123456"
           className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[17px] tracking-widest text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>

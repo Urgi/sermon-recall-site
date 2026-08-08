@@ -45,9 +45,13 @@ Vercel env:
 - `NEXT_PUBLIC_SITE_URL=https://admin.sermonrecall.com`
 - `SUPABASE_SERVICE_ROLE_KEY` (cron, invites — not required for pastor signup OTP)
 
-Supabase → **Authentication → Email templates**:
-- **Confirm signup** — code-only body from `supabase/templates/confirmation.html` (`{{ .Token }}`)
-- **Reset password** — code-only body from `supabase/templates/recovery.html` (`{{ .Token }}`)
+Supabase → **Authentication → Email** (hosted project — required for production OTP):
+- **Confirm email** = ON
+- **OTP length** = **6** (matches Dubbadhu / app UI)
+- **Confirm signup** template — code-only body from `supabase/templates/confirmation.html` (`{{ .Token }}`), not a magic link
+- **Reset password** template — code-only body from `supabase/templates/recovery.html` (`{{ .Token }}`)
+
+Ethiopia note: like Dubbadhu’s `+251` path, Sermon Recall uses **email OTP** (not SMS). Delivery depends on Auth SMTP/templates, not phone numbers.
 
 Supabase → **Authentication → URL configuration** (optional legacy / invite links only):
 

@@ -2,7 +2,17 @@
 export function mapAuthError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes('email not confirmed') || m.includes('not confirmed')) {
-    return 'This email is not confirmed yet. Open the link from your inbox (check spam) or resend the confirmation email below.';
+    return 'This email is not confirmed yet. Enter the confirmation code from your inbox on the verify screen (check spam), or resend the code below.';
+  }
+  if (
+    m.includes('token has expired') ||
+    m.includes('otp_expired') ||
+    (m.includes('expired') && m.includes('otp'))
+  ) {
+    return 'That code expired. Request a new confirmation code and try again.';
+  }
+  if (m.includes('invalid') && (m.includes('otp') || m.includes('token') || m.includes('code'))) {
+    return 'That confirmation code is invalid. Check the latest email and try again, or resend a new code.';
   }
   if (m.includes('invalid login credentials')) {
     return 'Incorrect email or password, or your email may still be waiting for confirmation.';

@@ -5,6 +5,12 @@ import { useState } from 'react';
 
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { CHURCH_TIMEZONE_OPTIONS } from '@/lib/church/timezones';
+import {
+  APP_LANGUAGES,
+  type AppLanguage,
+  languageOptionLabel,
+  normalizeAppLanguage,
+} from '@/lib/i18n/languages';
 
 export type ChurchSettingsInitial = {
   name: string;
@@ -12,6 +18,7 @@ export type ChurchSettingsInitial = {
   pastorName: string;
   timezone: string;
   requireDevotionalApproval: boolean;
+  sermonLanguage: AppLanguage;
 };
 
 type Props = {
@@ -24,6 +31,9 @@ export function ChurchSettingsForm({ initial }: Props) {
   const [churchCode, setChurchCode] = useState(initial.churchCode);
   const [pastorName, setPastorName] = useState(initial.pastorName);
   const [timezone, setTimezone] = useState(initial.timezone);
+  const [sermonLanguage, setSermonLanguage] = useState<AppLanguage>(
+    normalizeAppLanguage(initial.sermonLanguage),
+  );
   const [requireDevotionalApproval, setRequireDevotionalApproval] = useState(
     initial.requireDevotionalApproval,
   );
@@ -60,6 +70,7 @@ export function ChurchSettingsForm({ initial }: Props) {
           pastorName: pastorName.trim(),
           timezone,
           requireDevotionalApproval,
+          sermonLanguage,
         }),
       });
       const data = (await res.json()) as { error?: string };
@@ -155,6 +166,27 @@ export function ChurchSettingsForm({ initial }: Props) {
           {!CHURCH_TIMEZONE_OPTIONS.some((o) => o.value === timezone) ? (
             <option value={timezone}>{timezone}</option>
           ) : null}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="church-settings-language" className="admin-label">
+          Church language
+        </label>
+        <p className="admin-hint mt-0.5">
+          Default language for sermons and devotionals for your congregation.
+        </p>
+        <select
+          id="church-settings-language"
+          value={sermonLanguage}
+          onChange={(e) => setSermonLanguage(normalizeAppLanguage(e.target.value))}
+          className="admin-input mt-1"
+        >
+          {APP_LANGUAGES.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {languageOptionLabel(opt.value)}
+            </option>
+          ))}
         </select>
       </div>
 

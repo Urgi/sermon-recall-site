@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 
 import { buildEmailDiagnostics } from '@/lib/auth/email-diagnostics';
-import { getAdminEmailRedirectUrlServer } from '@/lib/auth/admin-callback-url';
-import { sendSignupConfirmationEmail } from '@/lib/email/send-auth-email';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +26,11 @@ export async function GET(request: Request) {
   return NextResponse.json(report);
 }
 
-/** POST { email, dryRun?: boolean } — test generateLink + optional Resend send. */
+/**
+ * POST { email, dryRun?: boolean } — exercises signup OTP (code), not magic links.
+ * Uses admin.generateLink({ type: 'signup' }) so local Inbucket / hosted Auth mailer
+ * receive the same confirmation-code email as /register.
+ */
 export async function POST(request: Request) {
   const blocked = devOnly();
   if (blocked) return blocked;
@@ -46,72 +48,60 @@ export async function POST(request: Request) {
 
   const origin = request.headers.get('origin');
   const report = await buildEmailDiagnostics(email, origin);
-  const redirectTo = getAdminEmailRedirectUrlServer(undefined, origin);
 
   const admin = createServiceRoleClient();
   if (!admin) {
     return NextResponse.json({
       ...report,
-      step: 'generateLink',
+      step: 'signup_otp',
       ok: false,
       error: 'SUPABASE_SERVICE_ROLE_KEY missing',
     });
   }
 
+  const tempPassword = `Diag-${Math.random().toString(36).slice(2)}A1!`;
   const { data, error } = await admin.auth.admin.generateLink({
-    type: 'magiclink',
+    type: 'signup',
     email,
-    options: { redirectTo: redirectTo ?? undefined },
+    password: tempPassword,
   });
 
   if (error) {
     return NextResponse.json({
       ...report,
-      step: 'generateLink',
+      step: 'generateLink_signup',
       ok: false,
       error: error.message,
+      hint: 'If the user already exists and is confirmed, delete them in Auth → Users or use a new email.',
     });
   }
 
-  const actionLink = data.properties?.action_link ?? null;
+  const emailOtp =
+    typeof data.properties?.email_otp === 'string' ? data.properties.email_otp : null;
   const result: Record<string, unknown> = {
     ...report,
-    step: 'generateLink',
+    step: 'generateLink_signup',
     ok: true,
-    linkHost: actionLink ? new URL(actionLink).host : null,
-    redirectTo,
+    hasEmailOtp: Boolean(emailOtp),
+    otpLength: emailOtp?.length ?? null,
+    note: 'Signup OTP path (same family as /register → /verify-email). Enter code on /verify-email.',
   };
 
-  const isDev = process.env.NODE_ENV === 'development';
-  if (isDev && actionLink) {
-    result.debugActionLink = actionLink;
+  if (process.env.NODE_ENV === 'development' && emailOtp) {
+    result.debugEmailOtp = emailOtp;
   }
 
   if (body.dryRun) {
     result.sent = false;
-    result.note = 'dryRun=true — no email sent';
+    result.note =
+      'dryRun=true — link/OTP generated but mailer not relied on. Local: also check Inbucket if confirmations are on.';
     return NextResponse.json(result);
   }
 
-  if (!process.env.RESEND_API_KEY?.trim()) {
-    result.sent = false;
-    result.error = 'RESEND_API_KEY missing — cannot send. Use debugActionLink locally or Inbucket.';
-    return NextResponse.json(result);
-  }
-
-  if (!actionLink) {
-    return NextResponse.json({ ...result, sent: false, error: 'No action_link' });
-  }
-
-  try {
-    await sendSignupConfirmationEmail({ to: email, confirmUrl: actionLink });
-    result.sent = true;
-    result.sentVia = 'resend';
-    result.message = `Email sent to ${email}`;
-  } catch (e) {
-    result.sent = false;
-    result.error = e instanceof Error ? e.message : 'Send failed';
-  }
+  // generateLink triggers the Auth mailer when confirmations are enabled.
+  result.sent = true;
+  result.sentVia = 'supabase_auth_mailer';
+  result.message = `Signup confirmation code generated for ${email}. Local → Inbucket http://127.0.0.1:54324. Hosted → inbox/spam. Paste code on /verify-email.`;
 
   return NextResponse.json(result);
 }

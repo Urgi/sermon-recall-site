@@ -33,6 +33,7 @@ export type ChurchSettingsRow = {
   pastor_name: string | null;
   timezone: string;
   require_devotional_approval: boolean;
+  sermon_language: string;
 };
 
 export type AuthContext = {

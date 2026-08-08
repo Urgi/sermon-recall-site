@@ -17,6 +17,9 @@ export function PublicSiteFooter() {
           </p>
         </div>
         <div className="flex flex-col gap-2 text-[14px]">
+          <Link href="/faq" className="text-[#94a3b8] hover:text-[#38bdf8]">
+            FAQ
+          </Link>
           <Link href="/privacy" className="text-[#94a3b8] hover:text-[#38bdf8]">
             Privacy policy
           </Link>

@@ -3,6 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import {
+  APP_LANGUAGES,
+  DEFAULT_APP_LANGUAGE,
+  type AppLanguage,
+  languageOptionLabel,
+} from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function CreateChurchForm() {
@@ -10,6 +16,7 @@ export function CreateChurchForm() {
   const [name, setName] = useState('');
   const [churchCode, setChurchCode] = useState('');
   const [pastorName, setPastorName] = useState('');
+  const [sermonLanguage, setSermonLanguage] = useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -22,6 +29,7 @@ export function CreateChurchForm() {
       p_name: name.trim(),
       p_church_code: churchCode.trim(),
       p_pastor_display_name: pastorName.trim() || null,
+      p_sermon_language: sermonLanguage,
     });
     setPending(false);
     if (rpcError) {
@@ -32,6 +40,8 @@ export function CreateChurchForm() {
         setError('Church code must be 4–32 characters after trimming.');
       } else if (msg.includes('invalid_name')) {
         setError('Enter a church name.');
+      } else if (msg.includes('invalid_sermon_language')) {
+        setError('Choose English, Spanish, or French for church language.');
       } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) {
         setError('That church code is already taken. Pick another.');
       } else if (msg.includes('cannot_change_role') || msg.includes('cannot_change_church_id')) {
@@ -100,6 +110,28 @@ export function CreateChurchForm() {
           onChange={(e) => setPastorName(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
         />
+      </div>
+      <div>
+        <label htmlFor="sermon-language" className="block text-[13px] font-medium text-[#94a3b8]">
+          Church language
+        </label>
+        <p className="mt-0.5 text-[12px] leading-snug text-[#64748b]">
+          Language for sermons and devotionals shared with your congregation. Change later in
+          settings.
+        </p>
+        <select
+          id="sermon-language"
+          name="sermonLanguage"
+          value={sermonLanguage}
+          onChange={(e) => setSermonLanguage(e.target.value as AppLanguage)}
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+        >
+          {APP_LANGUAGES.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {languageOptionLabel(opt.value)}
+            </option>
+          ))}
+        </select>
       </div>
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">

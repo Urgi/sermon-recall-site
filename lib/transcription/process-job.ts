@@ -16,6 +16,7 @@ import {
   splitMp3IntoChunks,
 } from '@/lib/transcription/ffmpeg';
 import { downloadYouTubeAudio } from '@/lib/transcription/youtube-download';
+import { normalizeAppLanguage } from '@/lib/i18n/languages';
 import { transcribeAudioBuffer } from '@/lib/stt/transcribe';
 
 type ProgressFn = (chunksDone: number, chunksTotal: number) => Promise<void>;
@@ -29,6 +30,20 @@ function maxChunkBytes(): number {
   return OPENAI_MAX_BYTES;
 }
 
+async function resolveChurchSermonLanguage(
+  admin: SupabaseClient,
+  churchId: string,
+): Promise<string | undefined> {
+  const { data } = await admin
+    .from('churches')
+    .select('sermon_language')
+    .eq('id', churchId)
+    .maybeSingle();
+  const lang = normalizeAppLanguage(data?.sermon_language);
+  // Whisper/Groq language codes match our AppLanguage values (en|es|fr).
+  return lang;
+}
+
 export async function processTranscriptionJob(
   admin: SupabaseClient,
   job: TranscriptionJobRow,
@@ -36,6 +51,8 @@ export async function processTranscriptionJob(
 ): Promise<void> {
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sr-transcribe-'));
   try {
+    const sttLanguage = await resolveChurchSermonLanguage(admin, job.church_id);
+
     let sourcePath: string;
     if (job.source_type === 'youtube') {
       if (!job.source_url) throw new Error('Missing YouTube URL.');
@@ -91,6 +108,7 @@ export async function processTranscriptionJob(
         buffer: buf,
         filename: `chunk-${i + 1}.mp3`,
         mimeType: 'audio/mpeg',
+        language: sttLanguage,
       });
       parts.push(text);
       await onProgress?.(i + 1, chunksTotal);

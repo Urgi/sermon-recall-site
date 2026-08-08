@@ -4,8 +4,10 @@ import { authorizeApiPermission } from '@/lib/auth/server';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import { parseSingleDayFromModelJson } from '@/lib/devotionals/devotional-days';
 import { buildSingleDayRegenerationPrompt } from '@/lib/devotionals/devotional-prompts';
+import { normalizeAppLanguage } from '@/lib/i18n/languages';
 import { getOpenAIApiKeyFromEnv, runOpenAIJsonPrompt } from '@/lib/openai/run-openai-json';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,6 +82,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid or mismatched churchId.' }, { status: 403 });
   }
 
+  const supabase = createServerSupabaseClient();
+  const { data: churchRow } = await supabase
+    .from('churches')
+    .select('sermon_language')
+    .eq('id', churchId)
+    .maybeSingle();
+  const language = normalizeAppLanguage(churchRow?.sermon_language);
+
   const pastorName =
     typeof body.pastorName === 'string' && body.pastorName.trim()
       ? body.pastorName.trim()
@@ -103,9 +113,10 @@ export async function POST(req: Request) {
     currentDayJson: JSON.stringify(day),
     otherDaysPrePrompts,
     instruction,
+    language,
   });
 
-  const gen = await runOpenAIJsonPrompt(prompt);
+  const gen = await runOpenAIJsonPrompt(prompt, { language });
   if ('status' in gen) {
     return NextResponse.json({ error: gen.error, hint: gen.hint }, { status: gen.status });
   }

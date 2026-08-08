@@ -8,6 +8,12 @@ import { queueAppToast } from '@/lib/app-toast';
 import { PasswordInput } from '@/components/auth/PasswordInput';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { SIGNUP_CODE_SENT_MESSAGE } from '@/lib/auth/signup-email-messages';
+import {
+  APP_LANGUAGES,
+  DEFAULT_APP_LANGUAGE,
+  type AppLanguage,
+  languageOptionLabel,
+} from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -17,6 +23,8 @@ export function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [preferredLanguage, setPreferredLanguage] =
+    useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -38,6 +46,7 @@ export function RegisterForm() {
         options: {
           data: {
             full_name: fullName.trim() || undefined,
+            preferred_language: preferredLanguage,
             signup_portal: 'admin_web',
           },
         },
@@ -120,6 +129,28 @@ export function RegisterForm() {
           onChange={(e) => setPassword(e.target.value)}
         />
         <p className="mt-1 text-[12px] text-[#64748b]">At least {MIN_PASSWORD_LENGTH} characters</p>
+      </div>
+      <div>
+        <label htmlFor="reg-language" className="block text-[13px] font-medium text-[#94a3b8]">
+          Preferred language
+        </label>
+        <p className="mt-0.5 text-[12px] leading-snug text-[#64748b]">
+          English, Spanish, or French — you can change this later in settings.
+        </p>
+        <select
+          id="reg-language"
+          name="preferredLanguage"
+          disabled={pending}
+          value={preferredLanguage}
+          onChange={(e) => setPreferredLanguage(e.target.value as AppLanguage)}
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+        >
+          {APP_LANGUAGES.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {languageOptionLabel(opt.value)}
+            </option>
+          ))}
+        </select>
       </div>
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { HomeFaqSection } from '@/components/public/HomeFaqSection';
 import { PublicSiteFooter } from '@/components/public/PublicSiteFooter';
 import { PublicSiteHeader } from '@/components/public/PublicSiteHeader';
 import { PUBLIC_SITE, supportEmail } from '@/lib/public-site/config';
@@ -42,7 +43,7 @@ export default async function PublicHomePage() {
               {PUBLIC_SITE.tagline}
             </p>
             <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Help your church remember and live out Sunday&apos;s message
+              Help your church remember and live out Saturday/Sunday&apos;s message
             </h1>
             <p className="mt-5 text-[17px] leading-relaxed text-[#94a3b8]">
               {PUBLIC_SITE.shortDescription} Pastors prepare a six-day cycle from each sermon;
@@ -135,7 +136,9 @@ export default async function PublicHomePage() {
           </ol>
         </section>
 
-        <section className="border-t border-[rgba(56,189,248,0.1)] bg-[#0a0f18]/40 px-4 py-12 sm:px-6">
+        <HomeFaqSection />
+
+        <section className="px-4 py-12 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-lg font-semibold text-white">Questions or support</h2>
             <p className="mt-2 text-[15px] text-[#94a3b8]">
@@ -150,7 +153,10 @@ export default async function PublicHomePage() {
                 {email}
               </a>
             </p>
-            <Link href="/support" className="mt-3 inline-block text-[14px] text-[#64748b] hover:text-[#94a3b8]">
+            <Link href="/#faq" className="mt-3 inline-block text-[14px] text-[#64748b] hover:text-[#94a3b8]">
+              Read the FAQ →
+            </Link>
+            <Link href="/support" className="mt-1 inline-block text-[14px] text-[#64748b] hover:text-[#94a3b8]">
               Visit support page →
             </Link>
           </div>

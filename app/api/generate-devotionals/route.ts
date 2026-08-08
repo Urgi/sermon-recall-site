@@ -6,6 +6,7 @@ import { authorizeApiPermission } from '@/lib/auth/server';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import { parseDaysFromModelJson } from '@/lib/devotionals/devotional-days';
 import { buildSixDayGenerationPrompt } from '@/lib/devotionals/devotional-prompts';
+import { normalizeAppLanguage } from '@/lib/i18n/languages';
 import { getOpenAIApiKeyFromEnv, runOpenAIJsonPrompt } from '@/lib/openai/run-openai-json';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -83,14 +84,22 @@ export async function POST(req: Request) {
       ? `${transcript.slice(0, MAX_TRANSCRIPT_CHARS)}\n\n[Truncated for generation.]`
       : transcript;
 
+  const { data: churchRow } = await supabase
+    .from('churches')
+    .select('sermon_language')
+    .eq('id', sermon.church_id)
+    .maybeSingle();
+  const language = normalizeAppLanguage(churchRow?.sermon_language);
+
   const prompt = buildSixDayGenerationPrompt({
     sermonTitle: sermon.title as string,
     pastorName: (sermon.pastor_name as string | null) ?? null,
     sermonDate: (sermon.sermon_date as string | null) ?? null,
     transcript: transcriptSlice,
+    language,
   });
 
-  const gen = await runOpenAIJsonPrompt(prompt);
+  const gen = await runOpenAIJsonPrompt(prompt, { language });
   if ('status' in gen) {
     return NextResponse.json({ error: gen.error, hint: gen.hint }, { status: gen.status });
   }

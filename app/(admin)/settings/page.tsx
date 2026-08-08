@@ -3,9 +3,11 @@ import Link from 'next/link';
 import { AppearanceSettings } from '@/components/admin/AppearanceSettings';
 import { ChurchSettingsForm } from '@/components/admin/ChurchSettingsForm';
 import { DeleteAccountPanel } from '@/components/admin/DeleteAccountPanel';
+import { PreferredLanguageSettings } from '@/components/admin/PreferredLanguageSettings';
 import { staffHasPermission } from '@/lib/auth/profile';
 import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/server';
 import { DEFAULT_CHURCH_TIMEZONE } from '@/lib/church/timezones';
+import { normalizeAppLanguage } from '@/lib/i18n/languages';
 
 export default async function AdminSettingsPage() {
   const { profile, staffRole } = await requireAdminSession();
@@ -33,7 +35,8 @@ export default async function AdminSettingsPage() {
         <section className="rounded-xl border border-admin bg-admin-card p-6">
           <h2 className="text-lg font-semibold text-admin-fg">Church settings</h2>
           <p className="mt-1 text-[14px] text-admin-muted">
-            Name, join code, timezone, and devotional approval rules for your whole church.
+            Name, join code, language, timezone, and devotional approval rules for your whole
+            church.
           </p>
           <div className="mt-5">
             <ChurchSettingsForm
@@ -43,6 +46,7 @@ export default async function AdminSettingsPage() {
                 pastorName: church.pastor_name ?? '',
                 timezone: church.timezone || DEFAULT_CHURCH_TIMEZONE,
                 requireDevotionalApproval: church.require_devotional_approval !== false,
+                sermonLanguage: normalizeAppLanguage(church.sermon_language),
               }}
             />
           </div>
@@ -56,6 +60,16 @@ export default async function AdminSettingsPage() {
           </p>
         </section>
       ) : null}
+
+      <section className="rounded-xl border border-admin bg-admin-card p-6">
+        <h2 className="text-lg font-semibold text-admin-fg">Language</h2>
+        <p className="mt-1 text-[14px] text-admin-muted">
+          Your personal language preference for Sermon Recall.
+        </p>
+        <div className="mt-5">
+          <PreferredLanguageSettings />
+        </div>
+      </section>
 
       <section className="rounded-xl border border-admin bg-admin-card p-6">
         <h2 className="text-lg font-semibold text-admin-fg">Appearance</h2>

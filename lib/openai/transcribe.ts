@@ -6,6 +6,7 @@ export async function transcribeAudioBuffer(params: {
   buffer: Buffer;
   filename: string;
   mimeType: string;
+  language?: string;
 }): Promise<string> {
   const key = process.env.OPENAI_API_KEY?.trim();
   if (!key) {
@@ -16,6 +17,10 @@ export async function transcribeAudioBuffer(params: {
   const blob = new Blob([new Uint8Array(params.buffer)], { type: params.mimeType });
   form.append('file', blob, params.filename);
   form.append('model', process.env.OPENAI_TRANSCRIPTION_MODEL?.trim() || 'whisper-1');
+  const lang = params.language?.trim();
+  if (lang) {
+    form.append('language', lang);
+  }
 
   const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',

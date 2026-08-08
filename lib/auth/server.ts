@@ -178,7 +178,7 @@ export async function getChurchSettingsForProfile(
   const supabase = createServerSupabaseClient();
   const { data } = await supabase
     .from('churches')
-    .select('id, name, church_code, pastor_name, timezone, require_devotional_approval')
+    .select('id, name, church_code, pastor_name, timezone, require_devotional_approval, sermon_language')
     .eq('id', churchId)
     .single();
   return data as ChurchSettingsRow | null;

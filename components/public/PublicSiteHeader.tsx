@@ -11,6 +11,12 @@ export function PublicSiteHeader() {
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4">
           <Link
+            href="/faq"
+            className="hidden text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0] sm:inline"
+          >
+            FAQ
+          </Link>
+          <Link
             href="/support"
             className="hidden text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0] sm:inline"
           >

@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { authorizeApiPermission } from '@/lib/auth/server';
 import { DEFAULT_CHURCH_TIMEZONE } from '@/lib/church/timezones';
 import { normalizeChurchCode } from '@/lib/church/member-join';
+import { DEFAULT_APP_LANGUAGE, normalizeAppLanguage } from '@/lib/i18n/languages';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,9 @@ export async function GET() {
   const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
     .from('churches')
-    .select('id, name, church_code, pastor_name, timezone, require_devotional_approval')
+    .select(
+      'id, name, church_code, pastor_name, timezone, require_devotional_approval, sermon_language',
+    )
     .eq('id', auth.ctx.profile.church_id!)
     .single();
 
@@ -32,6 +35,7 @@ export async function POST(req: Request) {
     pastorName?: unknown;
     timezone?: unknown;
     requireDevotionalApproval?: unknown;
+    sermonLanguage?: unknown;
   };
   try {
     body = await req.json();
@@ -48,6 +52,7 @@ export async function POST(req: Request) {
       ? body.timezone.trim()
       : DEFAULT_CHURCH_TIMEZONE;
   const requireDevotionalApproval = body.requireDevotionalApproval !== false;
+  const sermonLanguage = normalizeAppLanguage(body.sermonLanguage ?? DEFAULT_APP_LANGUAGE);
 
   if (!name) {
     return NextResponse.json({ error: 'Church name is required.' }, { status: 400 });
@@ -66,6 +71,7 @@ export async function POST(req: Request) {
     p_pastor_name: pastorName || null,
     p_timezone: timezone,
     p_require_devotional_approval: requireDevotionalApproval,
+    p_sermon_language: sermonLanguage,
   });
 
   if (error) {
@@ -75,6 +81,9 @@ export async function POST(req: Request) {
     }
     if (msg.includes('invalid_church_code_format')) {
       return NextResponse.json({ error: 'Church code must be 4–32 characters.' }, { status: 400 });
+    }
+    if (msg.includes('invalid_sermon_language')) {
+      return NextResponse.json({ error: 'Choose English, Spanish, or French.' }, { status: 400 });
     }
     if (msg.includes('forbidden')) {
       return NextResponse.json({ error: 'You cannot change church settings.' }, { status: 403 });
