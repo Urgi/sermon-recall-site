@@ -26,6 +26,9 @@ export function PublicSiteFooter() {
           <Link href="/support" className="text-[#94a3b8] hover:text-[#38bdf8]">
             Support & contact
           </Link>
+          <Link href="/delete-account" className="text-[#94a3b8] hover:text-[#38bdf8]">
+            Delete account
+          </Link>
           <Link href="/login" className="text-[#94a3b8] hover:text-[#38bdf8]">
             Pastor sign in
           </Link>
