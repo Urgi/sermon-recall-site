@@ -50,7 +50,8 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
       if (signError) {
         const msg = signError.message.toLowerCase();
         setError(mapAuthError(signError.message));
-        if (msg.includes('not confirmed') || msg.includes('confirm')) {
+        // Only the real Supabase unconfirmed-email error — never wrong password.
+        if (msg.includes('email not confirmed')) {
           setShowResend(true);
         }
         return;

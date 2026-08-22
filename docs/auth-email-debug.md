@@ -7,11 +7,13 @@
 | **Local** (`supabase start`) | Emails go to **Inbucket**, not Gmail/Yahoo → http://127.0.0.1:54324 |
 | **Hosted** | Supabase sends a **confirmation code** email — paste template from `supabase/templates/confirmation.html` |
 
-`NEXT_PUBLIC_SUPABASE_URL` is **not** your website URL. Password reset links still use `NEXT_PUBLIC_SITE_URL` and `/auth/callback?next=reset-password`.
+`NEXT_PUBLIC_SUPABASE_URL` is **not** your website URL.
 
 **Signup confirmation** uses a code on `/verify-email` (admin) or `/verify-email` in the mobile app — not email links.
 
-**Password reset** uses a code on `/reset-password` (admin + mobile) — not email links.
+**Password reset** uses a code on `/reset-password` (admin + mobile) — not email links. Hosted Supabase must use the code-only **Reset password** template from `supabase/templates/recovery.html` (`{{ .Token }}`). If the default template with `{{ .ConfirmationURL }}` is still live, users get a link instead of a code.
+
+Reset UX is two steps: (1) enter email + code → verify, (2) set new password.
 
 ## Local diagnostic UI
 

@@ -15,7 +15,7 @@ export function mapAuthError(message: string): string {
     return 'That confirmation code is invalid. Check the latest email and try again, or resend a new code.';
   }
   if (m.includes('invalid login credentials')) {
-    return 'Incorrect email or password, or your email may still be waiting for confirmation.';
+    return 'Incorrect email or password.';
   }
   if (m.includes('user already registered') || m.includes('already been registered')) {
     return 'An account with this email already exists. Try signing in or reset your password.';

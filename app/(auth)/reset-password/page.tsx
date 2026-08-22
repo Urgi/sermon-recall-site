@@ -14,7 +14,7 @@ export default function ResetPasswordPage({
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
-      <h1 className="text-xl font-bold text-white">Choose a new password</h1>
+      <h1 className="text-xl font-bold text-white">Reset password</h1>
       <ResetPasswordForm initialEmail={initialEmail} linkRejected={linkRejected} />
     </div>
   );
