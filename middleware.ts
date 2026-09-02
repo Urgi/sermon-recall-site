@@ -35,8 +35,7 @@ export async function middleware(request: NextRequest) {
         loginParams.get('setup') === 'failed' ||
         loginParams.get('email_sent') === '1' ||
         loginParams.get('error') != null);
-    const allowResetPassword = path === '/reset-password';
-    if (!stayOnLogin && !allowResetPassword) {
+    if (!stayOnLogin) {
       const dash = request.nextUrl.clone();
       dash.pathname = '/dashboard';
       dash.search = '';

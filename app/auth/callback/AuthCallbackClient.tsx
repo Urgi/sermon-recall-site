@@ -36,7 +36,7 @@ export function AuthCallbackClient() {
         await supabase.auth.signOut();
         if (cancelled) return;
         const isRecovery = next === 'reset-password' || type === 'recovery';
-        router.replace(isRecovery ? '/reset-password?error=use_code' : '/verify-email?error=use_code');
+        router.replace(isRecovery ? '/login?error=use_code' : '/verify-email?error=use_code');
         return;
       }
 

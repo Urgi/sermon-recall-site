@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { sendEmailOtp, verifyEmailOtp } from '@/lib/auth/email-otp';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { USE_CODE_NOT_LINK_MESSAGE } from '@/lib/auth/signup-email-messages';
-import { PasswordInput } from '@/components/auth/PasswordInput';
+import { ensurePublicUserProfile } from '@/lib/auth/ensure-public-profile';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -15,15 +15,20 @@ type Props = {
   linkRejected?: boolean;
 };
 
+type Step = 'email' | 'code';
+
+const inputClass =
+  'mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
+
 export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
+  const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState(initialEmail);
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [showResend, setShowResend] = useState(false);
   const [resendPending, setResendPending] = useState(false);
-  const [resendNotice, setResendNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
@@ -35,73 +40,91 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
     });
   }, [router, nextPath]);
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSendCode(e?: React.FormEvent) {
+    e?.preventDefault();
+    setError(null);
+    setNotice(null);
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) {
+      setError('Enter your email address.');
+      return;
+    }
+    setPending(true);
+    const supabase = createBrowserSupabaseClient();
+    const { error: err } = await sendEmailOtp(supabase, trimmed, { createUser: false });
+    setPending(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setStep('code');
+    setNotice('Code sent. Check your inbox and spam.');
+  }
+
+  async function onVerify(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setResendNotice(null);
-    setShowResend(false);
+    setNotice(null);
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < 6) {
+      setError('Enter the 6+ digit code from your email.');
+      return;
+    }
     setPending(true);
     try {
       const supabase = createBrowserSupabaseClient();
-      const { error: signError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (signError) {
-        const msg = signError.message.toLowerCase();
-        setError(mapAuthError(signError.message));
-        // Only the real Supabase unconfirmed-email error — never wrong password.
-        if (msg.includes('email not confirmed')) {
-          setShowResend(true);
-        }
+      const { error: err } = await verifyEmailOtp(supabase, trimmedEmail, trimmedCode);
+      if (err) {
+        setError(err);
         return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        const profile = await ensurePublicUserProfile(supabase, session.user);
+        if (!profile.ok) {
+          setError(profile.error);
+          return;
+        }
       }
       router.refresh();
       router.push(nextPath);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(mapAuthError(msg));
+      setError(mapAuthError(err instanceof Error ? err.message : String(err)));
     } finally {
       setPending(false);
     }
   }
 
-  async function onResendConfirmation() {
-    if (!email.trim()) {
-      setResendNotice('Enter your email above, then try again.');
-      return;
-    }
+  async function onResend() {
     setResendPending(true);
-    setResendNotice(null);
-    try {
-      const supabase = createBrowserSupabaseClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.trim(),
-      });
-      if (resendError) {
-        setResendNotice(mapAuthError(resendError.message));
-        return;
-      }
-      setResendNotice('Confirmation code sent. Check inbox and spam.');
-    } catch {
-      setResendNotice('Network error. Check your connection and try again.');
-    } finally {
-      setResendPending(false);
-    }
+    setError(null);
+    const supabase = createBrowserSupabaseClient();
+    const { error: err } = await sendEmailOtp(supabase, email.trim().toLowerCase(), {
+      createUser: false,
+    });
+    setResendPending(false);
+    setNotice(err ?? 'New code sent. Check inbox and spam.');
   }
 
-  const verifyHref = email.trim()
-    ? `/verify-email?email=${encodeURIComponent(email.trim())}`
-    : '/verify-email';
-
   return (
-    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+    <form onSubmit={step === 'email' ? onSendCode : onVerify} className="mt-6 space-y-4">
       {linkRejected ? (
-        <p className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100" role="alert">
+        <p
+          className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100"
+          role="alert"
+        >
           {USE_CODE_NOT_LINK_MESSAGE}
         </p>
       ) : null}
+
+      <p className="text-[14px] leading-relaxed text-[#94a3b8]">
+        {step === 'email'
+          ? 'We’ll email you a one-time code — no password needed.'
+          : `Enter the code we sent to ${email.trim().toLowerCase()}.`}
+      </p>
 
       <div>
         <label htmlFor="login-email" className="block text-[13px] font-medium text-[#94a3b8]">
@@ -113,63 +136,85 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
           type="email"
           autoComplete="email"
           required
-          disabled={pending}
+          disabled={pending || step === 'code'}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={inputClass}
         />
       </div>
-      <div>
-        <div className="flex items-center justify-between">
-          <label htmlFor="login-password" className="block text-[13px] font-medium text-[#94a3b8]">
-            Password
+
+      {step === 'code' ? (
+        <div>
+          <label htmlFor="login-code" className="block text-[13px] font-medium text-[#94a3b8]">
+            Sign-in code
           </label>
-          <Link href="/forgot-password" className="text-[12px] text-[#38bdf8] hover:underline">
-            Forgot password?
-          </Link>
+          <p className="mt-0.5 text-[12px] text-[#64748b]">6-digit code from your email (check spam).</p>
+          <input
+            id="login-code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={8}
+            required
+            disabled={pending}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            placeholder="123456"
+            className={`${inputClass} font-mono text-[17px] tracking-widest`}
+          />
         </div>
-        <PasswordInput
-          id="login-password"
-          name="password"
-          autoComplete="current-password"
-          required
-          disabled={pending}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
+      ) : null}
+
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">
           {error}
         </p>
       ) : null}
-      {showResend ? (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={resendPending || pending}
-            onClick={() => void onResendConfirmation()}
-            className="text-left text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
-          >
-            {resendPending ? 'Sending…' : 'Resend confirmation code'}
-          </button>
-          <Link href={verifyHref} className="text-[13px] font-medium text-[#38bdf8] hover:underline">
-            Enter confirmation code
-          </Link>
-        </div>
-      ) : null}
-      {resendNotice ? (
+      {notice ? (
         <p className="text-[13px] text-[#86efac]" role="status">
-          {resendNotice}
+          {notice}
         </p>
       ) : null}
+
       <button
         type="submit"
         disabled={pending}
         className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
       >
-        {pending ? 'Signing in…' : 'Sign in'}
+        {pending
+          ? step === 'email'
+            ? 'Sending…'
+            : 'Signing in…'
+          : step === 'email'
+            ? 'Email me a code'
+            : 'Verify & sign in'}
       </button>
+
+      {step === 'code' ? (
+        <>
+          <button
+            type="button"
+            disabled={resendPending || pending}
+            onClick={() => void onResend()}
+            className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+          >
+            {resendPending ? 'Sending…' : 'Resend code'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStep('email');
+              setCode('');
+              setError(null);
+              setNotice(null);
+            }}
+            className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline"
+          >
+            Use a different email
+          </button>
+        </>
+      ) : null}
     </form>
   );
 }

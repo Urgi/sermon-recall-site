@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { buildMemberJoinUrl, normalizeChurchCode } from '@/lib/church/member-join';
+import { GOOGLE_PLAY_URL } from '@/lib/public-site/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 type Props = { params: { code: string } };
@@ -33,20 +35,30 @@ export default async function MemberJoinPage({ params }: Props) {
         </p>
         <div className="mt-8 space-y-3 text-left text-[14px] text-[#cbd5e1]">
           <p>
-            <span className="font-semibold text-white">1.</span> Install Sermon Recall from the App
-            Store or Google Play.
+            <span className="font-semibold text-white">1.</span> Install Sermon Recall from{' '}
+            <a
+              href={GOOGLE_PLAY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#38bdf8] hover:underline"
+            >
+              Google Play
+            </a>
+            .
           </p>
           <p>
-            <span className="font-semibold text-white">2.</span> Sign in with your phone number.
+            <span className="font-semibold text-white">2.</span> Sign in with your email (we send a
+            one-time code).
           </p>
           <p>
             <span className="font-semibold text-white">3.</span> On &ldquo;Join your church,&rdquo;
             enter the code above.
           </p>
         </div>
+        <MemberAppStoreLinks className="mt-8 justify-center" />
         <a
           href={appDeepLink}
-          className="mt-8 inline-block rounded-lg bg-[#0ea5e9] px-5 py-3 text-[15px] font-semibold text-white no-underline hover:bg-[#0284c7]"
+          className="mt-4 inline-block rounded-lg bg-[#0ea5e9] px-5 py-3 text-[15px] font-semibold text-white no-underline hover:bg-[#0284c7]"
         >
           Open in app
         </a>

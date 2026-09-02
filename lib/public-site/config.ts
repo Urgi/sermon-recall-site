@@ -20,6 +20,14 @@ export const PUBLIC_SITE = {
     "Sermon Recall helps churches turn Saturday/Sunday's message into a six-day devotional journey so members remember and apply what they heard.",
 } as const;
 
+/** Member app store links (override via env if the listing URL changes). */
+export const GOOGLE_PLAY_URL =
+  process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL?.trim() ||
+  'https://play.google.com/store/apps/details?id=com.antoineassociates.sermonrecall';
+
+/** Set when the App Store listing is live (Apple ID 6798402169). */
+export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() || '';
+
 /** Homepage + FAQ page — curated list from ministry positioning doc (12 key objections). */
 export const PUBLIC_FAQ = [
   {

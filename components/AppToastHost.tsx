@@ -61,8 +61,8 @@ function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | nu
     return {
       message: USE_RESET_CODE_NOT_LINK_MESSAGE,
       variant: 'error',
-      href: '/reset-password',
-      hrefLabel: 'Enter reset code',
+      href: '/login',
+      hrefLabel: 'Sign in with a code',
     };
   }
   if (searchParams.get('setup') === 'failed') {

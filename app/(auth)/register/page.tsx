@@ -16,8 +16,7 @@ export default function RegisterPage() {
         with its code, same as in the mobile app.
       </p>
       <p className="mt-3 rounded-lg border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-[13px] leading-relaxed text-sky-100">
-        After you register, we email a confirmation code. Enter it on the next screen before you
-        can sign in.
+        We email you a one-time code to finish creating your account. Enter it on the next screen.
       </p>
       <RegisterForm />
       <p className="mt-6 text-center text-[13px] text-[#64748b]">

@@ -5,13 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
+import { sendEmailOtp, verifyEmailOtp } from '@/lib/auth/email-otp';
 import {
   EMAIL_CONFIRMED_MESSAGE,
-  SIGNUP_CODE_SENT_MESSAGE,
   USE_CODE_NOT_LINK_MESSAGE,
 } from '@/lib/auth/signup-email-messages';
 import { ensurePublicUserProfile } from '@/lib/auth/ensure-public-profile';
-import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -41,26 +40,22 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
     e.preventDefault();
     setError(null);
     setResendNotice(null);
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     const trimmedCode = code.trim();
     if (!trimmedEmail) {
       setError('Enter the email you registered with.');
       return;
     }
     if (trimmedCode.length < 6) {
-      setError('Enter the confirmation code from your email.');
+      setError('Enter the code from your email.');
       return;
     }
     setPending(true);
     try {
       const supabase = createBrowserSupabaseClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: trimmedEmail,
-        token: trimmedCode,
-        type: 'signup',
-      });
+      const { error: verifyError } = await verifyEmailOtp(supabase, trimmedEmail, trimmedCode);
       if (verifyError) {
-        setError(mapAuthError(verifyError.message));
+        setError(verifyError);
         return;
       }
       const {
@@ -90,31 +85,27 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
     }
     setResendPending(true);
     setResendNotice(null);
-    try {
-      const supabase = createBrowserSupabaseClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.trim(),
-      });
-      setResendNotice(
-        resendError ? mapAuthError(resendError.message) : 'New code sent. Check your inbox and spam.',
-      );
-    } catch {
-      setResendNotice('Network error. Try again.');
-    } finally {
-      setResendPending(false);
-    }
+    const supabase = createBrowserSupabaseClient();
+    const { error: resendError } = await sendEmailOtp(supabase, email.trim().toLowerCase(), {
+      createUser: true,
+      signupPortal: 'admin_web',
+    });
+    setResendPending(false);
+    setResendNotice(resendError ?? 'New code sent. Check your inbox and spam.');
   }
 
   return (
     <form onSubmit={onVerify} className="mt-6 space-y-4">
       <p className="text-[14px] leading-relaxed text-[#94a3b8]">
-        Enter the confirmation code from your email. Links in that email cannot confirm your
-        account — the code is required.
+        Enter the one-time code from your email. Links in that email will not sign you in — the
+        code is required.
       </p>
 
       {linkRejected ? (
-        <p className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100" role="alert">
+        <p
+          className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100"
+          role="alert"
+        >
           {USE_CODE_NOT_LINK_MESSAGE}
         </p>
       ) : null}
@@ -172,7 +163,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         disabled={pending}
         className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
       >
-        {pending ? 'Confirming…' : 'Confirm email'}
+        {pending ? 'Verifying…' : 'Verify code'}
       </button>
 
       <button
@@ -181,7 +172,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         onClick={() => void onResend()}
         className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
       >
-        {resendPending ? 'Sending…' : 'Resend confirmation code'}
+        {resendPending ? 'Sending…' : 'Resend code'}
       </button>
 
       <p className="text-center text-[13px] text-[#64748b]">

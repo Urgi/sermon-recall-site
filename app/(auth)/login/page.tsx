@@ -22,7 +22,7 @@ export default function LoginPage({
       </div>
       <h1 className="text-xl font-bold text-white">Pastor sign in</h1>
       <p className="mt-2 text-[14px] leading-relaxed text-[#94a3b8]">
-        Sign in with the email and password for your church admin account.
+        Sign in with a one-time code sent to your church admin email — no password needed.
       </p>
       <LoginForm nextPath={next} initialEmail={initialEmail} linkRejected={linkRejected} />
       <p className="mt-6 text-center text-[13px] text-[#64748b]">

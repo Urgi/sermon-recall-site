@@ -15,10 +15,10 @@ export function mapAuthError(message: string): string {
     return 'That confirmation code is invalid. Check the latest email and try again, or resend a new code.';
   }
   if (m.includes('invalid login credentials')) {
-    return 'Incorrect email or password.';
+    return 'That code is incorrect. Check the latest email and try again.';
   }
   if (m.includes('user already registered') || m.includes('already been registered')) {
-    return 'An account with this email already exists. Try signing in or reset your password.';
+    return 'An account with this email already exists. Sign in with a code instead.';
   }
   if (m.includes('fetch') || m.includes('network') || m.includes('failed to fetch')) {
     return 'Cannot reach the server. Check your internet connection and try again.';

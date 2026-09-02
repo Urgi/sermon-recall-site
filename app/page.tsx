@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { HomeFaqSection } from '@/components/public/HomeFaqSection';
+import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { PublicSiteFooter } from '@/components/public/PublicSiteFooter';
 import { PublicSiteHeader } from '@/components/public/PublicSiteHeader';
 import { PUBLIC_SITE, supportEmail } from '@/lib/public-site/config';
@@ -89,16 +90,17 @@ export default async function PublicHomePage() {
             <article className="rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#05070a] p-6">
               <h2 className="text-lg font-semibold text-white">For church members</h2>
               <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-                Members use the Sermon Recall mobile app on iPhone (Android supported in
-                development). Your pastor shares a church code; you create an account, join your
-                church, and open each day&apos;s devotional with guided reflection and application.
+                Members use the Sermon Recall app on Android (iPhone coming soon). Your pastor
+                shares a church code; you create an account with email, join your church, and open
+                each day&apos;s devotional with guided reflection and application.
               </p>
               <ul className="mt-4 space-y-2 text-[14px] text-[#cbd5e1]">
                 <li>• Daily devotionals tied to your church&apos;s sermon series</li>
                 <li>• Optional reminders to stay on rhythm through the week</li>
                 <li>• Private progress on your own account</li>
               </ul>
-              <p className="mt-5 text-[14px] text-[#64748b]">
+              <MemberAppStoreLinks className="mt-5" />
+              <p className="mt-4 text-[14px] text-[#64748b]">
                 Ask your pastor for your church&apos;s join code or link.
               </p>
             </article>

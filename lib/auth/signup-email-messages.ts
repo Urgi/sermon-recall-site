@@ -2,9 +2,9 @@
 export const USE_CODE_NOT_LINK_MESSAGE =
   'Email links cannot confirm your account. Enter the confirmation code from your email on the verify screen.';
 
-/** Shown when a password reset link is opened instead of entering the OTP. */
+/** Shown when a legacy password-reset link is opened — sign-in is email OTP only. */
 export const USE_RESET_CODE_NOT_LINK_MESSAGE =
-  'Email links cannot reset your password. Enter the reset code from your email on the reset password screen.';
+  'Email links cannot sign you in. Use the sign-in screen and enter the one-time code from your email.';
 
 export const SIGNUP_CODE_SENT_MESSAGE =
   'We sent a confirmation code to your email. Enter it on the next screen. Check spam if nothing arrives in a few minutes.';

@@ -1,3 +1,5 @@
+import { GOOGLE_PLAY_URL } from '@/lib/public-site/config';
+
 /** Base URL for member join links (QR codes, emails). Defaults to admin/site URL. */
 export function memberJoinBaseUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_MEMBER_JOIN_URL?.trim();
@@ -32,8 +34,8 @@ export function buildMemberJoinEmailHtml(params: {
     <div style="font-family: system-ui, -apple-system, sans-serif; max-width: 32rem; color: #0f172a;">
       <p>Join <strong>${escapeHtml(params.churchName)}</strong> on Sermon Recall.</p>
       <p style="font-size: 15px; line-height: 1.5;">
-        1. Install the Sermon Recall app on your phone.<br />
-        2. Sign in with your phone number.<br />
+        1. Install Sermon Recall from <a href="${GOOGLE_PLAY_URL}" style="color: #0284c7;">Google Play</a>.<br />
+        2. Sign in with your email (one-time code).<br />
         3. Enter church code <strong style="font-family: ui-monospace, monospace;">${escapeHtml(code)}</strong>
         or scan the QR code below.
       </p>
@@ -57,8 +59,8 @@ export function buildMemberJoinEmailText(params: {
   return [
     `Join ${params.churchName} on Sermon Recall`,
     '',
-    '1. Install the Sermon Recall app on your phone.',
-    '2. Sign in with your phone number.',
+    `1. Install Sermon Recall from Google Play: ${GOOGLE_PLAY_URL}`,
+    '2. Sign in with your email (one-time code).',
     `3. Enter church code: ${code}`,
     '',
     `Or open this link: ${params.joinUrl}`,

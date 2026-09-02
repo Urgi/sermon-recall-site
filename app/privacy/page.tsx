@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <ul className="mt-3 list-disc space-y-2 pl-5">
               <li>
                 <strong className="text-[#e2e8f0]">Account information</strong> — email address, name,
-                and password (stored securely via our authentication provider).
+                and sign-in codes (handled securely via our authentication provider).
               </li>
               <li>
                 <strong className="text-[#e2e8f0]">Church association</strong> — church code or

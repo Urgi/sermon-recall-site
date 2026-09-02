@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { PUBLIC_SITE, supportEmail } from '@/lib/public-site/config';
 
 export function PublicSiteFooter() {
@@ -15,6 +16,7 @@ export function PublicSiteFooter() {
           <p className="mt-3 text-[13px] text-[#94a3b8]">
             © {year} {PUBLIC_SITE.legalName}. All rights reserved.
           </p>
+          <MemberAppStoreLinks className="mt-4" size="compact" />
         </div>
         <div className="flex flex-col gap-2 text-[14px]">
           <Link href="/faq" className="text-[#94a3b8] hover:text-[#38bdf8]">

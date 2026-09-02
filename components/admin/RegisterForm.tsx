@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
-import { PasswordInput } from '@/components/auth/PasswordInput';
-import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { sendEmailOtp } from '@/lib/auth/email-otp';
 import { SIGNUP_CODE_SENT_MESSAGE } from '@/lib/auth/signup-email-messages';
 import {
   APP_LANGUAGES,
@@ -16,13 +15,13 @@ import {
 } from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
-const MIN_PASSWORD_LENGTH = 8;
+const inputClass =
+  'mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
 
 export function RegisterForm() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [preferredLanguage, setPreferredLanguage] =
     useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
@@ -31,44 +30,25 @@ export function RegisterForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`);
+    setPending(true);
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setError('Enter your email address.');
+      setPending(false);
       return;
     }
-    setPending(true);
-    const trimmedEmail = email.trim();
 
     try {
       const supabase = createBrowserSupabaseClient();
-      const { data, error: signError } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim() || undefined,
-            preferred_language: preferredLanguage,
-            signup_portal: 'admin_web',
-          },
-        },
+      const { error: err } = await sendEmailOtp(supabase, trimmedEmail, {
+        createUser: true,
+        fullName: fullName.trim() || undefined,
+        preferredLanguage,
+        signupPortal: 'admin_web',
       });
 
-      if (signError) {
-        setError(mapAuthError(signError.message));
-        return;
-      }
-      if (data.user?.identities?.length === 0) {
-        setError(
-          'An account with this email already exists. Try signing in or reset your password.',
-        );
-        return;
-      }
-      if (data.session) {
-        queueAppToast({
-          variant: 'success',
-          message: 'Account created. Taking you to your dashboard…',
-        });
-        router.refresh();
-        router.push('/dashboard?welcome=1');
+      if (err) {
+        setError(err);
         return;
       }
 
@@ -95,7 +75,7 @@ export function RegisterForm() {
           disabled={pending}
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={inputClass}
         />
       </div>
       <div>
@@ -111,24 +91,8 @@ export function RegisterForm() {
           disabled={pending}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={inputClass}
         />
-      </div>
-      <div>
-        <label htmlFor="reg-password" className="block text-[13px] font-medium text-[#94a3b8]">
-          Password
-        </label>
-        <PasswordInput
-          id="reg-password"
-          name="password"
-          autoComplete="new-password"
-          required
-          minLength={MIN_PASSWORD_LENGTH}
-          disabled={pending}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <p className="mt-1 text-[12px] text-[#64748b]">At least {MIN_PASSWORD_LENGTH} characters</p>
       </div>
       <div>
         <label htmlFor="reg-language" className="block text-[13px] font-medium text-[#94a3b8]">
@@ -143,7 +107,7 @@ export function RegisterForm() {
           disabled={pending}
           value={preferredLanguage}
           onChange={(e) => setPreferredLanguage(e.target.value as AppLanguage)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={inputClass}
         >
           {APP_LANGUAGES.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -158,8 +122,8 @@ export function RegisterForm() {
           {error.includes('already exists') ? (
             <>
               {' '}
-              <Link href="/forgot-password" className="text-[#38bdf8] hover:underline">
-                Reset password
+              <Link href="/login" className="text-[#38bdf8] hover:underline">
+                Sign in with a code
               </Link>
             </>
           ) : null}
@@ -170,7 +134,7 @@ export function RegisterForm() {
         disabled={pending}
         className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
       >
-        {pending ? 'Creating account…' : 'Create account'}
+        {pending ? 'Sending…' : 'Email me a code'}
       </button>
     </form>
   );

@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     const msg = error.message.toLowerCase();
     if (msg.includes('already') && msg.includes('confirmed')) {
       return NextResponse.json({
-        message: 'This email is already confirmed. Try signing in with your password.',
+        message: 'This email is already confirmed. Sign in with a code from your email.',
         alreadyConfirmed: true,
       });
     }

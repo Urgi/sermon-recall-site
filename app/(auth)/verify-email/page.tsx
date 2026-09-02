@@ -14,7 +14,7 @@ export default function VerifyEmailPage({
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
-      <h1 className="text-xl font-bold text-white">Confirm your email</h1>
+      <h1 className="text-xl font-bold text-white">Enter your code</h1>
       <VerifyEmailForm initialEmail={email} linkRejected={linkRejected} />
     </div>
   );
