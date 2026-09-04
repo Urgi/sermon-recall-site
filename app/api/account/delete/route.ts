@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { emailsMatchForDeletion } from '@/lib/account/deletion';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getRequestSupabaseUser } from '@/lib/supabase/request-user';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
@@ -14,11 +14,7 @@ export async function POST(req: Request) {
     /* empty body ok */
   }
 
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const { user, supabase, error: authError } = await getRequestSupabaseUser(req);
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });

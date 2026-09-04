@@ -1,16 +1,12 @@
 import { NextResponse } from 'next/server';
 
 import { parseDeletionPreview } from '@/lib/account/deletion';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getRequestSupabaseUser } from '@/lib/supabase/request-user';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const supabase = createServerSupabaseClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+export async function GET(req: Request) {
+  const { user, supabase, error: authError } = await getRequestSupabaseUser(req);
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
