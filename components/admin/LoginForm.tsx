@@ -18,7 +18,7 @@ type Props = {
 type Step = 'email' | 'code';
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
+  'mt-1 w-full rounded-xl border border-[rgba(56,189,248,0.22)] bg-[#0b1220] px-4 py-3.5 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
 
 export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
@@ -39,6 +39,13 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
       }
     });
   }, [router, nextPath]);
+
+  function backToEmail() {
+    setStep('email');
+    setCode('');
+    setError(null);
+    setNotice(null);
+  }
 
   async function onSendCode(e?: React.FormEvent) {
     e?.preventDefault();
@@ -109,46 +116,68 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
     setNotice(err ?? 'New code sent. Check inbox and spam.');
   }
 
+  const emailReady = email.trim().length > 0;
+  const codeReady = code.trim().length >= 6;
+
   return (
     <form onSubmit={step === 'email' ? onSendCode : onVerify} className="mt-6 space-y-4">
+      {step === 'code' ? (
+        <button
+          type="button"
+          onClick={backToEmail}
+          className="text-[14px] font-semibold text-[#38bdf8] hover:underline"
+        >
+          ← Back
+        </button>
+      ) : null}
+
+      {step === 'code' ? (
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#38bdf8]">
+            Verification
+          </p>
+          <h2 className="mt-2 text-[28px] font-bold leading-tight text-white">Enter your code</h2>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
+            We sent a code to {email.trim().toLowerCase()}.
+          </p>
+        </div>
+      ) : (
+        <p className="text-[14px] leading-relaxed text-[#94a3b8]">
+          We’ll email you a one-time code — no password needed.
+        </p>
+      )}
+
       {linkRejected ? (
         <p
-          className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100"
+          className="rounded-xl border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100"
           role="alert"
         >
           {USE_CODE_NOT_LINK_MESSAGE}
         </p>
       ) : null}
 
-      <p className="text-[14px] leading-relaxed text-[#94a3b8]">
-        {step === 'email'
-          ? 'We’ll email you a one-time code — no password needed.'
-          : `Enter the code we sent to ${email.trim().toLowerCase()}.`}
-      </p>
-
-      <div>
-        <label htmlFor="login-email" className="block text-[13px] font-medium text-[#94a3b8]">
-          Email
-        </label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          disabled={pending || step === 'code'}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputClass}
-        />
-      </div>
-
-      {step === 'code' ? (
+      {step === 'email' ? (
         <div>
-          <label htmlFor="login-code" className="block text-[13px] font-medium text-[#94a3b8]">
+          <label htmlFor="login-email" className="block text-[13px] font-semibold text-white">
+            Email
+          </label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            disabled={pending}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      ) : (
+        <div>
+          <label htmlFor="login-code" className="sr-only">
             Sign-in code
           </label>
-          <p className="mt-0.5 text-[12px] text-[#64748b]">6-digit code from your email (check spam).</p>
           <input
             id="login-code"
             name="code"
@@ -158,13 +187,14 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             maxLength={8}
             required
             disabled={pending}
+            autoFocus
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            placeholder="123456"
-            className={`${inputClass} font-mono text-[17px] tracking-widest`}
+            placeholder="000000"
+            className={`${inputClass} text-center text-[28px] font-semibold tracking-[0.35em]`}
           />
         </div>
-      ) : null}
+      )}
 
       {error ? (
         <p className="text-[13px] text-red-400" role="alert">
@@ -179,8 +209,10 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
 
       <button
         type="submit"
-        disabled={pending}
-        className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        disabled={
+          pending || (step === 'email' ? !emailReady : !codeReady)
+        }
+        className="w-full rounded-full bg-[#0ea5e9] px-4 py-3.5 text-[16px] font-semibold text-white hover:bg-[#0284c7] disabled:cursor-not-allowed disabled:border disabled:border-[rgba(56,189,248,0.22)] disabled:bg-[#0b1220] disabled:text-[#64748b]"
       >
         {pending
           ? step === 'email'
@@ -188,32 +220,18 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             : 'Signing in…'
           : step === 'email'
             ? 'Email me a code'
-            : 'Verify & sign in'}
+            : 'Verify code'}
       </button>
 
       {step === 'code' ? (
-        <>
-          <button
-            type="button"
-            disabled={resendPending || pending}
-            onClick={() => void onResend()}
-            className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
-          >
-            {resendPending ? 'Sending…' : 'Resend code'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setStep('email');
-              setCode('');
-              setError(null);
-              setNotice(null);
-            }}
-            className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline"
-          >
-            Use a different email
-          </button>
-        </>
+        <button
+          type="button"
+          disabled={resendPending || pending}
+          onClick={() => void onResend()}
+          className="block w-full py-2 text-center text-[15px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+        >
+          {resendPending ? 'Sending…' : 'Resend code'}
+        </button>
       ) : null}
     </form>
   );

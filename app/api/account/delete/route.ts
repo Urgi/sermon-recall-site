@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { emailsMatchForDeletion } from '@/lib/account/deletion';
 import { getRequestSupabaseUser } from '@/lib/supabase/request-user';
-import { createServiceRoleClient } from '@/lib/supabase/service-role';
+import { deleteAuthUserWithServiceRole } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,22 +42,24 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
+    if (msg.includes('not_authenticated')) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+    }
     console.warn('[account/delete] rpc', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  const admin = createServiceRoleClient();
-  if (!admin) {
+  const authDelete = await deleteAuthUserWithServiceRole(user.id);
+  if (!authDelete.ok) {
+    console.warn('[account/delete] auth', authDelete.error);
     return NextResponse.json(
-      { error: 'Account data was removed but sign-in could not be finalized. Contact support.' },
-      { status: 503 },
+      {
+        error:
+          authDelete.error ??
+          'Could not finish deleting your sign-in. Contact support.',
+      },
+      { status: authDelete.status },
     );
-  }
-
-  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-  if (deleteError) {
-    console.warn('[account/delete] auth', deleteError.message);
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

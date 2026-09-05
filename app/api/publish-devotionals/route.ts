@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { authorizeApiPermission } from '@/lib/auth/server';
 import { parseDaysFromClientPayload } from '@/lib/devotionals/devotional-days';
 import { writeAuditLog } from '@/lib/audit/log';
-import { notifyChurchNewDevotionals } from '@/lib/push/notify-church-new-devotionals';
+import { notifyNewWeekDay1IfReady } from '@/lib/push/notify-church-new-devotionals';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +31,9 @@ export async function POST(req: Request) {
 
   const { data: sermon, error: sermonError } = await supabase
     .from('sermons')
-    .select('id, church_id, title, workflow_status, churches(require_devotional_approval)')
+    .select(
+      'id, church_id, title, sermon_date, workflow_status, churches(require_devotional_approval, timezone)',
+    )
     .eq('id', sermonId)
     .single();
 
@@ -44,11 +46,12 @@ export async function POST(req: Request) {
   }
 
   const churchEmbedRaw = sermon.churches as
-    | { require_devotional_approval: boolean }
-    | { require_devotional_approval: boolean }[]
+    | { require_devotional_approval: boolean; timezone?: string }
+    | { require_devotional_approval: boolean; timezone?: string }[]
     | null;
   const churchEmbed = Array.isArray(churchEmbedRaw) ? churchEmbedRaw[0] : churchEmbedRaw;
   const approvalRequired = churchEmbed?.require_devotional_approval !== false;
+  const churchTimeZone = churchEmbed?.timezone ?? null;
   const wf = (sermon.workflow_status as string) ?? 'draft';
 
   if (approvalRequired && wf !== 'approved') {
@@ -128,10 +131,13 @@ export async function POST(req: Request) {
     })
     .eq('id', sermonId);
 
-  await notifyChurchNewDevotionals({
+  await notifyNewWeekDay1IfReady({
     churchId: sermon.church_id,
     sermonId,
     sermonTitle: sermon.title ?? 'New sermon',
+    sermonDate: (sermon as { sermon_date?: string | null }).sermon_date,
+    churchTimeZone,
+    publishedAtIso: now,
     excludeUserId: user.id,
   });
 

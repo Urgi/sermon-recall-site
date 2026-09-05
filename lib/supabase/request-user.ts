@@ -12,7 +12,8 @@ export async function getRequestSupabaseUser(req: Request): Promise<{
   supabase: SupabaseClient;
   error: string | null;
 }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim();
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
   if (!url || !anon) {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
@@ -23,9 +24,14 @@ export async function getRequestSupabaseUser(req: Request): Promise<{
     header && /^Bearer\s+/i.test(header) ? header.replace(/^Bearer\s+/i, '').trim() : '';
 
   if (bearer) {
+    // Prefer accessToken callback so PostgREST RPCs see auth.uid() reliably.
     const supabase = createClient(url, anon, {
-      global: { headers: { Authorization: `Bearer ${bearer}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
+      accessToken: async () => bearer,
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
     });
     const {
       data: { user },
