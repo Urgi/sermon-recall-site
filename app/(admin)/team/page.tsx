@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { canAccessTeamNav } from '@/lib/auth/profile';
 import { getChurchForProfile, requireApprovedStaffSession } from '@/lib/auth/server';
 import { TeamDashboard } from '@/components/admin/TeamDashboard';
@@ -37,8 +39,13 @@ export default async function TeamPage() {
       <header>
         <h1 className="admin-heading">Team</h1>
         <p className="admin-body mt-2 max-w-2xl">
-          Manage who can access your church workspace. Invite staff by email, approve new members,
-          and control what each role is allowed to do. All changes are enforced securely on the server.
+          This is how people get pastor or admin access. Invite them by email and choose a role —
+          they never pick up elevated access from the member QR or church code. Congregation
+          members still join on{' '}
+          <Link href="/members" className="text-admin-link hover:underline">
+            Members
+          </Link>
+          .
         </p>
       </header>
       <TeamDashboard />

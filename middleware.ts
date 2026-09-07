@@ -10,7 +10,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/sermons') ||
     path.startsWith('/settings') ||
     path.startsWith('/notifications') ||
-    path.startsWith('/team');
+    path.startsWith('/team') ||
+    path.startsWith('/members');
   const isAuthPage =
     path === '/login' ||
     path === '/register' ||

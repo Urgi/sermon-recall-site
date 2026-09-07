@@ -27,6 +27,18 @@ export type PastorEngagementPayload = {
   sample_commitments: string[];
 };
 
+export type MidweekNudgePhase = 'none' | 'upcoming' | 'due' | 'sent' | 'missed';
+
+export type PastorMidweekNudgeStatus = {
+  phase: MidweekNudgePhase;
+  sermon_id: string | null;
+  sermon_title: string | null;
+  expected_day: number | null;
+  cycle_diff: number | null;
+  sent_count: number;
+  will_send_count: number;
+};
+
 function asCount(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -83,5 +95,27 @@ export function parsePastorEngagement(data: unknown): PastorEngagementPayload | 
     weekly,
     sermons,
     sample_commitments,
+  };
+}
+
+const PHASES: MidweekNudgePhase[] = ['none', 'upcoming', 'due', 'sent', 'missed'];
+
+export function parsePastorMidweekNudge(data: unknown): PastorMidweekNudgeStatus | null {
+  if (!data || typeof data !== 'object') return null;
+  const o = data as Record<string, unknown>;
+  const phaseRaw = String(o.phase ?? 'none');
+  const phase = PHASES.includes(phaseRaw as MidweekNudgePhase)
+    ? (phaseRaw as MidweekNudgePhase)
+    : 'none';
+  const expected = Number(o.expected_day);
+  const diff = Number(o.cycle_diff);
+  return {
+    phase,
+    sermon_id: o.sermon_id ? String(o.sermon_id) : null,
+    sermon_title: o.sermon_title ? String(o.sermon_title) : null,
+    expected_day: Number.isFinite(expected) ? expected : null,
+    cycle_diff: Number.isFinite(diff) ? diff : null,
+    sent_count: asCount(o.sent_count),
+    will_send_count: asCount(o.will_send_count),
   };
 }

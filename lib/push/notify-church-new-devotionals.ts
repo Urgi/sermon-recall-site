@@ -1,9 +1,15 @@
-import { formatInTimeZone } from 'date-fns-tz';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import {
+  firstDevotionalDayYmd,
+  localYmdInChurchTz,
+  safeChurchTimeZone,
+} from '@/lib/devotionals/cycle';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
 import { pruneStalePushTokens } from '@/lib/rate-limit';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
+
+export { firstDevotionalDayYmd, localYmdInChurchTz, safeChurchTimeZone };
 
 export type NotifyChurchNewDevotionalsParams = {
   churchId: string;
@@ -19,42 +25,6 @@ export type NotifyChurchNewDevotionalsParams = {
    */
   respectNotifyEnabled?: boolean;
 };
-
-const DEFAULT_TZ = 'America/New_York';
-
-export function safeChurchTimeZone(raw: string | null | undefined): string {
-  if (!raw?.trim()) return DEFAULT_TZ;
-  try {
-    formatInTimeZone(new Date(), raw.trim(), 'yyyy-MM-dd');
-    return raw.trim();
-  } catch {
-    return DEFAULT_TZ;
-  }
-}
-
-export function localYmdInChurchTz(now: Date, timeZone: string): string {
-  return formatInTimeZone(now, safeChurchTimeZone(timeZone), 'yyyy-MM-dd');
-}
-
-/** First calendar day members can start Day 1 of this cycle (church TZ). */
-export function firstDevotionalDayYmd(params: {
-  sermonDate: string | null | undefined;
-  publishedAtIso?: string | null;
-  churchTimeZone: string;
-}): string {
-  const tz = safeChurchTimeZone(params.churchTimeZone);
-  const trimmed = params.sermonDate?.trim();
-  if (trimmed && /^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
-  const published = params.publishedAtIso?.trim();
-  if (published) {
-    try {
-      return formatInTimeZone(new Date(published), tz, 'yyyy-MM-dd');
-    } catch {
-      /* fall through */
-    }
-  }
-  return localYmdInChurchTz(new Date(), tz);
-}
 
 export function newWeekDedupeKey(sermonId: string): string {
   return `new-week-${sermonId}`;

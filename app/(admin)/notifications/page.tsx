@@ -5,7 +5,9 @@ import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
 import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistory';
 
-export default async function NotificationsPage() {
+type Props = { searchParams: { encourage?: string; n?: string } };
+
+export default async function NotificationsPage({ searchParams }: Props) {
   const { profile, staffRole, isApprovedStaff } = await requireAdminSession();
   const canSend =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
@@ -21,6 +23,12 @@ export default async function NotificationsPage() {
       </div>
     );
   }
+
+  const encourageN = Number(searchParams.n);
+  const encourageInactiveCount =
+    searchParams.encourage === '1' && Number.isFinite(encourageN) && encourageN > 0
+      ? encourageN
+      : undefined;
 
   if (!canSend) {
     return (
@@ -48,15 +56,15 @@ export default async function NotificationsPage() {
         </Link>
         <h1 className="admin-heading mt-4">Notifications</h1>
         <p className="admin-body mt-2">
-          Send a one-time push to your church. Members also receive automatic devotional reminders
-          for published sermon cycles.
+          Send a one-time push to your church. Members also get automatic daily reminders, plus a
+          mid-week catch-up nudge if they are more than a day behind.
         </p>
       </div>
 
       <section id="notify-church" className="admin-card p-6">
         <h2 className="admin-section-title">Notify your church</h2>
         <div className="mt-4">
-          <PastorBroadcastForm />
+          <PastorBroadcastForm encourageInactiveCount={encourageInactiveCount} />
         </div>
       </section>
 

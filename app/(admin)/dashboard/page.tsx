@@ -1,21 +1,20 @@
-import Link from 'next/link';
-
 import {
-  canAccessTeamNav,
   canManageSermonsWithStaff,
   staffHasPermission,
 } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
-import { parsePastorEngagement } from '@/lib/engagement/types';
+import {
+  DashboardOverview,
+  type DashboardSermonRow,
+} from '@/components/admin/DashboardOverview';
+import { parsePastorEngagement, parsePastorMidweekNudge } from '@/lib/engagement/types';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { ChurchMemberQrInline } from '@/components/admin/ChurchMemberQrInline';
-import { ChurchQrCard } from '@/components/admin/ChurchQrCard';
 import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
-import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { qrPngDataUrl } from '@/lib/church/qr';
-import { PastorEngagementSection } from '@/components/admin/PastorEngagementSection';
+import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
+import { pastorLifecycle } from '@/lib/admin/workflow-status';
 
 type Props = { searchParams: { staff?: string; error?: string } };
 
@@ -24,24 +23,12 @@ export default async function DashboardPage({ searchParams }: Props) {
   const church = await getChurchForProfile(profile.church_id);
   const supabase = createServerSupabaseClient();
 
-  let sermonCount = 0;
-  if (profile.church_id) {
-    const { count } = await supabase
-      .from('sermons')
-      .select('id', { count: 'exact', head: true })
-      .eq('church_id', profile.church_id);
-    sermonCount = count ?? 0;
-  }
-
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
   const canSendNotifications =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
-  const canViewTeam = canAccessTeamNav(profile, staffRole, {
-    ownerUserId: church?.owner_user_id,
-    userId: user.id,
-  });
 
   let engagementParsed = null as ReturnType<typeof parsePastorEngagement>;
+  let midweekNudge = null as ReturnType<typeof parsePastorMidweekNudge>;
   if (profile.church_id && canPublish) {
     const { data: engagementRaw, error: engagementErr } = await supabase.rpc(
       'pastor_church_engagement',
@@ -51,9 +38,34 @@ export default async function DashboardPage({ searchParams }: Props) {
       engagementParsed = parsePastorEngagement(engagementRaw);
     }
   }
+  if (profile.church_id && (canPublish || canSendNotifications)) {
+    const { data: nudgeRaw, error: nudgeErr } = await supabase.rpc('pastor_midweek_nudge_status', {
+      p_church_id: profile.church_id,
+    });
+    if (!nudgeErr) {
+      midweekNudge = parsePastorMidweekNudge(nudgeRaw);
+    }
+  }
 
-  const churchMemberPositive =
-    engagementParsed != null ? engagementParsed.member_count > 0 : Boolean(profile.church_id);
+  let recentSermons: DashboardSermonRow[] = [];
+  if (profile.church_id) {
+    const { data: sermons } = await supabase
+      .from('sermons')
+      .select('id, title, sermon_date, workflow_status, status, transcript_status')
+      .eq('church_id', profile.church_id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    recentSermons = (sermons ?? []).map((s) => ({
+      id: s.id as string,
+      title: s.title as string,
+      sermon_date: (s.sermon_date as string | null) ?? null,
+      lifecycle: pastorLifecycle({
+        workflow: ((s.workflow_status as SermonWorkflowStatus) ?? 'draft') as SermonWorkflowStatus,
+        ingestStatus: (s.status as string | null) ?? null,
+        transcriptStatus: (s.transcript_status as string | null) ?? null,
+      }),
+    }));
+  }
 
   let memberJoinUrl: string | null = null;
   let memberQrDataUrl: string | null = null;
@@ -62,15 +74,10 @@ export default async function DashboardPage({ searchParams }: Props) {
     memberQrDataUrl = await qrPngDataUrl(memberJoinUrl);
   }
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="admin-heading">Dashboard</h1>
-        <p className="admin-body mt-2">
-          Upload sermons, track processing, and review devotionals for your congregation.
-        </p>
-      </div>
+  const greetingName = profile.full_name?.trim() || user.email?.split('@')[0] || null;
 
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
       {searchParams.staff === 'pending' || (membership?.status === 'pending' && profile.church_id) ? (
         <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-6">
           <h2 className="admin-section-title text-amber-900 dark:text-amber-100">
@@ -89,39 +96,12 @@ export default async function DashboardPage({ searchParams }: Props) {
         </p>
       ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="admin-card p-5">
-          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Sermons</p>
-          <p className="mt-2 text-3xl font-bold text-admin-fg-strong">{sermonCount}</p>
-          <Link href="/sermons" className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline">
-            View all
-          </Link>
-        </div>
-        <div className="admin-card p-5">
-          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Quick action</p>
-          <div className="mt-3 flex flex-col items-start gap-2">
-            {canPublish && profile.church_id ? (
-              <Link href="/sermons/new" className="admin-btn-primary">
-                Add sermon
-              </Link>
-            ) : (
-              <p className="admin-hint">
-                {profile.church_id
-                  ? 'Approved staff access required to add sermons.'
-                  : 'Create or join a church to continue.'}
-              </p>
-            )}
-            {canSendNotifications && profile.church_id ? (
-              <Link href="/notifications#notify-church" className="admin-btn-primary">
-                Notify church
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
       {!profile.church_id ? (
-        <div className="space-y-6">
+        <div className="mx-auto max-w-lg space-y-6">
+          <div>
+            <h1 className="admin-heading">Welcome</h1>
+            <p className="admin-body mt-2">Create a church workspace to get started.</p>
+          </div>
           <section className="admin-card p-6">
             <h2 className="admin-section-title">Start your church</h2>
             <p className="admin-body mt-2">
@@ -144,40 +124,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
       ) : (
         <>
-          <section className="admin-card p-6">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 flex-1">
-                <h2 className="admin-hint text-sm font-semibold uppercase tracking-wide">
-                  Your church
-                </h2>
-                <p className="admin-section-title mt-1">{church?.name ?? '—'}</p>
-                <p className="admin-hint mt-1 font-mono">
-                  Code: {church?.church_code ?? '—'}
-                </p>
-                {canViewTeam ? (
-                  <Link
-                    href="/team"
-                    className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline"
-                  >
-                    Manage team →
-                  </Link>
-                ) : null}
-              </div>
-              {church?.church_code && memberQrDataUrl ? (
-                <ChurchMemberQrInline
-                  churchName={church.name}
-                  churchCode={church.church_code}
-                  qrDataUrl={memberQrDataUrl}
-                />
-              ) : null}
-            </div>
-          </section>
-          {canPublish ? (
-            <PastorEngagementSection
-              engagement={engagementParsed}
-              churchHasMembers={churchMemberPositive}
-            />
-          ) : null}
           {church && !church.owner_user_id && canPublish ? (
             <section className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-6">
               <h2 className="admin-section-title text-sky-900 dark:text-sky-100">
@@ -192,21 +138,18 @@ export default async function DashboardPage({ searchParams }: Props) {
               </div>
             </section>
           ) : null}
-          {church?.church_code && memberJoinUrl && memberQrDataUrl ? (
-            <section className="admin-card p-6">
-              <h2 className="admin-section-title">Share with members</h2>
-              <p className="admin-body mt-2">
-                Copy a join link, email instructions, or send directly to a member.
-              </p>
-              <ChurchQrCard
-                churchName={church.name}
-                churchCode={church.church_code}
-                joinUrl={memberJoinUrl}
-                qrDataUrl={memberQrDataUrl}
-                toolsOnly
-              />
-            </section>
-          ) : null}
+          <DashboardOverview
+            greetingName={greetingName}
+            churchName={church?.name ?? 'Your church'}
+            churchCode={church?.church_code ?? null}
+            joinUrl={memberJoinUrl}
+            qrDataUrl={memberQrDataUrl}
+            canPublish={canPublish}
+            canNotify={canSendNotifications}
+            engagement={engagementParsed}
+            midweekNudge={midweekNudge}
+            recentSermons={recentSermons}
+          />
         </>
       )}
     </div>

@@ -17,8 +17,83 @@ export type NotificationStatus =
 
 export type AudienceType = 'all_members' | 'pastors_only';
 
+export type SermonIngestStatus = 'processing' | 'ready' | 'failed';
+
+export type TranscriptStatus = 'idle' | 'queued' | 'processing' | 'completed' | 'failed';
+
+/** Pastor-facing sermon lifecycle — not the raw workflow enum. */
+export type PastorLifecycle =
+  | 'processing'
+  | 'failed'
+  | 'review_needed'
+  | 'ready_to_publish'
+  | 'published'
+  | 'draft'
+  | 'archived';
+
+export function pastorLifecycle(opts: {
+  workflow: SermonWorkflowStatus;
+  ingestStatus?: string | null;
+  transcriptStatus?: string | null;
+}): PastorLifecycle {
+  const ingest = opts.ingestStatus ?? '';
+  const transcript = opts.transcriptStatus ?? '';
+  if (opts.workflow === 'archived') return 'archived';
+  if (ingest === 'failed' || transcript === 'failed') return 'failed';
+  if (opts.workflow === 'published') return 'published';
+  if (opts.workflow === 'approved') return 'ready_to_publish';
+  if (
+    opts.workflow === 'generated' ||
+    opts.workflow === 'submitted_for_approval' ||
+    opts.workflow === 'changes_requested'
+  ) {
+    return 'review_needed';
+  }
+  if (ingest === 'processing' || transcript === 'queued' || transcript === 'processing') {
+    return 'processing';
+  }
+  return 'draft';
+}
+
+export function pastorLifecycleLabel(life: PastorLifecycle): string {
+  switch (life) {
+    case 'processing':
+      return 'Processing';
+    case 'failed':
+      return 'Failed';
+    case 'review_needed':
+      return 'Review needed';
+    case 'ready_to_publish':
+      return 'Ready to publish';
+    case 'published':
+      return 'Published';
+    case 'archived':
+      return 'Archived';
+    default:
+      return 'Draft';
+  }
+}
+
+export function pastorLifecycleBadgeClass(life: PastorLifecycle): string {
+  switch (life) {
+    case 'published':
+      return workflowStatusBadgeClass('published');
+    case 'ready_to_publish':
+      return workflowStatusBadgeClass('approved');
+    case 'review_needed':
+      return workflowStatusBadgeClass('submitted_for_approval');
+    case 'processing':
+      return workflowStatusBadgeClass('generated');
+    case 'failed':
+    case 'archived':
+      return workflowStatusBadgeClass('archived');
+    default:
+      return workflowStatusBadgeClass('draft');
+  }
+}
+
 export function workflowStatusLabel(status: SermonWorkflowStatus): string {
-  return status.replace(/_/g, ' ');
+  return pastorLifecycleLabel(pastorLifecycle({ workflow: status }));
 }
 
 export function workflowStatusBadgeClass(status: SermonWorkflowStatus): string {

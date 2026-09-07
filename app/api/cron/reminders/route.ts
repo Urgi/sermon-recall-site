@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { authorizeCronRequest } from '@/lib/cron-auth';
+import { runMidweekBehindNudges } from '@/lib/push/midweek-behind-nudge';
 import { runNewWeekDay1Notifications } from '@/lib/push/notify-church-new-devotionals';
 import { runDevotionalReminders } from '@/lib/push/reminder-scheduler';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -36,7 +37,8 @@ export async function GET(req: Request) {
   try {
     const newWeek = await runNewWeekDay1Notifications(admin);
     const result = await runDevotionalReminders(admin);
-    return NextResponse.json({ ok: true, newWeek, ...result });
+    const midweekBehind = await runMidweekBehindNudges(admin);
+    return NextResponse.json({ ok: true, newWeek, midweekBehind, ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
     console.warn('[cron/reminders]', msg);

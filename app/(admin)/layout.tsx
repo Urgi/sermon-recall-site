@@ -1,19 +1,15 @@
 import Link from 'next/link';
 
-import {
-  canAccessTeamNav,
-  canManageSermonsWithStaff,
-  staffHasPermission,
-} from '@/lib/auth/profile';
+import { canAccessTeamNav, staffHasPermission } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
+import { AdminSidebarNav } from '@/components/admin/AdminSidebarNav';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, profile, staffRole, isApprovedStaff } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
-  const pastorCapable = canManageSermonsWithStaff(profile, staffRole);
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
     ownerUserId: church?.owner_user_id,
     userId: user.id,
@@ -29,55 +25,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminShellProviders>
     <div className="admin-shell flex min-h-screen bg-admin-page text-admin-fg">
-      <aside className="admin-sidebar hidden w-56 shrink-0 flex-col border-r border-admin bg-admin-sidebar p-4 wide:flex">
+      <aside className="admin-sidebar hidden w-60 shrink-0 flex-col border-r border-admin bg-admin-sidebar p-4 wide:flex">
         <Link href="/dashboard" className="mb-6 inline-block" aria-label="Dashboard home">
           <SermonRecallLogo variant="header" className="h-10 w-auto max-w-[10rem] object-contain" priority />
         </Link>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-admin-dim">
-          Church admin
-        </p>
-        <nav className="admin-nav-stack flex flex-col gap-1 text-[14px]">
-          <Link
-            href="/dashboard"
-            className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/sermons"
-            className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-          >
-            Sermons
-          </Link>
-          {pastorCapable ? (
-            <Link
-              href="/sermons/new"
-              className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-            >
-              New sermon
-            </Link>
-          ) : null}
-          {canViewTeam ? (
-            <Link
-              href="/team"
-              className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-            >
-              Team
-            </Link>
-          ) : null}
-          <Link
-            href="/notifications"
-            className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-          >
-            Notifications
-          </Link>
-          <Link
-            href="/settings"
-            className="rounded-md px-2 py-2 text-admin-muted hover:bg-admin-nav-hover hover:text-admin-accent"
-          >
-            Settings
-          </Link>
-        </nav>
+        <AdminSidebarNav canViewTeam={canViewTeam} canViewNotifications={canViewNotifications} />
         <div className="mt-auto border-t border-admin pt-4">
           <p className="truncate px-2 text-[12px] text-admin-dim" title={user.email}>
             {label}
@@ -102,6 +54,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="text-xs font-medium text-admin-link hover:underline"
             >
               Sermons
+            </Link>
+            <Link
+              href="/members"
+              className="text-xs font-medium text-admin-link hover:underline"
+            >
+              Members
             </Link>
             {canViewTeam ? (
               <Link

@@ -9,13 +9,28 @@ import { BroadcastRoleAudience } from '@/components/admin/BroadcastRoleAudience'
 
 const DEFAULT_ROLES: StaffRole[] = ['owner', 'admin_pastor', 'associate_pastor'];
 
-export function PastorBroadcastForm() {
+type Props = {
+  /** When set, this visit came from “Send encouragement.” */
+  encourageInactiveCount?: number;
+};
+
+export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
   const router = useRouter();
   const formId = useId();
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
+  const [title, setTitle] = useState(
+    encourageInactiveCount != null && encourageInactiveCount > 0
+      ? 'A note of encouragement'
+      : '',
+  );
+  const [body, setBody] = useState(
+    encourageInactiveCount != null && encourageInactiveCount > 0
+      ? 'We’d love for you to finish this week’s devotional when you can. You’re not behind — just pick up today’s day.'
+      : '',
+  );
   const [targetStaffRoles, setTargetStaffRoles] = useState<StaffRole[]>(DEFAULT_ROLES);
-  const [includeAllMembers, setIncludeAllMembers] = useState(false);
+  const [includeAllMembers, setIncludeAllMembers] = useState(
+    Boolean(encourageInactiveCount && encourageInactiveCount > 0),
+  );
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -104,6 +119,16 @@ export function PastorBroadcastForm() {
   return (
     <>
       <form id={formId} onSubmit={onSubmit} className="space-y-4">
+        {encourageInactiveCount != null && encourageInactiveCount > 0 ? (
+          <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-[13px] text-[var(--admin-fg-secondary)]">
+            {encourageInactiveCount === 1
+              ? '1 member has not completed a devotional this week.'
+              : `${encourageInactiveCount} members have not completed a devotional this week.`}{' '}
+            This composer cannot yet send only to those people. Tick <strong>All church members</strong>{' '}
+            to reach them, or leave it off to notify staff only. Nothing sends until you review and
+            confirm.
+          </div>
+        ) : null}
         <div>
           <label htmlFor="broadcast-title" className="admin-label">
             Title <span className="admin-hint">(max 80 characters)</span>
