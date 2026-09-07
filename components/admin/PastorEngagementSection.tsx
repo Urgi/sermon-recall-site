@@ -321,10 +321,11 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
       {engagement.sample_commitments.length > 0 ? (
         <div className="admin-card p-6">
           <h3 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
-            Application commitments (sample)
+            What members said they would do
           </h3>
           <p className="admin-hint mt-1">
-            Short excerpts from member submissions — names are not shown.
+            At the end of a day, members write one thing they will put into practice. These are
+            anonymous — no names.
           </p>
           <ul className="mt-4 space-y-3">
             {engagement.sample_commitments.map((c, i) => (

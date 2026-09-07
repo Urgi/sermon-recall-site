@@ -15,7 +15,6 @@ import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
 import { JoinChurchForm } from '@/components/admin/JoinChurchForm';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { qrPngDataUrl } from '@/lib/church/qr';
-import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
 import { PastorEngagementSection } from '@/components/admin/PastorEngagementSection';
 
 type Props = { searchParams: { staff?: string; error?: string } };
@@ -37,7 +36,6 @@ export default async function DashboardPage({ searchParams }: Props) {
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
   const canSendNotifications =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
-  const canNotifyChurch = canSendNotifications;
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
     ownerUserId: church?.owner_user_id,
     userId: user.id,
@@ -101,17 +99,24 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
         <div className="admin-card p-5">
           <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Quick action</p>
-          {canPublish && profile.church_id ? (
-            <Link href="/sermons/new" className="admin-btn-primary mt-3 inline-block">
-              Add sermon
-            </Link>
-          ) : (
-            <p className="admin-hint mt-3">
-              {profile.church_id
-                ? 'Approved staff access required to add sermons.'
-                : 'Create or join a church to continue.'}
-            </p>
-          )}
+          <div className="mt-3 flex flex-col items-start gap-2">
+            {canPublish && profile.church_id ? (
+              <Link href="/sermons/new" className="admin-btn-primary">
+                Add sermon
+              </Link>
+            ) : (
+              <p className="admin-hint">
+                {profile.church_id
+                  ? 'Approved staff access required to add sermons.'
+                  : 'Create or join a church to continue.'}
+              </p>
+            )}
+            {canSendNotifications && profile.church_id ? (
+              <Link href="/notifications#notify-church" className="admin-btn-primary">
+                Notify church
+              </Link>
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -204,19 +209,6 @@ export default async function DashboardPage({ searchParams }: Props) {
           ) : null}
         </>
       )}
-
-      {profile.church_id && canNotifyChurch ? (
-        <section id="notify-church" className="admin-card p-6">
-          <h2 className="admin-section-title">Notify your church</h2>
-          <p className="admin-body mt-2">
-            Send a one-time push to your church. Members also receive automatic devotional reminders
-            for published sermon cycles.
-          </p>
-          <div className="mt-4">
-            {canSendNotifications ? <PastorBroadcastForm /> : null}
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }
