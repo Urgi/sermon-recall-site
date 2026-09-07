@@ -23,21 +23,21 @@
   }
 
   [data-theme='light'] {
-    --admin-page-bg: #f1f5f9;
+    --admin-page-bg: #f8fafc;
     --admin-shell-bg: #f8fafc;
     --admin-sidebar-bg: #ffffff;
     --admin-card-bg: #ffffff;
-    --admin-surface-bg: #ffffff;
+    --admin-surface-bg: #f8fafc;
     --admin-fg: #0f172a;
     --admin-fg-strong: #020617;
     --admin-fg-secondary: #334155;
     --admin-muted: #64748b;
-    --admin-dim: #475569;
-    --admin-border: rgba(14, 165, 233, 0.2);
-    --admin-border-strong: rgba(14, 165, 233, 0.35);
+    --admin-dim: #94a3b8;
+    --admin-border: #e2e8f0;
+    --admin-border-strong: #cbd5e1;
     --admin-accent: #0284c7;
     --admin-link: #0369a1;
-    --admin-nav-hover-bg: #e2e8f0;
+    --admin-nav-hover-bg: #f1f5f9;
   }
 
   body {
@@ -490,6 +490,18 @@
     font-size: 0.75rem;
     font-weight: 500;
     text-transform: capitalize;
+  }
+
+  .admin-badge--draft {
+    border-color: rgba(148, 163, 184, 0.3);
+    background-color: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+  }
+
+  [data-theme='light'] .admin-badge--draft {
+    border-color: #cbd5e1;
+    background-color: #f1f5f9;
+    color: #475569;
   }
 
   .admin-badge--ready,

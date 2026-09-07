@@ -46,7 +46,6 @@ export async function GET(req: Request) {
       .from('sermon_transcription_jobs')
       .select('*')
       .eq('sermon_id', sermonId)
-      .in('status', ['pending', 'processing'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();

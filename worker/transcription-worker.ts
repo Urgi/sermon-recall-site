@@ -26,7 +26,12 @@ import {
   failTranscriptionJob,
   processTranscriptionJob,
 } from '@/lib/transcription/process-job';
+import { sendYoutubeIngestFailureEmail } from '@/lib/email/send-youtube-failure';
 import { materializeYoutubeCookiesAtStartup } from '@/lib/transcription/youtube-cookies';
+import {
+  youtubeFailureCode,
+  youtubeUserFailureMessage,
+} from '@/lib/transcription/youtube-failure';
 
 const POLL_MS = Number(process.env.WORKER_POLL_MS ?? 2000);
 const WORKER_ID =
@@ -100,7 +105,30 @@ async function runLoop() {
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Transcription failed.';
       console.error(`[worker] failed job ${job.id}:`, msg);
-      await failTranscriptionJob(admin, job.id, job.sermon_id, msg);
+      if (job.source_type === 'youtube') {
+        const code = youtubeFailureCode(job.id);
+        const { data: sermon } = await admin
+          .from('sermons')
+          .select('title')
+          .eq('id', job.sermon_id)
+          .maybeSingle();
+        try {
+          await sendYoutubeIngestFailureEmail({
+            code,
+            jobId: job.id,
+            sermonId: job.sermon_id,
+            sermonTitle: typeof sermon?.title === 'string' ? sermon.title : null,
+            sourceUrl: job.source_url,
+            churchId: job.church_id,
+            error: msg,
+          });
+        } catch (mailErr) {
+          console.error('[worker] youtube ops email failed:', mailErr);
+        }
+        await failTranscriptionJob(admin, job.id, job.sermon_id, youtubeUserFailureMessage(code));
+      } else {
+        await failTranscriptionJob(admin, job.id, job.sermon_id, msg);
+      }
     }
   }
 }

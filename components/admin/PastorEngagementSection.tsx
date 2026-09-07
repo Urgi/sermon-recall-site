@@ -1,10 +1,14 @@
 'use client';
 
+import { format, parseISO, startOfWeek } from 'date-fns';
+import { useId, useState } from 'react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,7 +16,7 @@ import {
 } from 'recharts';
 
 import { useAdminTheme } from '@/components/admin/ThemeProvider';
-import type { PastorEngagementPayload } from '@/lib/engagement/types';
+import type { PastorEngagementPayload, WeeklyEngagementRow } from '@/lib/engagement/types';
 import { getAdminChartTheme } from '@/lib/theme/chart-theme';
 
 type Props = {
@@ -20,10 +24,76 @@ type Props = {
   churchHasMembers: boolean;
 };
 
+type MetricId = 'members' | 'opened' | 'completed' | 'inactive';
+
+const METRICS: {
+  id: MetricId;
+  label: string;
+  hint: string;
+  chartTitle: string;
+  isRate: boolean;
+}[] = [
+  {
+    id: 'members',
+    label: 'Members',
+    hint: 'Registered in the church',
+    chartTitle: 'Members week by week',
+    isRate: false,
+  },
+  {
+    id: 'opened',
+    label: 'Opened a day (7d)',
+    hint: 'Share of members who opened',
+    chartTitle: 'Opened rate week by week',
+    isRate: true,
+  },
+  {
+    id: 'completed',
+    label: 'Completed (7d)',
+    hint: 'Share of members who finished a day',
+    chartTitle: 'Completed rate week by week',
+    isRate: true,
+  },
+  {
+    id: 'inactive',
+    label: 'No completion (7d)',
+    hint: 'Share of members with no completion',
+    chartTitle: 'Inactive rate week by week',
+    isRate: true,
+  },
+];
+
+function weekLabel(ymd: string): string {
+  try {
+    return format(parseISO(ymd), 'MMM d');
+  } catch {
+    return ymd;
+  }
+}
+
+function ratePct(count: number, members: number): number {
+  if (members <= 0) return 0;
+  return Math.round((1000 * count) / members) / 10;
+}
+
+function weeksForChart(engagement: PastorEngagementPayload): WeeklyEngagementRow[] {
+  if (engagement.weekly.length > 0) return engagement.weekly;
+  return [
+    {
+      week_start: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      member_count: engagement.member_count,
+      opened_count: engagement.opened_this_week,
+      completed_count: engagement.active_this_week,
+    },
+  ];
+}
+
 export function PastorEngagementSection({ engagement, churchHasMembers }: Props) {
   const { resolved } = useAdminTheme();
   const chart = getAdminChartTheme(resolved);
   const isLight = resolved === 'light';
+  const chartId = useId();
+  const [selected, setSelected] = useState<MetricId>('members');
 
   if (!engagement) {
     return (
@@ -41,55 +111,154 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
   }
 
   const topSermon = engagement.sermons[0];
-  const chartData =
+  const dayChartData =
     topSermon?.days.map((d) => ({
       label: `Day ${d.day_number}`,
       opened: d.opened_count,
       completed: d.completed_count,
     })) ?? [];
 
+  const weeklyPoints = weeksForChart(engagement).map((w) => {
+    const inactive = Math.max(w.member_count - w.completed_count, 0);
+    return {
+      label: weekLabel(w.week_start),
+      members: w.member_count,
+      opened: w.opened_count,
+      completed: w.completed_count,
+      inactive,
+      openedRate: ratePct(w.opened_count, w.member_count),
+      completedRate: ratePct(w.completed_count, w.member_count),
+      inactiveRate: ratePct(inactive, w.member_count),
+    };
+  });
+
+  const selectedMeta = METRICS.find((m) => m.id === selected)!;
+  const valueKey =
+    selected === 'opened'
+      ? 'openedRate'
+      : selected === 'completed'
+        ? 'completedRate'
+        : selected === 'inactive'
+          ? 'inactiveRate'
+          : 'members';
+  const stroke =
+    selected === 'opened'
+      ? chart.barOpened
+      : selected === 'completed'
+        ? chart.barCompleted
+        : selected === 'inactive'
+          ? chart.lineInactive
+          : chart.lineMembers;
+
+  const metricValue: Record<MetricId, number> = {
+    members: engagement.member_count,
+    opened: engagement.opened_this_week,
+    completed: engagement.active_this_week,
+    inactive: engagement.inactive_this_week,
+  };
+
+  const metricClass: Record<MetricId, string> = {
+    members: '',
+    opened: isLight ? 'text-sky-600' : 'text-sky-300',
+    completed: isLight ? 'text-emerald-600' : 'text-emerald-400',
+    inactive: isLight ? 'text-rose-600' : 'text-rose-300',
+  };
+
+  function selectMetric(id: MetricId) {
+    setSelected((current) => (current === id ? 'members' : id));
+  }
+
   return (
     <section className="space-y-6">
       <div>
         <h2 className="admin-section-title">Congregation engagement</h2>
         <p className="admin-body mt-1">
-          <strong className="font-medium text-[var(--admin-fg-secondary)]">Opened</strong> counts
-          members who opened that day in the app (or already had reading progress).{' '}
-          <strong className="font-medium text-[var(--admin-fg-secondary)]">Completed</strong> means
-          the member marked that devotional done. Weekly figures use the last 7 days in UTC.
+          Weekly figures use UTC weeks.{' '}
+          <strong className="font-medium text-[var(--admin-fg-secondary)]">Opened</strong> is
+          members who opened a day.{' '}
+          <strong className="font-medium text-[var(--admin-fg-secondary)]">Completed</strong> is
+          members who marked a day done. Tap a metric to see its week-by-week rate.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="admin-stat-card">
-          <p className="admin-stat-label">Members</p>
-          <p className="admin-stat-value">{engagement.member_count}</p>
-        </div>
-        <div className="admin-stat-card">
-          <p className="admin-stat-label">Opened a day (7d)</p>
-          <p
-            className={`admin-stat-value ${isLight ? 'text-sky-600' : 'text-sky-300'}`}
-          >
-            {engagement.opened_this_week}
-          </p>
-        </div>
-        <div className="admin-stat-card">
-          <p className="admin-stat-label">Completed (7d)</p>
-          <p
-            className={`admin-stat-value ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`}
-          >
-            {engagement.active_this_week}
-          </p>
-        </div>
-        <div className="admin-stat-card">
-          <p className="admin-stat-label">No completion (7d)</p>
-          <p
-            className={`admin-stat-value ${isLight ? 'text-rose-600' : 'text-rose-300'}`}
-          >
-            {engagement.inactive_this_week}
-          </p>
-        </div>
+        {METRICS.map((metric) => {
+          const highlighted = selected === metric.id && metric.id !== 'members';
+          return (
+            <button
+              key={metric.id}
+              type="button"
+              aria-pressed={highlighted}
+              aria-controls={chartId}
+              onClick={() => selectMetric(metric.id)}
+              className={`admin-stat-card w-full cursor-pointer text-left transition-colors ${
+                highlighted
+                  ? 'ring-2 ring-[#0ea5e9] ring-offset-2 ring-offset-[var(--admin-page-bg)]'
+                  : 'hover:border-[var(--admin-accent)]'
+              }`}
+            >
+              <p className="admin-stat-label">{metric.label}</p>
+              <p className={`admin-stat-value ${metricClass[metric.id]}`.trim()}>
+                {metricValue[metric.id]}
+              </p>
+            </button>
+          );
+        })}
       </div>
+
+      <div id={chartId} className="admin-card p-6">
+        <h3 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
+          {selectedMeta.chartTitle}
+        </h3>
+        <p className="admin-hint mt-1">{selectedMeta.hint}</p>
+          <div className="mt-6 h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyPoints} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                <CartesianGrid stroke={chart.gridStroke} strokeDasharray="3 3" />
+                <XAxis dataKey="label" tick={{ fill: chart.tickFill, fontSize: 12 }} />
+                <YAxis
+                  allowDecimals={!selectedMeta.isRate}
+                  domain={selectedMeta.isRate ? [0, 100] : ['auto', 'auto']}
+                  tick={{ fill: chart.tickFill, fontSize: 12 }}
+                  width={44}
+                  tickFormatter={selectedMeta.isRate ? (v: number) => `${v}%` : undefined}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: chart.tooltip.backgroundColor,
+                    border: chart.tooltip.border,
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ color: chart.tooltip.labelColor }}
+                  formatter={(value, _name, item) => {
+                    const row = item?.payload as (typeof weeklyPoints)[number] | undefined;
+                    if (!row) return [String(value ?? ''), selectedMeta.label];
+                    if (selected === 'members') return [row.members, 'Members'];
+                    if (selected === 'opened') {
+                      return [`${row.openedRate}% · ${row.opened} of ${row.members}`, 'Opened'];
+                    }
+                    if (selected === 'completed') {
+                      return [
+                        `${row.completedRate}% · ${row.completed} of ${row.members}`,
+                        'Completed',
+                      ];
+                    }
+                    return [`${row.inactiveRate}% · ${row.inactive} of ${row.members}`, 'Inactive'];
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey={valueKey}
+                  name={selectedMeta.label}
+                  stroke={stroke}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: stroke }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
 
       {!churchHasMembers ? (
         <p className="admin-empty-hint">
@@ -98,7 +267,7 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
         </p>
       ) : null}
 
-      {topSermon && chartData.length > 0 ? (
+      {topSermon && dayChartData.length > 0 ? (
         <div className="admin-card p-6">
           <h3 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
             Opens vs completions by day — latest sermon
@@ -108,7 +277,7 @@ export function PastorEngagementSection({ engagement, churchHasMembers }: Props)
           </p>
           <div className="mt-6 h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+              <BarChart data={dayChartData} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
                 <CartesianGrid stroke={chart.gridStroke} strokeDasharray="3 3" />
                 <XAxis dataKey="label" tick={{ fill: chart.tickFill, fontSize: 12 }} />
                 <YAxis

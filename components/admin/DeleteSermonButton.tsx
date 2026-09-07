@@ -47,7 +47,7 @@ export function DeleteSermonButton({ sermonId, sermonTitle }: Props) {
         type="button"
         disabled={busy}
         onClick={() => void onDelete()}
-        className="rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-1.5 text-[12px] font-semibold text-red-200 hover:bg-red-950/50 disabled:opacity-50"
+        className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[12px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-500/40 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/50 transition-colors"
       >
         {busy ? 'Deleting…' : 'Delete sermon'}
       </button>

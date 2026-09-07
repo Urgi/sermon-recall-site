@@ -2,6 +2,7 @@
 
 import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerationHints';
 import { DevotionalPreviewReviewList } from '@/components/admin/DevotionalPreviewReviewList';
+import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
 import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
@@ -16,8 +17,34 @@ import {
   canSubmitForApproval,
   devotionalPreviewLockedHint,
 } from '@/lib/admin/workflow-status';
+import { firstDevotionalAvailableLabel, pastorDisplayName } from '@/lib/admin/sermon-wizard';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+function MemberGoLiveSummary({ sermonDate }: { sermonDate: string }) {
+  return (
+    <div className="rounded-xl border border-[var(--admin-border)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-card-bg))] px-4 py-3">
+      <dl className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--admin-dim)]">
+            Goes to
+          </dt>
+          <dd className="mt-0.5 text-[13px] font-medium leading-snug text-[var(--admin-fg-strong)]">
+            All members registered in the church
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--admin-dim)]">
+            First devotional
+          </dt>
+          <dd className="mt-0.5 text-[13px] font-medium leading-snug text-[var(--admin-fg-strong)]">
+            Available {firstDevotionalAvailableLabel(sermonDate)}
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
 
 type Props = {
   sermonId: string;
@@ -32,6 +59,9 @@ type Props = {
   workflowStatus: SermonWorkflowStatus;
   canPublish: boolean;
   canSubmit: boolean;
+  canApprove: boolean;
+  churchPastorName: string | null;
+  onPreviewDaysChange?: (days: DevotionalDay[] | null) => void;
 };
 
 export function GeminiDevotionalWorkflow({
@@ -47,18 +77,27 @@ export function GeminiDevotionalWorkflow({
   workflowStatus,
   canPublish,
   canSubmit,
+  canApprove,
+  churchPastorName,
+  onPreviewDaysChange,
 }: Props) {
   const router = useRouter();
   const [previewDays, setPreviewDays] = useState<DevotionalDay[] | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generatingStartedAt, setGeneratingStartedAt] = useState<number | null>(null);
   const [transcriptionJobId, setTranscriptionJobId] = useState<string | null>(null);
+  const [jobLookupDone, setJobLookupDone] = useState(false);
+  const [sourceFailed, setSourceFailed] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoGenerateAttempted = useRef(false);
 
   const canRegen = canRegenerateWorkflow(workflowStatus);
+
+  useEffect(() => {
+    onPreviewDaysChange?.(previewDays);
+  }, [onPreviewDaysChange, previewDays]);
 
   useEffect(() => {
     const stored = loadPreviewDays(sermonId);
@@ -69,7 +108,10 @@ export function GeminiDevotionalWorkflow({
   }, [sermonId]);
 
   useEffect(() => {
-    if (hasTranscript || hasExistingDevotionals) return;
+    if (hasTranscript || hasExistingDevotionals) {
+      setJobLookupDone(true);
+      return;
+    }
     let cancelled = false;
     void (async () => {
       const res = await fetch(
@@ -77,9 +119,12 @@ export function GeminiDevotionalWorkflow({
         { credentials: 'include' },
       );
       const json = (await res.json()) as { job?: { id: string; status: string } | null };
-      if (!cancelled && json.job?.id && json.job.status !== 'failed') {
+      if (cancelled) return;
+      if (json.job?.id && json.job.status !== 'completed') {
         setTranscriptionJobId(json.job.id);
+        if (json.job.status === 'failed') setSourceFailed(true);
       }
+      setJobLookupDone(true);
     })();
     return () => {
       cancelled = true;
@@ -162,28 +207,61 @@ export function GeminiDevotionalWorkflow({
     }
   }
 
+  async function submitDays(days: DevotionalDay[]): Promise<boolean> {
+    const res = await fetch('/api/devotionals/submit-for-approval', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        sermonId,
+        days,
+        replace: hasExistingDevotionals,
+      }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setError(data.error ?? 'Submit failed.');
+      return false;
+    }
+    return true;
+  }
+
   async function submitForApproval() {
     if (!previewDays?.length) return;
     setError(null);
     setSubmitting(true);
     try {
-      const res = await fetch('/api/devotionals/submit-for-approval', {
+      const ok = await submitDays(previewDays);
+      if (!ok) return;
+      setPreviewDays(null);
+      clearPreviewDays(sermonId);
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function approveNow() {
+    setError(null);
+    setSubmitting(true);
+    try {
+      if (previewDays?.length && canSubmitForApproval(workflowStatus)) {
+        const ok = await submitDays(previewDays);
+        if (!ok) return;
+        clearPreviewDays(sermonId);
+      }
+      const res = await fetch('/api/devotionals/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({
-          sermonId,
-          days: previewDays,
-          replace: hasExistingDevotionals,
-        }),
+        body: JSON.stringify({ sermonId }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Submit failed.');
+        setError(data.error ?? 'Approve failed.');
         return;
       }
       setPreviewDays(null);
-      clearPreviewDays(sermonId);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -218,19 +296,33 @@ export function GeminiDevotionalWorkflow({
   }
 
   const awaitingTranscript = !hasTranscript && !hasExistingDevotionals;
-  const pipelineActive = awaitingTranscript && Boolean(transcriptionJobId);
+  const hasActiveJob = awaitingTranscript && Boolean(transcriptionJobId);
+  const pipelineActive = hasActiveJob && !sourceFailed;
+  const showSourceRecovery = awaitingTranscript && jobLookupDone && !pipelineActive;
+  const approver = pastorDisplayName(churchPastorName);
+  const canSendForApproval =
+    approvalRequired && canSubmit && !canApprove && canSubmitForApproval(workflowStatus);
+  const canApproveHere =
+    approvalRequired &&
+    canApprove &&
+    (workflowStatus === 'submitted_for_approval' ||
+      (Boolean(previewDays?.length) && canSubmitForApproval(workflowStatus)));
+  const showGoLiveSummary = canApproveHere || (!approvalRequired && canPublish);
 
   return (
     <div className="space-y-4">
       {workflowStatus === 'approved' && canPublish ? (
-        <button
-          type="button"
-          onClick={() => void publishApproved()}
-          disabled={publishing}
-          className="admin-btn-primary"
-        >
-          {publishing ? 'Publishing…' : 'Publish approved devotionals to app'}
-        </button>
+        <div className="space-y-3">
+          <MemberGoLiveSummary sermonDate={sermonDate} />
+          <button
+            type="button"
+            onClick={() => void publishApproved()}
+            disabled={publishing}
+            className="admin-btn-primary rounded-full px-6"
+          >
+            {publishing ? 'Publishing…' : 'Publish to app'}
+          </button>
+        </div>
       ) : null}
 
       {!approvalRequired &&
@@ -238,36 +330,57 @@ export function GeminiDevotionalWorkflow({
       hasExistingDevotionals &&
       workflowStatus !== 'published' &&
       workflowStatus !== 'approved' ? (
-        <button
-          type="button"
-          onClick={() => void publishApproved()}
-          disabled={publishing}
-          className="admin-btn-primary"
-        >
-          {publishing ? 'Publishing…' : 'Publish devotionals to app'}
-        </button>
+        <div className="space-y-3">
+          <MemberGoLiveSummary sermonDate={sermonDate} />
+          <button
+            type="button"
+            onClick={() => void publishApproved()}
+            disabled={publishing}
+            className="admin-btn-primary rounded-full px-6"
+          >
+            {publishing ? 'Publishing…' : 'Publish to app'}
+          </button>
+        </div>
       ) : null}
 
-      {awaitingTranscript ? (
-        pipelineActive ? (
-          <TranscriptionJobPoller
-            jobId={transcriptionJobId!}
-            sermonId={sermonId}
-            generateDevotionalsAfter={canRegen}
-            onPreviewReady={(days) => setPreviewDays(days)}
-            onComplete={() => router.refresh()}
-          />
-        ) : (
-          <div className="admin-card p-4" role="status">
-            <p className="text-[14px] font-medium text-[var(--admin-accent)]">
-              Waiting for sermon text…
-            </p>
-            <p className="admin-hint mt-2 text-[13px] leading-relaxed">
-              When transcription finishes, the same progress bar will continue into your six-day
-              preview. Nothing is published until you approve it.
-            </p>
-          </div>
-        )
+      {workflowStatus === 'submitted_for_approval' && !canApprove ? (
+        <div className="admin-card p-4" role="status">
+          <p className="text-[14px] font-medium text-[var(--admin-fg-strong)]">
+            Sent to {approver}
+          </p>
+          <p className="admin-hint mt-2 leading-relaxed">
+            {approver} needs to approve these devotionals before members see them in the app.
+          </p>
+        </div>
+      ) : null}
+
+      {workflowStatus === 'submitted_for_approval' && canApprove && !previewDays ? (
+        <div className="space-y-3">
+          <MemberGoLiveSummary sermonDate={sermonDate} />
+          <button
+            type="button"
+            onClick={() => void approveNow()}
+            disabled={submitting}
+            className="admin-btn-primary rounded-full px-6"
+          >
+            {submitting ? 'Approving…' : 'Approve'}
+          </button>
+        </div>
+      ) : null}
+
+      {hasActiveJob ? (
+        <TranscriptionJobPoller
+          jobId={transcriptionJobId!}
+          sermonId={sermonId}
+          generateDevotionalsAfter={canRegen}
+          onPreviewReady={(days) => setPreviewDays(days)}
+          onComplete={() => router.refresh()}
+          onFailed={() => setSourceFailed(true)}
+        />
+      ) : null}
+
+      {showSourceRecovery ? (
+        <SermonTranscriptUpload sermonId={sermonId} />
       ) : null}
 
       {generating && !previewDays && generatingStartedAt != null ? (
@@ -315,10 +428,9 @@ export function GeminiDevotionalWorkflow({
                 Preview (not live yet)
               </p>
               <p className="admin-hint mt-1">
-                Review all six days before submitting or publishing.
-                {approvalRequired
-                  ? ' Nothing goes live until approved and published.'
-                  : ' Publish when ready — members see content after you publish.'}
+                {canApprove
+                  ? 'Edit anything that needs a pastor’s voice, then approve on this screen.'
+                  : `Edit if needed, then send to ${approver} for approval.`}
               </p>
             </div>
             {canRegen ? (
@@ -344,23 +456,42 @@ export function GeminiDevotionalWorkflow({
             disabled={generating || publishing || submitting}
           />
 
-          <div className="flex flex-wrap gap-3 pt-2">
-            {approvalRequired && canSubmit && canSubmitForApproval(workflowStatus) ? (
+          {canSendForApproval ? (
+            <p className="rounded-xl border border-[var(--admin-border)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-card-bg))] p-4 text-[13px] leading-relaxed text-[var(--admin-fg)]">
+              Send this to {approver} for approval. Members won’t see these devotionals until{' '}
+              {approver} approves them.
+            </p>
+          ) : null}
+
+          {showGoLiveSummary ? <MemberGoLiveSummary sermonDate={sermonDate} /> : null}
+
+          <div className="flex flex-wrap gap-3 pt-1">
+            {canApproveHere ? (
+              <button
+                type="button"
+                onClick={() => void approveNow()}
+                disabled={submitting || generating}
+                className="admin-btn-primary rounded-full px-6"
+              >
+                {submitting ? 'Approving…' : 'Approve'}
+              </button>
+            ) : null}
+            {canSendForApproval ? (
               <button
                 type="button"
                 onClick={() => void submitForApproval()}
-                disabled={submitting}
-                className="admin-btn-primary"
+                disabled={submitting || generating}
+                className="admin-btn-primary rounded-full px-6"
               >
-                {submitting ? 'Submitting…' : 'Submit for approval'}
+                {submitting ? 'Sending…' : 'Send for approval'}
               </button>
             ) : null}
             {!approvalRequired && canPublish ? (
               <button
                 type="button"
                 onClick={() => void publish()}
-                disabled={publishing}
-                className="admin-btn-primary"
+                disabled={publishing || generating}
+                className="admin-btn-primary rounded-full px-6"
               >
                 {publishing ? 'Publishing…' : 'Publish to app'}
               </button>

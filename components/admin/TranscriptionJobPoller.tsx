@@ -7,6 +7,7 @@ import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerati
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import { savePreviewDays } from '@/lib/devotionals/preview-session';
+import { YOUTUBE_TEMPORARILY_DOWN_MESSAGE } from '@/lib/transcription/youtube-failure';
 import { useProgressTick } from '@/lib/hooks/useProgressTick';
 
 type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -14,6 +15,7 @@ type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
 type Job = {
   id: string;
   status: JobStatus;
+  source_type?: 'storage' | 'youtube';
   chunks_done: number;
   chunks_total: number;
   error_message: string | null;
@@ -29,6 +31,7 @@ type Props = {
   generateDevotionalsAfter?: boolean;
   onComplete?: () => void;
   onPreviewReady?: (days: DevotionalDay[]) => void;
+  onFailed?: () => void;
 };
 
 function formatElapsed(startMs: number): string {
@@ -45,6 +48,7 @@ export function TranscriptionJobPoller({
   generateDevotionalsAfter,
   onComplete,
   onPreviewReady,
+  onFailed,
 }: Props) {
   const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);
@@ -87,6 +91,7 @@ export function TranscriptionJobPoller({
         }
         if (json.job.status === 'failed') {
           setError(json.job.error_message ?? 'Transcription failed.');
+          onFailed?.();
           return;
         }
         timer = setTimeout(() => void poll(), 2000);
@@ -154,6 +159,24 @@ export function TranscriptionJobPoller({
   }, [onComplete, onPreviewReady, pipelinePhase, router, sermonId]);
 
   if (error) {
+    const youtubeDown =
+      job?.source_type === 'youtube' ||
+      /YouTube is temporarily down|Ref YT-/i.test(error);
+    if (youtubeDown) {
+      return (
+        <div className="admin-card space-y-2 p-4" role="alert">
+          <p className="text-[14px] font-medium text-[var(--admin-fg-strong)]">
+            YouTube is temporarily down
+          </p>
+          <p className="admin-hint leading-relaxed">{YOUTUBE_TEMPORARILY_DOWN_MESSAGE}</p>
+          <p className="admin-hint leading-relaxed">
+            Use <span className="font-medium text-[var(--admin-fg-strong)]">Upload</span> or{' '}
+            <span className="font-medium text-[var(--admin-fg-strong)]">Paste text</span> on this
+            page to continue.
+          </p>
+        </div>
+      );
+    }
     return (
       <p className="text-[13px] text-red-500 dark:text-red-400" role="alert">
         {error}

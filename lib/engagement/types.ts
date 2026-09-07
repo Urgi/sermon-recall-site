@@ -10,14 +10,27 @@ export type SermonEngagementRow = {
   days: DayCompletionRow[];
 };
 
+export type WeeklyEngagementRow = {
+  week_start: string;
+  member_count: number;
+  opened_count: number;
+  completed_count: number;
+};
+
 export type PastorEngagementPayload = {
   member_count: number;
   active_this_week: number;
   inactive_this_week: number;
   opened_this_week: number;
+  weekly: WeeklyEngagementRow[];
   sermons: SermonEngagementRow[];
   sample_commitments: string[];
 };
+
+function asCount(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
 
 export function parsePastorEngagement(data: unknown): PastorEngagementPayload | null {
   if (!data || typeof data !== 'object') return null;
@@ -48,6 +61,17 @@ export function parsePastorEngagement(data: unknown): PastorEngagementPayload | 
     };
   });
 
+  const weeklyRaw = Array.isArray(o.weekly) ? o.weekly : [];
+  const weekly: WeeklyEngagementRow[] = weeklyRaw.map((w) => {
+    const r = w as Record<string, unknown>;
+    return {
+      week_start: String(r.week_start ?? ''),
+      member_count: asCount(r.member_count),
+      opened_count: asCount(r.opened_count),
+      completed_count: asCount(r.completed_count),
+    };
+  });
+
   const scRaw = Array.isArray(o.sample_commitments) ? o.sample_commitments : [];
   const sample_commitments = scRaw.map((x) => String(x)).filter(Boolean);
 
@@ -56,6 +80,7 @@ export function parsePastorEngagement(data: unknown): PastorEngagementPayload | 
     active_this_week: Number.isFinite(active_this_week) ? active_this_week : 0,
     inactive_this_week: Number.isFinite(inactive_this_week) ? inactive_this_week : 0,
     opened_this_week: Number.isFinite(opened_this_week) ? opened_this_week : 0,
+    weekly,
     sermons,
     sample_commitments,
   };

@@ -50,12 +50,72 @@ export type TranscriptionJobRow = {
   updated_at: string;
 };
 
-const YOUTUBE_RE =
-  /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/;
+const YOUTUBE_VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
 
+function isYouTubeVideoId(id: string | null | undefined): id is string {
+  return Boolean(id && YOUTUBE_VIDEO_ID_RE.test(id));
+}
+
+function youtubeWatchUrl(id: string): string {
+  return `https://www.youtube.com/watch?v=${id}`;
+}
+
+function hostIsYouTube(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^www\./, '');
+  return (
+    host === 'youtu.be' ||
+    host === 'youtube.com' ||
+    host === 'm.youtube.com' ||
+    host === 'music.youtube.com' ||
+    host.endsWith('.youtube.com')
+  );
+}
+
+/** Normalize a pastor-pasted YouTube link to a canonical watch URL. */
 export function parseYouTubeUrl(raw: string): string | null {
   const t = raw.trim();
-  const m = t.match(YOUTUBE_RE);
-  if (!m?.[1]) return null;
-  return `https://www.youtube.com/watch?v=${m[1]}`;
+  if (!t) return null;
+
+  const withProto = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+  try {
+    const u = new URL(withProto);
+    if (!hostIsYouTube(u.hostname)) return null;
+
+    const host = u.hostname.toLowerCase().replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = u.pathname.split('/').filter(Boolean)[0];
+      return isYouTubeVideoId(id) ? youtubeWatchUrl(id) : null;
+    }
+
+    const fromQuery = u.searchParams.get('v');
+    if (isYouTubeVideoId(fromQuery)) return youtubeWatchUrl(fromQuery);
+
+    const parts = u.pathname.split('/').filter(Boolean);
+    if (
+      parts.length >= 2 &&
+      ['shorts', 'embed', 'live', 'v'].includes(parts[0]!) &&
+      isYouTubeVideoId(parts[1])
+    ) {
+      return youtubeWatchUrl(parts[1]!);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+/** Pull the first recognizable YouTube URL out of pasted text. */
+export function extractYouTubeUrl(raw: string): string | null {
+  const direct = parseYouTubeUrl(raw);
+  if (direct) return direct;
+
+  const matches = raw.match(/https?:\/\/[^\s<>"']+/gi);
+  if (!matches) return null;
+  for (const candidate of matches) {
+    const cleaned = candidate.replace(/[.,;:!?)]+$/, '');
+    const parsed = parseYouTubeUrl(cleaned);
+    if (parsed) return parsed;
+  }
+  return null;
 }

@@ -73,7 +73,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
   }
 
   return (
-    <li className="rounded-xl border border-[rgba(56,189,248,0.12)] bg-[#0a0f18] p-5">
+    <li className="admin-card p-5">
       <div className="grid gap-8 wide:grid-cols-2 wide:items-start">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
@@ -163,7 +163,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+                  className="admin-input mt-2"
                   placeholder="e.g. Day 1 — Begin here"
                   autoComplete="off"
                 />
@@ -171,11 +171,11 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
               <div>
                 <label
                   htmlFor={`dv-scr-${devotional.id}`}
-                  className="block text-[13px] font-medium text-[#94a3b8]"
+                  className="admin-label"
                 >
                   Scripture / subtitle line
                 </label>
-                <p className="mt-0.5 text-[12px] text-[#64748b]">
+                <p className="admin-hint mt-0.5 text-[12px]">
                   Reference or short line under the title (optional).
                 </p>
                 <input
@@ -183,7 +183,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   type="text"
                   value={scriptureRef}
                   onChange={(e) => setScriptureRef(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+                  className="admin-input mt-2"
                   placeholder="e.g. Psalm 46:10"
                   autoComplete="off"
                 />
@@ -193,7 +193,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   type="button"
                   disabled={!dirty || saving}
                   onClick={() => void save()}
-                  className="rounded-lg bg-[#0ea5e9] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0284c7] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="admin-btn-primary"
                 >
                   {saving ? 'Saving…' : 'Save changes'}
                 </button>
@@ -204,19 +204,19 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                     setTitle(devotional.title ?? '');
                     setScriptureRef(devotional.scripture_reference ?? '');
                   }}
-                  className="rounded-lg border border-[rgba(56,189,248,0.25)] px-4 py-2 text-[14px] text-[#94a3b8] hover:bg-[#05070a] disabled:opacity-40"
+                  className="admin-btn-secondary"
                 >
                   Reset
                 </button>
               </div>
               {error ? (
-                <p className="text-[13px] text-red-400" role="alert">
+                <p className="text-[13px] text-red-500" role="alert">
                   {error}
                 </p>
               ) : null}
             </>
           ) : (
-            <div className="rounded-lg border border-[rgba(56,189,248,0.08)] bg-[#05070a]/80 p-4 text-[14px] text-[#94a3b8]">
+            <div className="admin-card-nested p-4 text-[14px] text-admin-muted">
               <p>
                 <span className="text-[#64748b]">Title: </span>
                 {devotional.title?.trim() || '—'}

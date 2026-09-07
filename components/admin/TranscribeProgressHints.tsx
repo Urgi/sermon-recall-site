@@ -43,7 +43,7 @@ export function TranscribeProgressHints({ phase, className = '', intervalMs = 28
   return (
     <p
       key={`${phase}-${index}`}
-      className={`text-[13px] leading-snug text-sky-200/80 motion-safe:animate-hintFade ${className}`.trim()}
+      className={`text-[13px] leading-snug font-medium text-sky-700 dark:text-sky-300 motion-safe:animate-hintFade ${className}`.trim()}
     >
       {lines[index]}
     </p>

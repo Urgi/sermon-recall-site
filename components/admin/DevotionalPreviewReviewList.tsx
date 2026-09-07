@@ -176,7 +176,7 @@ function DevotionalDayReviewModal({
         if (e.target === e.currentTarget && !regenBusy) onClose();
       }}
     >
-      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-admin bg-[#0a0f18] shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-admin bg-admin-card shadow-2xl">
         <div className="flex items-center justify-between gap-3 border-b border-admin px-5 py-4">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#38bdf8]">
             Day {day.day_number}
@@ -209,7 +209,7 @@ function DevotionalDayReviewModal({
                   }}
                   autoFocus
                   maxLength={600}
-                  className="min-w-0 flex-1 rounded-lg border border-[#38bdf8]/40 bg-[#05070a] px-3 py-2 text-[18px] font-semibold text-white outline-none focus:ring-2 focus:ring-sky-400/40"
+                  className="min-w-0 flex-1 rounded-lg border border-admin-strong bg-admin-surface px-3 py-2 text-[18px] font-semibold text-admin-fg-strong outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30"
                 />
               ) : (
                 <h3
@@ -253,9 +253,9 @@ function DevotionalDayReviewModal({
             <p className="admin-hint mt-1 text-[12px]">{sermonTitle}</p>
           </div>
 
-          <div className="rounded-lg border border-emerald-500/20 bg-[#050a08] p-4 space-y-4">
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/90">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400/90">
                 Member preview
               </p>
               {!showRegenPrompt ? (
@@ -263,7 +263,7 @@ function DevotionalDayReviewModal({
                   type="button"
                   onClick={() => setShowRegenPrompt(true)}
                   disabled={disabled || regenBusy}
-                  className="text-[12px] font-medium text-violet-300 hover:text-violet-200 disabled:opacity-50"
+                  className="text-[12px] font-medium text-violet-600 hover:text-violet-500 disabled:opacity-50 dark:text-violet-300 dark:hover:text-violet-200"
                 >
                   Regenerate with AI
                 </button>
@@ -278,7 +278,7 @@ function DevotionalDayReviewModal({
                     type="button"
                     onClick={() => setEditingPrePrompt(true)}
                     disabled={disabled || regenBusy}
-                    className="text-[12px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50"
+                    className="text-[12px] font-medium text-sky-600 hover:text-sky-500 disabled:opacity-50 dark:text-sky-400 dark:hover:text-sky-300"
                   >
                     Edit
                   </button>
@@ -287,7 +287,7 @@ function DevotionalDayReviewModal({
                     <button
                       type="button"
                       onClick={savePrePrompt}
-                      className="text-[12px] font-medium text-emerald-400 hover:text-emerald-300"
+                      className="text-[12px] font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
                       Save
                     </button>
@@ -311,15 +311,15 @@ function DevotionalDayReviewModal({
                   rows={3}
                   maxLength={2000}
                   autoFocus
-                  className="w-full resize-y rounded-lg border border-[#38bdf8]/40 bg-[#05070a] px-3 py-2 text-[13px] leading-relaxed text-amber-100/90 outline-none focus:ring-2 focus:ring-sky-400/40"
+                  className="w-full resize-y rounded-lg border border-admin-strong bg-admin-surface px-3 py-2 text-[13px] leading-relaxed text-amber-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-400/30 dark:text-amber-100/90"
                 />
               ) : (
-                <p className="text-[13px] leading-relaxed text-amber-100/90">{day.pre_prompt}</p>
+                <p className="text-[13px] leading-relaxed text-amber-900 dark:text-amber-100/90">{day.pre_prompt}</p>
               )}
             </div>
 
             {day.scripture_reference ? (
-              <p className="text-[14px] font-medium text-sky-300">{day.scripture_reference}</p>
+              <p className="text-[14px] font-semibold text-sky-700 dark:text-sky-300">{day.scripture_reference}</p>
             ) : null}
 
             {day.scripture_text ? (
@@ -370,7 +370,7 @@ function DevotionalDayReviewModal({
                     rows={10}
                     maxLength={48000}
                     autoFocus
-                    className="w-full resize-y rounded-lg border border-[#38bdf8]/40 bg-[#05070a] px-3 py-2 text-[14px] leading-relaxed text-admin-fg outline-none focus:ring-2 focus:ring-sky-400/40"
+                    className="w-full resize-y rounded-lg border border-admin-strong bg-admin-surface px-3 py-2 text-[14px] leading-relaxed text-admin-fg outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-400/30"
                   />
                   <p
                     className={`text-[11px] ${
@@ -432,10 +432,10 @@ function DevotionalDayReviewModal({
                   rows={3}
                   maxLength={2000}
                   autoFocus
-                  className="w-full resize-y rounded-lg border border-[#38bdf8]/40 bg-[#05070a] px-3 py-2 text-[14px] leading-relaxed text-violet-200/95 outline-none focus:ring-2 focus:ring-sky-400/40"
+                  className="w-full resize-y rounded-lg border border-admin-strong bg-admin-surface px-3 py-2 text-[14px] leading-relaxed text-violet-900 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-400/30 dark:text-violet-200/95"
                 />
               ) : (
-                <p className="text-[14px] leading-relaxed text-violet-200/95">{day.reflection_question}</p>
+                <p className="text-[14px] leading-relaxed text-violet-900 dark:text-violet-200/95">{day.reflection_question}</p>
               )}
             </div>
 
@@ -443,8 +443,8 @@ function DevotionalDayReviewModal({
           </div>
 
           {showRegenPrompt ? (
-            <div className="rounded-lg border border-violet-500/30 bg-violet-950/20 p-4 space-y-3">
-              <p className="text-[13px] font-medium text-violet-200">
+            <div className="rounded-lg border border-violet-500/30 bg-violet-50 dark:bg-violet-950/20 p-4 space-y-3">
+              <p className="text-[13px] font-medium text-violet-800 dark:text-violet-200">
                 What should change about this day?
               </p>
               <textarea

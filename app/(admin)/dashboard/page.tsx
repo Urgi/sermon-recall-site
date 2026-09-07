@@ -91,6 +91,30 @@ export default async function DashboardPage({ searchParams }: Props) {
         </p>
       ) : null}
 
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div className="admin-card p-5">
+          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Sermons</p>
+          <p className="mt-2 text-3xl font-bold text-admin-fg-strong">{sermonCount}</p>
+          <Link href="/sermons" className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline">
+            View all
+          </Link>
+        </div>
+        <div className="admin-card p-5">
+          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Quick action</p>
+          {canPublish && profile.church_id ? (
+            <Link href="/sermons/new" className="admin-btn-primary mt-3 inline-block">
+              Add sermon
+            </Link>
+          ) : (
+            <p className="admin-hint mt-3">
+              {profile.church_id
+                ? 'Approved staff access required to add sermons.'
+                : 'Create or join a church to continue.'}
+            </p>
+          )}
+        </div>
+      </section>
+
       {!profile.church_id ? (
         <div className="space-y-6">
           <section className="admin-card p-6">
@@ -143,6 +167,12 @@ export default async function DashboardPage({ searchParams }: Props) {
               ) : null}
             </div>
           </section>
+          {canPublish ? (
+            <PastorEngagementSection
+              engagement={engagementParsed}
+              churchHasMembers={churchMemberPositive}
+            />
+          ) : null}
           {church && !church.owner_user_id && canPublish ? (
             <section className="rounded-xl border border-sky-500/30 bg-sky-500/10 p-6">
               <h2 className="admin-section-title text-sky-900 dark:text-sky-100">
@@ -175,10 +205,6 @@ export default async function DashboardPage({ searchParams }: Props) {
         </>
       )}
 
-      {profile.church_id && canPublish ? (
-        <PastorEngagementSection engagement={engagementParsed} churchHasMembers={churchMemberPositive} />
-      ) : null}
-
       {profile.church_id && canNotifyChurch ? (
         <section id="notify-church" className="admin-card p-6">
           <h2 className="admin-section-title">Notify your church</h2>
@@ -191,30 +217,6 @@ export default async function DashboardPage({ searchParams }: Props) {
           </div>
         </section>
       ) : null}
-
-      <section className="grid gap-4 sm:grid-cols-2">
-        <div className="admin-card p-5">
-          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Sermons</p>
-          <p className="mt-2 text-3xl font-bold text-admin-fg-strong">{sermonCount}</p>
-          <Link href="/sermons" className="mt-3 inline-block text-[14px] font-medium text-admin-link hover:underline">
-            View all
-          </Link>
-        </div>
-        <div className="admin-card p-5">
-          <p className="admin-hint text-[13px] font-medium uppercase tracking-wide">Quick action</p>
-          {canPublish && profile.church_id ? (
-            <Link href="/sermons/new" className="admin-btn-primary mt-3 inline-block">
-              Add sermon
-            </Link>
-          ) : (
-            <p className="admin-hint mt-3">
-              {profile.church_id
-                ? 'Approved staff access required to add sermons.'
-                : 'Create or join a church to continue.'}
-            </p>
-          )}
-        </div>
-      </section>
     </div>
   );
 }

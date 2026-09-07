@@ -9,7 +9,7 @@ export function SermonTranscriptLinkCard({ sermonId, characterCount }: Props) {
   return (
     <Link
       href={`/sermons/${sermonId}/transcript`}
-      className="admin-card block p-5 transition hover:border-[rgba(56,189,248,0.35)] hover:bg-admin-surface/60"
+      className="admin-card block p-5 transition hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-nav-hover-bg)]"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -23,7 +23,7 @@ export function SermonTranscriptLinkCard({ sermonId, characterCount }: Props) {
             {characterCount.toLocaleString()} characters
           </p>
         </div>
-        <span className="shrink-0 text-[13px] font-medium text-sky-400">View →</span>
+        <span className="shrink-0 text-[13px] font-medium text-[var(--admin-accent)]">View →</span>
       </div>
     </Link>
   );

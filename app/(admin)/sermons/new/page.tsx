@@ -1,8 +1,7 @@
-import Link from 'next/link';
-
 import { canManageSermons } from '@/lib/auth/profile';
-import { requireAdminSession } from '@/lib/auth/server';
+import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/server';
 import { NewSermonForm } from '@/components/admin/NewSermonForm';
+import Link from 'next/link';
 
 export default async function NewSermonPage() {
   const { profile } = await requireAdminSession();
@@ -37,22 +36,13 @@ export default async function NewSermonPage() {
     );
   }
 
+  const church = await getChurchSettingsForProfile(profile.church_id);
+
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <Link href="/sermons" className="admin-link-back">
-          ← Sermons
-        </Link>
-        <h1 className="admin-heading mt-4">Add sermon</h1>
-        <p className="admin-body mt-2">
-          Choose <span className="font-medium text-[var(--admin-fg-strong)]">paste text</span> or{' '}
-          <span className="font-medium text-[var(--admin-fg-strong)]">audio / video / .txt</span>,
-          then add sermon in one step. Status starts as{' '}
-          <span className="font-medium text-[var(--admin-fg-strong)]">processing</span> until you mark
-          it ready.
-        </p>
-      </div>
-      <NewSermonForm churchId={profile.church_id} />
-    </div>
+    <NewSermonForm
+      churchId={profile.church_id}
+      sermonLanguage={church?.sermon_language}
+      defaultPastorName={church?.pastor_name}
+    />
   );
 }

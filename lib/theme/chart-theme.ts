@@ -9,6 +9,8 @@ export type AdminChartTheme = {
   };
   barOpened: string;
   barCompleted: string;
+  lineMembers: string;
+  lineInactive: string;
 };
 
 export function getAdminChartTheme(resolved: 'dark' | 'light'): AdminChartTheme {
@@ -24,6 +26,8 @@ export function getAdminChartTheme(resolved: 'dark' | 'light'): AdminChartTheme 
       },
       barOpened: '#38bdf8',
       barCompleted: '#4ade80',
+      lineMembers: '#6366f1',
+      lineInactive: '#fb7185',
     };
   }
   return {
@@ -37,5 +41,7 @@ export function getAdminChartTheme(resolved: 'dark' | 'light'): AdminChartTheme 
     },
     barOpened: '#7dd3fc',
     barCompleted: '#86efac',
+    lineMembers: '#a5b4fc',
+    lineInactive: '#fda4af',
   };
 }

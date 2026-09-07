@@ -64,7 +64,7 @@ export function DevotionalGenerationHints({
       aria-atomic="true"
       className={`min-h-[2.5rem] max-w-lg pt-1 ${className}`.trim()}
     >
-      <p key={index} className="text-[13px] leading-snug text-sky-200/85 motion-safe:animate-hintFade">
+      <p key={index} className="text-[13px] leading-snug font-medium text-sky-700 dark:text-sky-300 motion-safe:animate-hintFade">
         {lines[index]}
       </p>
     </div>

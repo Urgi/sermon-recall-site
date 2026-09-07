@@ -19,6 +19,7 @@ type Props = {
   canApprove: boolean;
   canPublish: boolean;
   changesRequestedNote?: string | null;
+  hideApproveAction?: boolean;
 };
 
 export function SermonWorkflowPanel({
@@ -28,6 +29,7 @@ export function SermonWorkflowPanel({
   canApprove,
   canPublish,
   changesRequestedNote,
+  hideApproveAction = false,
 }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -73,14 +75,16 @@ export function SermonWorkflowPanel({
 
       {canApprove && workflowStatus === 'submitted_for_approval' ? (
         <div className="mt-4 space-y-3">
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => void post('/api/devotionals/approve', { sermonId })}
-            className="admin-btn-primary"
-          >
-            Approve devotionals
-          </button>
+          {hideApproveAction ? null : (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => void post('/api/devotionals/approve', { sermonId })}
+              className="admin-btn-primary"
+            >
+              Approve devotionals
+            </button>
+          )}
           <div>
             <label className="admin-label" htmlFor="changes-note">
               Request changes (optional note)

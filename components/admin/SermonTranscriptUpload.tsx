@@ -22,6 +22,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+  const [pasteText, setPasteText] = useState('');
   const [queuedJobId, setQueuedJobId] = useState<string | null>(null);
   const [mediaProgress, setMediaProgress] = useState<{
     phase: TranscribePhase;
@@ -115,26 +116,78 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
     }
   }
 
+  async function savePastedText() {
+    const trimmed = pasteText.trim();
+    if (!trimmed) {
+      setError('Paste sermon text, or upload a file.');
+      return;
+    }
+    setError(null);
+    setDone(null);
+    setBusy(true);
+    const supabase = createBrowserSupabaseClient();
+    const { error: upErr } = await supabase
+      .from('sermons')
+      .update({ transcript: trimmed, transcript_status: 'completed', status: 'processing' })
+      .eq('id', sermonId);
+    setBusy(false);
+    if (upErr) {
+      setError(upErr.message);
+      return;
+    }
+    setPasteText('');
+    setDone(`Saved text (${trimmed.length.toLocaleString()} characters).`);
+    router.refresh();
+  }
+
   return (
-    <div className="mt-4 rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#020617]/60 p-4">
-      <p className="text-[13px] font-semibold text-sky-200">Add sermon from file</p>
-      <p className="mt-1 text-[12px] leading-relaxed text-[#94a3b8]">
-        Upload a <strong className="font-medium text-[#cbd5e1]">.txt</strong> (saved directly) or{' '}
-        <strong className="font-medium text-[#cbd5e1]">audio / video</strong> (queued for
-        transcription). {TRANSCRIPTION_LENGTH_HINT} Then generate devotionals as usual.
-      </p>
-      <label className="mt-3 inline-block">
-        <input
-          type="file"
-          accept="audio/*,video/*,.txt,text/plain"
-          className="hidden"
+    <div className="admin-card mt-4 p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-[14px] font-semibold text-[var(--admin-fg-strong)]">
+            Upload or paste text
+          </p>
+          <p className="admin-hint mt-1 text-[13px] leading-relaxed max-w-xl">
+            Upload a <strong className="font-medium text-[var(--admin-fg-secondary)]">.txt</strong>,{' '}
+            <strong className="font-medium text-[var(--admin-fg-secondary)]">audio / video</strong>, or
+            paste the manuscript below. {TRANSCRIPTION_LENGTH_HINT}
+          </p>
+        </div>
+        <label className="shrink-0 inline-block">
+          <input
+            type="file"
+            accept="audio/*,video/*,.txt,text/plain"
+            className="hidden"
+            disabled={busy}
+            onChange={(ev) => void onPick(ev)}
+          />
+          <span className="cursor-pointer inline-flex items-center rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-card-bg)] px-4 py-2 text-[13px] font-medium text-[var(--admin-fg)] shadow-sm hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)] disabled:opacity-50 transition-colors">
+            {busy ? 'Working…' : 'Choose file'}
+          </span>
+        </label>
+      </div>
+      <div className="mt-4">
+        <label htmlFor="fallback-paste" className="admin-label">
+          Paste text
+        </label>
+        <textarea
+          id="fallback-paste"
+          rows={6}
           disabled={busy}
-          onChange={(ev) => void onPick(ev)}
+          placeholder="Paste manuscript, outline, or bullets…"
+          value={pasteText}
+          onChange={(e) => setPasteText(e.target.value)}
+          className="admin-input mt-1 resize-y leading-relaxed"
         />
-        <span className="cursor-pointer rounded-lg border border-[rgba(56,189,248,0.35)] bg-[#0a0f18] px-4 py-2 text-[13px] font-medium text-sky-200 hover:bg-[#0f172a] disabled:opacity-50">
-          {busy ? 'Working…' : 'Choose file'}
-        </span>
-      </label>
+        <button
+          type="button"
+          disabled={busy || !pasteText.trim()}
+          onClick={() => void savePastedText()}
+          className="admin-btn-secondary mt-2 text-[13px]"
+        >
+          Save pasted text
+        </button>
+      </div>
       {mediaProgress && busy ? (
         <div className="mt-4">
           <TranscribeProgressPanel
