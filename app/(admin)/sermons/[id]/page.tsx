@@ -15,25 +15,26 @@ export default async function SermonDetailPage({ params }: Props) {
   const { profile, staffRole } = await requireAdminSession();
   const supabase = createServerSupabaseClient();
 
-  const { data: sermon } = await supabase
-    .from('sermons')
-    .select(
-      'id, title, pastor_name, sermon_date, source_url, transcript, status, workflow_status, summary, created_at, changes_requested_note, churches(require_devotional_approval, pastor_name)',
-    )
-    .eq('id', params.id)
-    .single();
+  const [{ data: sermon }, { data: devotionals }] = await Promise.all([
+    supabase
+      .from('sermons')
+      .select(
+        'id, title, pastor_name, sermon_date, source_url, transcript, status, workflow_status, summary, created_at, changes_requested_note, churches(require_devotional_approval, pastor_name)',
+      )
+      .eq('id', params.id)
+      .single(),
+    supabase
+      .from('devotionals')
+      .select(
+        'id, day_number, title, main_content, scripture_reference, scripture_text, reflection_question, estimated_minutes, pre_prompt',
+      )
+      .eq('sermon_id', params.id)
+      .order('day_number', { ascending: true }),
+  ]);
 
   if (!sermon) {
     notFound();
   }
-
-  const { data: devotionals } = await supabase
-    .from('devotionals')
-    .select(
-      'id, day_number, title, main_content, scripture_reference, scripture_text, reflection_question, estimated_minutes, pre_prompt',
-    )
-    .eq('sermon_id', params.id)
-    .order('day_number', { ascending: true });
 
   const days = devotionals ?? [];
   const canEdit = canManageSermonsWithStaff(profile, staffRole);

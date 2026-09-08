@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
@@ -6,7 +7,7 @@ import { staffHasPermission } from '@/lib/auth/profile';
 import { buildStaffAuthContext } from '@/lib/auth/membership';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function requireAdminSession(): Promise<StaffAuthContext> {
+export const requireAdminSession = cache(async (): Promise<StaffAuthContext> => {
   const supabase = createServerSupabaseClient();
   const {
     data: { user },
@@ -31,7 +32,7 @@ export async function requireAdminSession(): Promise<StaffAuthContext> {
     { id: user.id, email: user.email },
     profile as UserProfile,
   );
-}
+});
 
 /**
  * Requires an active staff membership (or legacy pastor/admin role).
@@ -158,28 +159,30 @@ export async function authorizeApiWithChurch(): Promise<
   return { ok: true, ctx };
 }
 
-export async function getChurchForProfile(
-  churchId: string | null,
-): Promise<ChurchSummary | null> {
-  if (!churchId) return null;
-  const supabase = createServerSupabaseClient();
-  const { data } = await supabase
-    .from('churches')
-    .select('id, name, church_code, owner_user_id')
-    .eq('id', churchId)
-    .single();
-  return data as ChurchSummary | null;
-}
+export const getChurchForProfile = cache(
+  async (churchId: string | null): Promise<ChurchSummary | null> => {
+    if (!churchId) return null;
+    const supabase = createServerSupabaseClient();
+    const { data } = await supabase
+      .from('churches')
+      .select('id, name, church_code, owner_user_id')
+      .eq('id', churchId)
+      .single();
+    return data as ChurchSummary | null;
+  },
+);
 
-export async function getChurchSettingsForProfile(
-  churchId: string | null,
-): Promise<ChurchSettingsRow | null> {
-  if (!churchId) return null;
-  const supabase = createServerSupabaseClient();
-  const { data } = await supabase
-    .from('churches')
-    .select('id, name, church_code, pastor_name, timezone, require_devotional_approval, sermon_language')
-    .eq('id', churchId)
-    .single();
-  return data as ChurchSettingsRow | null;
-}
+export const getChurchSettingsForProfile = cache(
+  async (churchId: string | null): Promise<ChurchSettingsRow | null> => {
+    if (!churchId) return null;
+    const supabase = createServerSupabaseClient();
+    const { data } = await supabase
+      .from('churches')
+      .select(
+        'id, name, church_code, pastor_name, timezone, require_devotional_approval, sermon_language',
+      )
+      .eq('id', churchId)
+      .single();
+    return data as ChurchSettingsRow | null;
+  },
+);

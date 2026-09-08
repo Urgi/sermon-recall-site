@@ -80,6 +80,12 @@ function sermonCompleted(sermonId: string, engagement: PastorEngagementPayload |
   return Math.max(...row.days.map((d) => d.completed_count), 0);
 }
 
+const COMMITMENT_PREVIEW = 4;
+
+function displayCommitment(raw: string): string {
+  return raw.trim().replace(/^[“"']+/, '').replace(/[”"']+$/, '').trim();
+}
+
 export function DashboardOverview({
   greetingName,
   churchName,
@@ -95,11 +101,15 @@ export function DashboardOverview({
   const { resolved } = useAdminTheme();
   const chart = getAdminChartTheme(resolved);
   const [range, setRange] = useState<RangeId>('7');
+  const [showAllCommitments, setShowAllCommitments] = useState(false);
   const hello = greetingName ? `${greeting()}, ${greetingName.split(' ')[0]}` : greeting();
   const members = engagement?.member_count ?? 0;
   const inactive = engagement?.inactive_this_week ?? 0;
   const opened = engagement?.opened_this_week ?? 0;
   const completed = engagement?.active_this_week ?? 0;
+  const commitments = (engagement?.sample_commitments ?? [])
+    .map(displayCommitment)
+    .filter(Boolean);
 
   const weeklyPoints = useMemo(() => {
     const weekly =
@@ -196,19 +206,24 @@ export function DashboardOverview({
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(16rem,1fr)]">
         <div className="admin-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
-              Weekly engagement
-            </h2>
-            <div className="inline-flex rounded-full border border-[var(--admin-border-strong)] p-0.5 text-[12px] font-semibold">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">
+                Weekly engagement
+              </h2>
+              <p className="mt-1 text-[13px] leading-snug text-[var(--admin-muted)]">
+                Members who opened and completed a devotional (UTC weeks).
+              </p>
+            </div>
+            <div className="inline-flex rounded-full border border-[var(--admin-border-strong)] p-0.5 text-[13px] font-semibold">
               {(['7', '30', '90'] as const).map((id) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setRange(id)}
-                  className={`rounded-full px-2.5 py-1 ${
+                  className={`rounded-full px-3 py-1 ${
                     range === id
-                      ? 'bg-[var(--admin-fg-strong)] text-[var(--admin-card-bg)]'
+                      ? 'bg-[#0ea5e9] text-white'
                       : 'text-[var(--admin-muted)] hover:text-[var(--admin-fg-strong)]'
                   }`}
                 >
@@ -265,21 +280,28 @@ export function DashboardOverview({
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/15 text-sky-300">
               <ChartMiniIcon />
             </span>
-            <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">This week</h2>
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">This week</h2>
           </div>
-          <p className="mt-4 text-[1.05rem] font-semibold leading-snug text-[var(--admin-fg-strong)]">
-            {members > 0
-              ? `${completed} of ${members} members completed a devotional.`
-              : 'Invite members to see completion this week.'}
-          </p>
           {members > 0 ? (
-            <p className="mt-2 text-[13px] text-[var(--admin-muted)]">
-              That’s {ratePct(completed, members)}% completion this week.
+            <>
+              <p className="mt-6 text-[2.5rem] font-bold leading-none tracking-tight tabular-nums text-[var(--admin-fg-strong)]">
+                {completed} of {members}
+              </p>
+              <p className="mt-3 text-[15px] leading-snug text-[var(--admin-fg-secondary)]">
+                members completed a devotional.
+              </p>
+              <p className="mt-2 text-[13px] text-[var(--admin-muted)]">
+                That’s {ratePct(completed, members)}% completion this week.
+              </p>
+            </>
+          ) : (
+            <p className="mt-6 text-[15px] leading-snug text-[var(--admin-fg-secondary)]">
+              Invite members to see completion this week.
             </p>
-          ) : null}
+          )}
           <Link
             href="/members"
-            className="mt-auto pt-6 text-[13px] font-medium text-[var(--admin-link)] hover:underline"
+            className="mt-auto pt-6 text-[14px] font-medium text-[var(--admin-link)] hover:underline"
           >
             View members →
           </Link>
@@ -289,8 +311,11 @@ export function DashboardOverview({
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(16rem,1fr)]">
         <div className="admin-card overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">Recent sermons</h2>
-            <Link href="/sermons" className="text-[13px] font-medium text-[var(--admin-link)] hover:underline">
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Recent sermons</h2>
+            <Link
+              href="/sermons?filter=all"
+              className="text-[14px] font-medium text-[var(--admin-link)] hover:underline"
+            >
               View all →
             </Link>
           </div>
@@ -334,8 +359,8 @@ export function DashboardOverview({
                           <span
                             className={`inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-semibold tabular-nums ${
                               pct >= 50
-                                ? 'bg-emerald-500/15 text-emerald-300'
-                                : 'bg-slate-500/20 text-[var(--admin-fg-secondary)]'
+                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
+                                : 'bg-sky-500/15 text-sky-600 dark:text-sky-300'
                             }`}
                           >
                             {done}/{members} ({pct}%)
@@ -374,7 +399,7 @@ export function DashboardOverview({
           />
         ) : (
           <div className="admin-card p-5">
-            <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">Share with members</h2>
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Share with members</h2>
             <p className="admin-hint mt-2">A church code will appear here once your church is set up.</p>
             <Link href="/members#invite" className="mt-4 inline-block text-[13px] font-medium text-[var(--admin-link)]">
               Invite members →
@@ -386,24 +411,35 @@ export function DashboardOverview({
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(16rem,1fr)]">
         <div className="admin-card p-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">
               What members are applying
             </h2>
-            <Link href="/sermons" className="text-[13px] font-medium text-[var(--admin-link)] hover:underline">
-              View all →
-            </Link>
+            {commitments.length > COMMITMENT_PREVIEW ? (
+              <button
+                type="button"
+                onClick={() => setShowAllCommitments((v) => !v)}
+                className="text-[14px] font-medium text-[var(--admin-link)] hover:underline"
+              >
+                {showAllCommitments ? 'Show less' : 'View all →'}
+              </button>
+            ) : null}
           </div>
           <p className="admin-hint mt-1">Recent anonymous commitments.</p>
-          {engagement?.sample_commitments.length ? (
+          {commitments.length ? (
             <ul className="mt-4 space-y-2">
-              {engagement.sample_commitments.slice(0, 4).map((c, i) => (
-                <li key={`${i}-${c.slice(0, 24)}`} className="flex gap-3 rounded-lg border border-admin px-3 py-2.5">
-                  <QuoteIcon />
-                  <p className="text-[14px] text-[var(--admin-fg-secondary)]">
-                    “{c.length > 120 ? `${c.slice(0, 117)}…` : c}”
-                  </p>
-                </li>
-              ))}
+              {(showAllCommitments ? commitments : commitments.slice(0, COMMITMENT_PREVIEW)).map(
+                (c, i) => (
+                  <li
+                    key={`${i}-${c.slice(0, 24)}`}
+                    className="flex items-start gap-3 rounded-lg border border-admin px-3.5 py-3"
+                  >
+                    <QuoteIcon />
+                    <p className="text-[15px] leading-snug text-[var(--admin-fg-strong)]">
+                      “{c.length > 140 ? `${c.slice(0, 137)}…` : c}”
+                    </p>
+                  </li>
+                ),
+              )}
             </ul>
           ) : (
             <p className="admin-hint mt-4">Commitments will show here after members finish a day.</p>
@@ -411,7 +447,7 @@ export function DashboardOverview({
         </div>
 
         <div className="admin-card flex flex-col p-5">
-          <h2 className="text-[15px] font-semibold text-[var(--admin-fg-strong)]">
+          <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">
             Catch-up nudge
           </h2>
           {midweekNudge && midweekNudge.phase !== 'none' ? (
@@ -552,7 +588,7 @@ function KebabIcon() {
 
 function QuoteIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" fill="currentColor" aria-hidden>
       <path d="M7.2 11.2C7.2 8.4 8.9 6.3 11.8 5.2L11 7.4c-1.2.5-1.8 1.4-1.8 2.6.9 0 2.4.5 2.4 2.4 0 1.6-1.2 2.8-2.8 2.8S6 14.6 6 12.8c0-.6.1-1.2.5-1.6-.2-.4-.3-1-.3-1.6 0-2.2 1.5-4.4 5-4.4l-1 2.4C8.4 6.4 7.2 8 7.2 11.2Zm8.8 0c0-2.8 1.7-4.9 4.6-6L19.8 7.4c-1.2.5-1.8 1.4-1.8 2.6.9 0 2.4.5 2.4 2.4 0 1.6-1.2 2.8-2.8 2.8s-2.8-1.2-2.8-3c0-.6.1-1.2.5-1.6-.2-.4-.3-1-.3-1.6 0-2.2 1.5-4.4 5-4.4l-1 2.4c-1.8.6-3 2.2-3 5.4Z" />
     </svg>
   );

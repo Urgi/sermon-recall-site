@@ -80,16 +80,19 @@ export function PreferredLanguageSettings() {
   }
 
   return (
-    <form onSubmit={onSave} className="space-y-4">
-      <div>
-        <label htmlFor="preferred-language" className="admin-label">
+    <form onSubmit={onSave} className="space-y-5">
+      <div className="space-y-2">
+        <label
+          htmlFor="preferred-language"
+          className="block text-[13px] font-semibold text-[var(--admin-fg-strong)]"
+        >
           Preferred language
         </label>
         <select
           id="preferred-language"
           value={language}
           onChange={(e) => setLanguage(normalizeAppLanguage(e.target.value))}
-          className="admin-input mt-1"
+          className="admin-input"
         >
           {APP_LANGUAGES.map((opt) => (
             <option key={opt.value} value={opt.value}>

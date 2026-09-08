@@ -1,10 +1,20 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 
+import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { canAccessTeamNav } from '@/lib/auth/profile';
 import { getChurchForProfile, requireApprovedStaffSession } from '@/lib/auth/server';
 import { TeamDashboard } from '@/components/admin/TeamDashboard';
 
-export default async function TeamPage() {
+export default function TeamPage() {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <TeamPageBody />
+    </Suspense>
+  );
+}
+
+async function TeamPageBody() {
   const ctx = await requireApprovedStaffSession();
   const church = await getChurchForProfile(ctx.profile.church_id);
 

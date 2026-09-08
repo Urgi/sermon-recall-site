@@ -4,7 +4,7 @@ import { authorizeApiWithChurch, getChurchForProfile } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { qrPngBuffer } from '@/lib/church/qr';
 
-export async function GET() {
+export async function GET(req: Request) {
   const auth = await authorizeApiWithChurch();
   if (!auth.ok) return auth.response;
 
@@ -16,11 +16,14 @@ export async function GET() {
   const joinUrl = buildMemberJoinUrl(church.church_code);
   const png = await qrPngBuffer(joinUrl);
   const safeCode = church.church_code.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const download = new URL(req.url).searchParams.get('download') === '1';
 
   return new NextResponse(new Uint8Array(png), {
     headers: {
       'Content-Type': 'image/png',
-      'Content-Disposition': `attachment; filename="sermon-recall-${safeCode}-qr.png"`,
+      'Content-Disposition': download
+        ? `attachment; filename="sermon-recall-${safeCode}-qr.png"`
+        : 'inline',
       'Cache-Control': 'private, max-age=3600',
     },
   });

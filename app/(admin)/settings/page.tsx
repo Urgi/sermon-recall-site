@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 
+import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { AppearanceSettings } from '@/components/admin/AppearanceSettings';
 import { ChurchSettingsForm } from '@/components/admin/ChurchSettingsForm';
 import { DeleteAccountPanel } from '@/components/admin/DeleteAccountPanel';
@@ -9,7 +11,15 @@ import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/ser
 import { DEFAULT_CHURCH_TIMEZONE } from '@/lib/church/timezones';
 import { normalizeAppLanguage } from '@/lib/i18n/languages';
 
-export default async function AdminSettingsPage() {
+export default function AdminSettingsPage() {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <AdminSettingsBody />
+    </Suspense>
+  );
+}
+
+async function AdminSettingsBody() {
   const { profile, staffRole } = await requireAdminSession();
   const canManageChurch =
     Boolean(profile.church_id) &&
@@ -17,67 +27,81 @@ export default async function AdminSettingsPage() {
   const church = canManageChurch ? await getChurchSettingsForProfile(profile.church_id) : null;
 
   return (
-    <div className="mx-auto max-w-lg space-y-8">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <Link
-          href="/dashboard"
-          className="text-[13px] font-medium text-admin-dim hover:text-sky-500"
-        >
+        <Link href="/dashboard" className="text-[13px] font-medium text-[var(--admin-link)] hover:underline">
           ← Dashboard
         </Link>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-admin-fg">Settings</h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-admin-muted">
-          Church workspace and personal preferences for the admin portal.
+        <h1 className="admin-heading mt-4">Settings</h1>
+        <p className="mt-2 text-[14px] leading-relaxed text-[var(--admin-muted)]">
+          Church workspace and your personal preferences for the admin portal.
         </p>
       </div>
 
       {canManageChurch && church ? (
-        <section className="rounded-xl border border-admin bg-admin-card p-6">
-          <h2 className="text-lg font-semibold text-admin-fg">Church settings</h2>
-          <p className="mt-1 text-[14px] text-admin-muted">
-            Name, join code, language, timezone, and devotional approval rules for your whole
-            church.
+        <section className="space-y-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-dim)]">
+            Church
           </p>
-          <div className="mt-5">
-            <ChurchSettingsForm
-              initial={{
-                name: church.name,
-                churchCode: church.church_code,
-                pastorName: church.pastor_name ?? '',
-                timezone: church.timezone || DEFAULT_CHURCH_TIMEZONE,
-                requireDevotionalApproval: church.require_devotional_approval !== false,
-                sermonLanguage: normalizeAppLanguage(church.sermon_language),
-              }}
-            />
+          <div className="admin-card p-6 sm:p-7">
+            <div className="border-b border-admin pb-5">
+              <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Church settings</h2>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--admin-muted)]">
+                How members join, what language devotionals use, and who can publish.
+              </p>
+            </div>
+            <div className="pt-6">
+              <ChurchSettingsForm
+                initial={{
+                  name: church.name,
+                  churchCode: church.church_code,
+                  pastorName: church.pastor_name ?? '',
+                  timezone: church.timezone || DEFAULT_CHURCH_TIMEZONE,
+                  requireDevotionalApproval: church.require_devotional_approval !== false,
+                  sermonLanguage: normalizeAppLanguage(church.sermon_language),
+                }}
+              />
+            </div>
           </div>
         </section>
       ) : profile.church_id ? (
-        <section className="rounded-xl border border-admin bg-admin-card p-6">
-          <h2 className="text-lg font-semibold text-admin-fg">Church settings</h2>
-          <p className="mt-2 text-[14px] text-admin-muted">
-            Your role cannot change church-wide settings. Ask an owner or admin pastor if something
-            needs updating.
+        <section className="space-y-3">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-dim)]">
+            Church
           </p>
+          <div className="admin-card p-6 sm:p-7">
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Church settings</h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-[var(--admin-muted)]">
+              Your role cannot change church-wide settings. Ask an owner or admin pastor if
+              something needs updating.
+            </p>
+          </div>
         </section>
       ) : null}
 
-      <section className="rounded-xl border border-admin bg-admin-card p-6">
-        <h2 className="text-lg font-semibold text-admin-fg">Language</h2>
-        <p className="mt-1 text-[14px] text-admin-muted">
-          Your personal language preference for Sermon Recall.
+      <section className="space-y-3">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-dim)]">
+          Your account
         </p>
-        <div className="mt-5">
-          <PreferredLanguageSettings />
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-admin bg-admin-card p-6">
-        <h2 className="text-lg font-semibold text-admin-fg">Appearance</h2>
-        <p className="mt-1 text-[14px] text-admin-muted">
-          Choose a brighter mode for daytime work, or stay on dark.
-        </p>
-        <div className="mt-5">
-          <AppearanceSettings />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
+          <div className="admin-card p-6 sm:p-7">
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Language</h2>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--admin-muted)]">
+              Your personal language in Sermon Recall. This does not change the church default.
+            </p>
+            <div className="mt-5">
+              <PreferredLanguageSettings />
+            </div>
+          </div>
+          <div className="admin-card p-6 sm:p-7">
+            <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">Appearance</h2>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--admin-muted)]">
+              Dark for evening work, or a brighter theme during the day. Saved on this device.
+            </p>
+            <div className="mt-5">
+              <AppearanceSettings />
+            </div>
+          </div>
         </div>
       </section>
 

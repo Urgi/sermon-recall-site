@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { CHURCH_TIMEZONE_OPTIONS } from '@/lib/church/timezones';
@@ -40,11 +40,22 @@ export function ChurchSettingsForm({ initial }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
 
   const codeChanged = churchCode.trim().toUpperCase() !== initial.churchCode.trim().toUpperCase();
   const joinUrlPreview = churchCode.trim()
     ? buildMemberJoinUrl(churchCode.trim())
     : buildMemberJoinUrl(initial.churchCode);
+
+  async function copy(kind: 'code' | 'link', text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setCopied(null);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,110 +99,136 @@ export function ChurchSettingsForm({ initial }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
-      <div>
-        <label htmlFor="church-settings-name" className="admin-label">
-          Church name
-        </label>
-        <input
-          id="church-settings-name"
-          type="text"
-          required
-          autoComplete="organization"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="admin-input mt-1"
-        />
+    <form onSubmit={onSubmit} className="space-y-8">
+      <div className="space-y-5">
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">Identity</p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field id="church-settings-name" label="Church name">
+            <input
+              id="church-settings-name"
+              type="text"
+              required
+              autoComplete="organization"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="admin-input"
+            />
+          </Field>
+          <Field id="church-settings-pastor" label="Lead pastor" hint="Shown to members. Optional.">
+            <input
+              id="church-settings-pastor"
+              type="text"
+              autoComplete="name"
+              placeholder="Optional"
+              value={pastorName}
+              onChange={(e) => setPastorName(e.target.value)}
+              className="admin-input"
+            />
+          </Field>
+        </div>
       </div>
 
-      <div>
-        <label htmlFor="church-settings-code" className="admin-label">
-          Church code
-        </label>
-        <p className="admin-hint mt-0.5">
-          Members enter this in the app to join. Join link:{' '}
-          <span className="break-all font-mono text-[12px]">{joinUrlPreview}</span>
-        </p>
-        <input
+      <div className="space-y-5">
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">How members join</p>
+        <Field
           id="church-settings-code"
-          type="text"
-          required
-          minLength={4}
-          maxLength={32}
-          autoComplete="off"
-          value={churchCode}
-          onChange={(e) => setChurchCode(e.target.value.toUpperCase())}
-          className="admin-input mt-1 max-w-xs font-mono uppercase"
-        />
+          label="Church code"
+          hint="Members type this in the mobile app."
+        >
+          <div className="flex gap-2">
+            <input
+              id="church-settings-code"
+              type="text"
+              required
+              minLength={4}
+              maxLength={32}
+              autoComplete="off"
+              value={churchCode}
+              onChange={(e) => setChurchCode(e.target.value.toUpperCase())}
+              className="admin-input max-w-xs font-mono uppercase tracking-wide"
+            />
+            <button
+              type="button"
+              onClick={() => void copy('code', churchCode.trim().toUpperCase())}
+              className="admin-btn-secondary shrink-0 px-3 text-[13px]"
+            >
+              {copied === 'code' ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </Field>
+        <Field id="church-settings-join" label="Join link">
+          <div className="flex gap-2">
+            <input
+              id="church-settings-join"
+              type="text"
+              readOnly
+              value={joinUrlPreview}
+              className="admin-input min-w-0 flex-1 font-mono text-[13px]"
+            />
+            <button
+              type="button"
+              onClick={() => void copy('link', joinUrlPreview)}
+              className="admin-btn-secondary shrink-0 px-3 text-[13px]"
+            >
+              {copied === 'link' ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </Field>
         {codeChanged ? (
-          <p className="mt-2 text-[13px] text-amber-700 dark:text-amber-200">
-            You changed the code — update any printed QR codes or shared links after saving.
+          <p className="text-[13px] text-amber-700 dark:text-amber-200">
+            You changed the code — update printed QR codes and shared links after saving.
           </p>
         ) : null}
       </div>
 
-      <div>
-        <label htmlFor="church-settings-pastor" className="admin-label">
-          Lead pastor display name
-        </label>
-        <input
-          id="church-settings-pastor"
-          type="text"
-          autoComplete="name"
-          placeholder="Optional"
-          value={pastorName}
-          onChange={(e) => setPastorName(e.target.value)}
-          className="admin-input mt-1"
-        />
+      <div className="space-y-5">
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">Defaults</p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            id="church-settings-timezone"
+            label="Timezone"
+            hint="Used for reminder times for your church."
+          >
+            <select
+              id="church-settings-timezone"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="admin-input"
+            >
+              {CHURCH_TIMEZONE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+              {!CHURCH_TIMEZONE_OPTIONS.some((o) => o.value === timezone) ? (
+                <option value={timezone}>{timezone}</option>
+              ) : null}
+            </select>
+          </Field>
+          <Field
+            id="church-settings-language"
+            label="Church language"
+            hint="Default for sermons and devotionals."
+          >
+            <select
+              id="church-settings-language"
+              value={sermonLanguage}
+              onChange={(e) => setSermonLanguage(normalizeAppLanguage(e.target.value))}
+              className="admin-input"
+            >
+              {APP_LANGUAGES.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {languageOptionLabel(opt.value)}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </div>
 
       <div>
-        <label htmlFor="church-settings-timezone" className="admin-label">
-          Timezone
-        </label>
-        <p className="admin-hint mt-0.5">
-          Used for devotional reminder scheduling for your church.
-        </p>
-        <select
-          id="church-settings-timezone"
-          value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          className="admin-input mt-1"
-        >
-          {CHURCH_TIMEZONE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-          {!CHURCH_TIMEZONE_OPTIONS.some((o) => o.value === timezone) ? (
-            <option value={timezone}>{timezone}</option>
-          ) : null}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="church-settings-language" className="admin-label">
-          Church language
-        </label>
-        <p className="admin-hint mt-0.5">
-          Default language for sermons and devotionals for your congregation.
-        </p>
-        <select
-          id="church-settings-language"
-          value={sermonLanguage}
-          onChange={(e) => setSermonLanguage(normalizeAppLanguage(e.target.value))}
-          className="admin-input mt-1"
-        >
-          {APP_LANGUAGES.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {languageOptionLabel(opt.value)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="rounded-lg border border-admin bg-admin-surface p-4">
-        <label className="flex cursor-pointer items-start gap-3">
+        <p className="mb-3 text-[13px] font-semibold text-[var(--admin-fg-strong)]">Publishing</p>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-admin bg-[var(--admin-surface-bg)] px-4 py-4">
           <input
             type="checkbox"
             checked={requireDevotionalApproval}
@@ -199,31 +236,56 @@ export function ChurchSettingsForm({ initial }: Props) {
             className="mt-1 h-4 w-4 rounded border-admin"
           />
           <span>
-            <span className="block text-[14px] font-medium text-admin-fg-strong">
-              Require devotional approval before publish
+            <span className="block text-[14px] font-semibold text-[var(--admin-fg-strong)]">
+              Require approval before publish
             </span>
-            <span className="admin-hint mt-1 block">
-              When on, staff submit devotionals for review; only owners and admin pastors can
-              publish. When off, anyone who can publish may go live directly from preview.
+            <span className="mt-1 block text-[13px] leading-relaxed text-[var(--admin-muted)]">
+              Staff submit devotionals for review. Only owners and admin pastors can go live.
             </span>
           </span>
         </label>
       </div>
 
-      {error ? (
-        <p className="text-[13px] text-red-500" role="alert">
-          {error}
-        </p>
-      ) : null}
-      {success ? (
-        <p className="text-[13px] text-emerald-600 dark:text-emerald-400" role="status">
-          {success}
-        </p>
-      ) : null}
-
-      <button type="submit" disabled={pending} className="admin-btn-primary disabled:opacity-60">
-        {pending ? 'Saving…' : 'Save church settings'}
-      </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-admin pt-5">
+        <div className="min-h-[1.25rem]">
+          {error ? (
+            <p className="text-[13px] text-red-500" role="alert">
+              {error}
+            </p>
+          ) : success ? (
+            <p className="text-[13px] text-emerald-600 dark:text-emerald-400" role="status">
+              {success}
+            </p>
+          ) : (
+            <p className="text-[13px] text-[var(--admin-muted)]">Changes apply to the whole church.</p>
+          )}
+        </div>
+        <button type="submit" disabled={pending} className="admin-btn-primary disabled:opacity-60">
+          {pending ? 'Saving…' : 'Save church settings'}
+        </button>
+      </div>
     </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-[13px] font-semibold text-[var(--admin-fg-strong)]">
+        {label}
+      </label>
+      {hint ? <p className="text-[13px] leading-relaxed text-[var(--admin-muted)]">{hint}</p> : null}
+      {children}
+    </div>
   );
 }

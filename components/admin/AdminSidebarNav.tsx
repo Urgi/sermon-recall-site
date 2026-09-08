@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, type ReactNode } from 'react';
+
+import { useAdminNav } from '@/components/admin/AdminNavContext';
 
 type NavItem = {
   href: string;
@@ -88,11 +90,14 @@ function IconSettings() {
 export function AdminSidebarNav({
   canViewTeam,
   canViewNotifications,
+  variant = 'sidebar',
 }: {
   canViewTeam: boolean;
   canViewNotifications: boolean;
+  variant?: 'sidebar' | 'compact';
 }) {
-  const path = usePathname() || '/dashboard';
+  const router = useRouter();
+  const { displayPath, beginNavigation } = useAdminNav();
   const items: NavItem[] = [
     { href: '/dashboard', label: 'Overview', icon: <IconOverview />, match: (p) => p === '/dashboard' },
     { href: '/sermons', label: 'Sermons', icon: <IconSermons />, match: (p) => p.startsWith('/sermons') },
@@ -104,14 +109,54 @@ export function AdminSidebarNav({
   }
   items.push({ href: '/settings', label: 'Settings', icon: <IconSettings /> });
 
+  useEffect(() => {
+    const hrefs = items.map((item) => item.href);
+    const run = () => {
+      for (const href of hrefs) router.prefetch(href);
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(run);
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = window.setTimeout(run, 200);
+    return () => window.clearTimeout(timer);
+    // Nav set is stable for a given permission pair.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canViewTeam, canViewNotifications, router]);
+
+  if (variant === 'compact') {
+    return (
+      <nav className="flex min-w-0 flex-wrap items-center gap-2">
+        {items.map((item) => {
+          const active = isActive(displayPath, item);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              prefetch
+              onClick={() => beginNavigation(item.href)}
+              className={`text-xs font-medium ${
+                active ? 'text-admin-fg-strong' : 'text-admin-link hover:underline'
+              }`}
+            >
+              {item.label === 'Notifications' ? 'Notify' : item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
+
   return (
     <nav className="flex flex-col gap-1 text-[14px]">
       {items.map((item) => {
-        const active = isActive(path, item);
+        const active = isActive(displayPath, item);
         return (
           <Link
             key={item.href}
             href={item.href}
+            prefetch
+            onClick={() => beginNavigation(item.href)}
             className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition-colors ${
               active
                 ? 'bg-[color-mix(in_srgb,var(--admin-accent)_14%,transparent)] text-[var(--admin-fg-strong)]'

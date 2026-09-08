@@ -3,6 +3,8 @@ import {
   staffHasPermission,
 } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
+import { Suspense } from 'react';
+
 import { ClaimLeadPastorButton } from '@/components/admin/ClaimLeadPastorButton';
 import {
   DashboardOverview,
@@ -12,67 +14,65 @@ import { parsePastorEngagement, parsePastorMidweekNudge } from '@/lib/engagement
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { CreateChurchForm } from '@/components/admin/CreateChurchForm';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
-import { qrPngDataUrl } from '@/lib/church/qr';
 import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import { pastorLifecycle } from '@/lib/admin/workflow-status';
+import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 
 type Props = { searchParams: { staff?: string; error?: string } };
 
-export default async function DashboardPage({ searchParams }: Props) {
+export default function DashboardPage(props: Props) {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <DashboardPageBody {...props} />
+    </Suspense>
+  );
+}
+
+async function DashboardPageBody({ searchParams }: Props) {
   const { user, profile, staffRole, membership, isApprovedStaff } = await requireAdminSession();
-  const church = await getChurchForProfile(profile.church_id);
   const supabase = createServerSupabaseClient();
 
   const canPublish = isApprovedStaff && canManageSermonsWithStaff(profile, staffRole);
   const canSendNotifications =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
 
-  let engagementParsed = null as ReturnType<typeof parsePastorEngagement>;
-  let midweekNudge = null as ReturnType<typeof parsePastorMidweekNudge>;
-  if (profile.church_id && canPublish) {
-    const { data: engagementRaw, error: engagementErr } = await supabase.rpc(
-      'pastor_church_engagement',
-      { p_church_id: profile.church_id },
-    );
-    if (!engagementErr) {
-      engagementParsed = parsePastorEngagement(engagementRaw);
-    }
-  }
-  if (profile.church_id && (canPublish || canSendNotifications)) {
-    const { data: nudgeRaw, error: nudgeErr } = await supabase.rpc('pastor_midweek_nudge_status', {
-      p_church_id: profile.church_id,
-    });
-    if (!nudgeErr) {
-      midweekNudge = parsePastorMidweekNudge(nudgeRaw);
-    }
-  }
+  const churchId = profile.church_id;
+  const [church, engagementRes, nudgeRes, sermonsRes] = await Promise.all([
+    getChurchForProfile(churchId),
+    churchId && canPublish
+      ? supabase.rpc('pastor_church_engagement', { p_church_id: churchId })
+      : Promise.resolve({ data: null, error: null }),
+    churchId && (canPublish || canSendNotifications)
+      ? supabase.rpc('pastor_midweek_nudge_status', { p_church_id: churchId })
+      : Promise.resolve({ data: null, error: null }),
+    churchId
+      ? supabase
+          .from('sermons')
+          .select('id, title, sermon_date, workflow_status, status, transcript_status')
+          .eq('church_id', churchId)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ]);
 
-  let recentSermons: DashboardSermonRow[] = [];
-  if (profile.church_id) {
-    const { data: sermons } = await supabase
-      .from('sermons')
-      .select('id, title, sermon_date, workflow_status, status, transcript_status')
-      .eq('church_id', profile.church_id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-    recentSermons = (sermons ?? []).map((s) => ({
-      id: s.id as string,
-      title: s.title as string,
-      sermon_date: (s.sermon_date as string | null) ?? null,
-      lifecycle: pastorLifecycle({
-        workflow: ((s.workflow_status as SermonWorkflowStatus) ?? 'draft') as SermonWorkflowStatus,
-        ingestStatus: (s.status as string | null) ?? null,
-        transcriptStatus: (s.transcript_status as string | null) ?? null,
-      }),
-    }));
-  }
+  const engagementParsed = !engagementRes.error
+    ? parsePastorEngagement(engagementRes.data)
+    : null;
+  const midweekNudge = !nudgeRes.error ? parsePastorMidweekNudge(nudgeRes.data) : null;
 
-  let memberJoinUrl: string | null = null;
-  let memberQrDataUrl: string | null = null;
-  if (church?.church_code) {
-    memberJoinUrl = buildMemberJoinUrl(church.church_code);
-    memberQrDataUrl = await qrPngDataUrl(memberJoinUrl);
-  }
+  const recentSermons: DashboardSermonRow[] = (sermonsRes.data ?? []).map((s) => ({
+    id: s.id as string,
+    title: s.title as string,
+    sermon_date: (s.sermon_date as string | null) ?? null,
+    lifecycle: pastorLifecycle({
+      workflow: ((s.workflow_status as SermonWorkflowStatus) ?? 'draft') as SermonWorkflowStatus,
+      ingestStatus: (s.status as string | null) ?? null,
+      transcriptStatus: (s.transcript_status as string | null) ?? null,
+    }),
+  }));
+
+  const memberJoinUrl = church?.church_code ? buildMemberJoinUrl(church.church_code) : null;
+  const memberQrDataUrl = church?.church_code ? '/api/church/qr-image' : null;
 
   const greetingName = profile.full_name?.trim() || user.email?.split('@')[0] || null;
 

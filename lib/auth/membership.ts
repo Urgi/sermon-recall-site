@@ -1,3 +1,5 @@
+import { cache } from 'react';
+
 import type { MembershipStatus, StaffAuthContext, UserProfile } from '@/lib/auth/profile';
 import {
   canManageSermonsFromStaff,
@@ -16,23 +18,22 @@ export type ChurchMembershipRow = {
   approved_at: string | null;
 };
 
-export async function loadMembership(
-  userId: string,
-  churchId: string | null,
-): Promise<ChurchMembershipRow | null> {
-  if (!churchId) return null;
+export const loadMembership = cache(
+  async (userId: string, churchId: string | null): Promise<ChurchMembershipRow | null> => {
+    if (!churchId) return null;
 
-  const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from('church_memberships')
-    .select('id, church_id, user_id, role, status, approved_at')
-    .eq('user_id', userId)
-    .eq('church_id', churchId)
-    .maybeSingle();
+    const supabase = createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('church_memberships')
+      .select('id, church_id, user_id, role, status, approved_at')
+      .eq('user_id', userId)
+      .eq('church_id', churchId)
+      .maybeSingle();
 
-  if (error || !data) return null;
-  return data as ChurchMembershipRow;
-}
+    if (error || !data) return null;
+    return data as ChurchMembershipRow;
+  },
+);
 
 /** @deprecated Use loadMembership */
 export const loadActiveMembership = loadMembership;

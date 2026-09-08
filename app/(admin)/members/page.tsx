@@ -1,12 +1,21 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 
+import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { DashboardShareCard } from '@/components/admin/DashboardShareCard';
 import { canAccessTeamNav } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
-import { qrPngDataUrl } from '@/lib/church/qr';
 
-export default async function MembersPage() {
+export default function MembersPage() {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <MembersPageBody />
+    </Suspense>
+  );
+}
+
+async function MembersPageBody() {
   const { user, profile, staffRole } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
@@ -26,12 +35,8 @@ export default async function MembersPage() {
     );
   }
 
-  let joinUrl: string | null = null;
-  let qrDataUrl: string | null = null;
-  if (church.church_code) {
-    joinUrl = buildMemberJoinUrl(church.church_code);
-    qrDataUrl = await qrPngDataUrl(joinUrl);
-  }
+  const joinUrl = church.church_code ? buildMemberJoinUrl(church.church_code) : null;
+  const qrDataUrl = church.church_code ? '/api/church/qr-image' : null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">

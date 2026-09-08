@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 
+import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { staffHasPermission } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
@@ -7,7 +9,15 @@ import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistor
 
 type Props = { searchParams: { encourage?: string; n?: string } };
 
-export default async function NotificationsPage({ searchParams }: Props) {
+export default function NotificationsPage(props: Props) {
+  return (
+    <Suspense fallback={<AdminPageFallback />}>
+      <NotificationsPageBody {...props} />
+    </Suspense>
+  );
+}
+
+async function NotificationsPageBody({ searchParams }: Props) {
   const { profile, staffRole, isApprovedStaff } = await requireAdminSession();
   const canSend =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');

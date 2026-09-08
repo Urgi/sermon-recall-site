@@ -5,6 +5,12 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    staleTimes: {
+      dynamic: 60,
+      static: 180,
+    },
+  },
   webpack: (config, { nextRuntime }) => {
     if (nextRuntime === 'edge') {
       config.resolve.alias = {

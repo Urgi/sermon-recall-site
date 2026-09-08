@@ -113,6 +113,27 @@
     flex-direction: column;
   }
 
+  @keyframes admin-progress {
+    0% {
+      transform: scaleX(0.08);
+    }
+    100% {
+      transform: scaleX(1);
+    }
+  }
+
+  .animate-admin-progress {
+    transform-origin: left center;
+    animation: admin-progress 10s cubic-bezier(0.12, 0.55, 0.2, 1) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-admin-progress {
+      animation: none;
+      width: 70%;
+    }
+  }
+
   @media (min-width: 840px) {
     .admin-sidebar {
       display: flex;
