@@ -11,6 +11,7 @@ type NavItem = {
   label: string;
   icon: ReactNode;
   match?: (path: string) => boolean;
+  count?: number | null;
 };
 
 function isActive(path: string, item: NavItem): boolean {
@@ -90,10 +91,12 @@ function IconSettings() {
 export function AdminSidebarNav({
   canViewTeam,
   canViewNotifications,
+  memberCount = null,
   variant = 'sidebar',
 }: {
   canViewTeam: boolean;
   canViewNotifications: boolean;
+  memberCount?: number | null;
   variant?: 'sidebar' | 'compact';
 }) {
   const router = useRouter();
@@ -101,7 +104,13 @@ export function AdminSidebarNav({
   const items: NavItem[] = [
     { href: '/dashboard', label: 'Overview', icon: <IconOverview />, match: (p) => p === '/dashboard' },
     { href: '/sermons', label: 'Sermons', icon: <IconSermons />, match: (p) => p.startsWith('/sermons') },
-    { href: '/members', label: 'Members', icon: <IconMembers />, match: (p) => p.startsWith('/members') },
+    {
+      href: '/members',
+      label: 'Members',
+      icon: <IconMembers />,
+      match: (p) => p.startsWith('/members'),
+      count: memberCount,
+    },
   ];
   if (canViewTeam) items.push({ href: '/team', label: 'Team', icon: <IconTeam /> });
   if (canViewNotifications) {
@@ -118,8 +127,8 @@ export function AdminSidebarNav({
       const id = window.requestIdleCallback(run);
       return () => window.cancelIdleCallback(id);
     }
-    const timer = window.setTimeout(run, 200);
-    return () => window.clearTimeout(timer);
+    const timer = globalThis.setTimeout(run, 200);
+    return () => globalThis.clearTimeout(timer);
     // Nav set is stable for a given permission pair.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canViewTeam, canViewNotifications, router]);
@@ -140,6 +149,9 @@ export function AdminSidebarNav({
               }`}
             >
               {item.label === 'Notifications' ? 'Notify' : item.label}
+              {typeof item.count === 'number' ? (
+                <span className="ml-1 tabular-nums opacity-80">({item.count})</span>
+              ) : null}
             </Link>
           );
         })}
@@ -170,7 +182,10 @@ export function AdminSidebarNav({
               />
             ) : null}
             <span className={active ? 'text-[#0ea5e9]' : ''}>{item.icon}</span>
-            {item.label}
+            <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            {typeof item.count === 'number' ? (
+              <span className="tabular-nums text-[12px] text-[var(--admin-muted)]">{item.count}</span>
+            ) : null}
           </Link>
         );
       })}

@@ -109,7 +109,7 @@ export function TranscriptionJobPoller({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [jobId, onComplete, pipelinePhase, router, shouldGenerateDevotionals]);
+  }, [jobId, onComplete, onFailed, pipelinePhase, router, shouldGenerateDevotionals]);
 
   useEffect(() => {
     if (pipelinePhase !== 'devotionals' || !sermonId || generationStarted.current) return;

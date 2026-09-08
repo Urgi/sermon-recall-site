@@ -136,8 +136,9 @@ export function DashboardOverview({
     {
       label: 'Total members',
       value: members,
-      hint: 'Registered in your church',
+      hint: 'Open the Members tab',
       icon: 'members' as const,
+      href: '/members',
     },
     {
       label: 'Active this week',
@@ -190,18 +191,37 @@ export function DashboardOverview({
       </div>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map((m) => (
-          <div key={m.label} className="admin-stat-card flex items-start gap-3">
-            <MetricIcon kind={m.icon} />
-            <div className="min-w-0">
-              <p className="text-[13px] font-medium text-[var(--admin-fg-strong)]">{m.label}</p>
-              <p className="mt-1 text-[1.75rem] font-bold leading-none tabular-nums text-[var(--admin-fg-strong)]">
-                {engagement ? m.value : '—'}
-              </p>
-              <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">{m.hint}</p>
+        {metrics.map((m) => {
+          const body = (
+            <>
+              <MetricIcon kind={m.icon} />
+              <div className="min-w-0">
+                <p className="text-[13px] font-medium text-[var(--admin-fg-strong)]">{m.label}</p>
+                <p className="mt-1 text-[1.75rem] font-bold leading-none tabular-nums text-[var(--admin-fg-strong)]">
+                  {engagement ? m.value : '—'}
+                </p>
+                <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">{m.hint}</p>
+              </div>
+            </>
+          );
+          const className = 'admin-stat-card flex items-start gap-3';
+          if ('href' in m && m.href) {
+            return (
+              <Link
+                key={m.label}
+                href={m.href}
+                className={`${className} transition-colors hover:border-[var(--admin-accent)]`}
+              >
+                {body}
+              </Link>
+            );
+          }
+          return (
+            <div key={m.label} className={className}>
+              {body}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(16rem,1fr)]">
