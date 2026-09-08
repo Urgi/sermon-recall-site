@@ -92,11 +92,13 @@ export function AdminSidebarNav({
   canViewTeam,
   canViewNotifications,
   memberCount = null,
+  teamCount = null,
   variant = 'sidebar',
 }: {
   canViewTeam: boolean;
   canViewNotifications: boolean;
   memberCount?: number | null;
+  teamCount?: number | null;
   variant?: 'sidebar' | 'compact';
 }) {
   const router = useRouter();
@@ -112,7 +114,15 @@ export function AdminSidebarNav({
       count: memberCount,
     },
   ];
-  if (canViewTeam) items.push({ href: '/team', label: 'Team', icon: <IconTeam /> });
+  if (canViewTeam) {
+    items.push({
+      href: '/team',
+      label: 'Team',
+      icon: <IconTeam />,
+      match: (p) => p.startsWith('/team'),
+      count: teamCount,
+    });
+  }
   if (canViewNotifications) {
     items.push({ href: '/notifications', label: 'Notifications', icon: <IconNotify /> });
   }
