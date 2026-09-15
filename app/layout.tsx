@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { ThemeScript } from '@/components/admin/ThemeScript';
 import { AppToastHost } from '@/components/AppToastHost';
+import { LanguageProvider } from '@/components/i18n/LanguageProvider';
 
 import './globals.css';
 
@@ -28,10 +29,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeScript />
-        <Suspense fallback={null}>
-          <AppToastHost />
-        </Suspense>
-        {children}
+        <LanguageProvider>
+          <Suspense fallback={null}>
+            <AppToastHost />
+          </Suspense>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

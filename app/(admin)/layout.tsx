@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import { AdminMobileHeaderSlot, AdminSidebarSlot } from '@/components/admin/AdminSidebarSlot';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
 import { SignOutButton } from '@/components/admin/SignOutButton';
@@ -22,7 +23,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <header className="admin-mobile-header flex items-center justify-between gap-3 border-b border-admin px-4 py-3 wide:hidden">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="Dashboard home">
               <SermonRecallLogo variant="header" className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
-              <span className="truncate text-sm font-semibold text-admin-fg-strong">Church admin</span>
+              <span className="truncate text-sm font-semibold text-admin-fg-strong">
+                <AdminChromeCopy k="nav.churchAdmin" />
+              </span>
             </Link>
             <div className="flex min-w-0 shrink items-center gap-2">
               <Suspense fallback={<MobileNavFallback />}>

@@ -14,6 +14,7 @@ import {
   languageOptionLabel,
 } from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
@@ -22,6 +23,7 @@ export function RegisterForm() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const { setLanguage } = useLanguage();
   const [preferredLanguage, setPreferredLanguage] =
     useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +108,11 @@ export function RegisterForm() {
           name="preferredLanguage"
           disabled={pending}
           value={preferredLanguage}
-          onChange={(e) => setPreferredLanguage(e.target.value as AppLanguage)}
+          onChange={(e) => {
+            const next = e.target.value as AppLanguage;
+            setPreferredLanguage(next);
+            setLanguage(next);
+          }}
           className={inputClass}
         >
           {APP_LANGUAGES.map((opt) => (

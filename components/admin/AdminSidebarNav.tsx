@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 
 import { useAdminNav } from '@/components/admin/AdminNavContext';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 type NavItem = {
   href: string;
@@ -102,13 +103,14 @@ export function AdminSidebarNav({
   variant?: 'sidebar' | 'compact';
 }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const { displayPath, beginNavigation } = useAdminNav();
   const items: NavItem[] = [
-    { href: '/dashboard', label: 'Overview', icon: <IconOverview />, match: (p) => p === '/dashboard' },
-    { href: '/sermons', label: 'Sermons', icon: <IconSermons />, match: (p) => p.startsWith('/sermons') },
+    { href: '/dashboard', label: t('nav.overview'), icon: <IconOverview />, match: (p) => p === '/dashboard' },
+    { href: '/sermons', label: t('nav.sermons'), icon: <IconSermons />, match: (p) => p.startsWith('/sermons') },
     {
       href: '/members',
-      label: 'Members',
+      label: t('nav.members'),
       icon: <IconMembers />,
       match: (p) => p.startsWith('/members'),
       count: memberCount,
@@ -117,16 +119,16 @@ export function AdminSidebarNav({
   if (canViewTeam) {
     items.push({
       href: '/team',
-      label: 'Team',
+      label: t('nav.team'),
       icon: <IconTeam />,
       match: (p) => p.startsWith('/team'),
       count: teamCount,
     });
   }
   if (canViewNotifications) {
-    items.push({ href: '/notifications', label: 'Notifications', icon: <IconNotify /> });
+    items.push({ href: '/notifications', label: t('nav.notifications'), icon: <IconNotify /> });
   }
-  items.push({ href: '/settings', label: 'Settings', icon: <IconSettings /> });
+  items.push({ href: '/settings', label: t('nav.settings'), icon: <IconSettings /> });
 
   useEffect(() => {
     const hrefs = items.map((item) => item.href);
@@ -158,7 +160,7 @@ export function AdminSidebarNav({
                 active ? 'text-admin-fg-strong' : 'text-admin-link hover:underline'
               }`}
             >
-              {item.label === 'Notifications' ? 'Notify' : item.label}
+              {item.href === '/notifications' ? t('nav.notifyShort') : item.label}
               {typeof item.count === 'number' ? (
                 <span className="ml-1 tabular-nums opacity-80">({item.count})</span>
               ) : null}

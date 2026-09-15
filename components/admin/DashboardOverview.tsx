@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { format, parseISO, startOfWeek } from 'date-fns';
 import { useMemo, useState } from 'react';
+
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import {
   CartesianGrid,
   Legend,
@@ -45,11 +47,11 @@ type Props = {
   recentSermons: DashboardSermonRow[];
 };
 
-function greeting(): string {
+function greeting(t: (key: 'dash.goodMorning' | 'dash.goodAfternoon' | 'dash.goodEvening') => string): string {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return t('dash.goodMorning');
+  if (h < 17) return t('dash.goodAfternoon');
+  return t('dash.goodEvening');
 }
 
 function weekLabel(ymd: string): string {
@@ -99,10 +101,11 @@ export function DashboardOverview({
   recentSermons,
 }: Props) {
   const { resolved } = useAdminTheme();
+  const { t } = useLanguage();
   const chart = getAdminChartTheme(resolved);
   const [range, setRange] = useState<RangeId>('7');
   const [showAllCommitments, setShowAllCommitments] = useState(false);
-  const hello = greetingName ? `${greeting()}, ${greetingName.split(' ')[0]}` : greeting();
+  const hello = greetingName ? `${greeting(t)}, ${greetingName.split(' ')[0]}` : greeting(t);
   const members = engagement?.member_count ?? 0;
   const inactive = engagement?.inactive_this_week ?? 0;
   const opened = engagement?.opened_this_week ?? 0;

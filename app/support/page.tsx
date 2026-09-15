@@ -62,9 +62,10 @@ export default function SupportPage() {
           <div>
             <h2 className="text-lg font-semibold text-white">Church members</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-              Install the Sermon Recall app from Google Play, create an account with email, and enter
-              the church code from your pastor. If you do not have a code, contact your church office
-              directly — we cannot add you to a church without your pastor&apos;s invitation or code.
+              Install the Sermon Recall app from the App Store or Google Play, create an account with
+              email, and enter the church code from your pastor. If you do not have a code, contact
+              your church office directly — we cannot add you to a church without your pastor&apos;s
+              invitation or code.
             </p>
             <MemberAppStoreLinks className="mt-4" size="compact" />
           </div>

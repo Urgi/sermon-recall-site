@@ -25,8 +25,10 @@ export const GOOGLE_PLAY_URL =
   process.env.NEXT_PUBLIC_GOOGLE_PLAY_URL?.trim() ||
   'https://play.google.com/store/apps/details?id=com.antoineassociates.sermonrecall';
 
-/** Set when the App Store listing is live (Apple ID 6798402169). */
-export const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() || '';
+/** App Store listing (Apple ID 6798402169). Override via env if the URL changes. */
+export const APP_STORE_URL =
+  process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() ||
+  'https://apps.apple.com/app/id6798402169';
 
 /** Homepage + FAQ page — curated list from ministry positioning doc (12 key objections). */
 export const PUBLIC_FAQ = [

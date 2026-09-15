@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { buildMemberJoinUrl, normalizeChurchCode } from '@/lib/church/member-join';
-import { GOOGLE_PLAY_URL } from '@/lib/public-site/config';
+import { APP_STORE_URL, GOOGLE_PLAY_URL } from '@/lib/public-site/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 type Props = { params: { code: string } };
@@ -35,7 +35,16 @@ export default async function MemberJoinPage({ params }: Props) {
         </p>
         <div className="mt-8 space-y-3 text-left text-[14px] text-[#cbd5e1]">
           <p>
-            <span className="font-semibold text-white">1.</span> Install Sermon Recall from{' '}
+            <span className="font-semibold text-white">1.</span> Install Sermon Recall from the{' '}
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#38bdf8] hover:underline"
+            >
+              App Store
+            </a>{' '}
+            or{' '}
             <a
               href={GOOGLE_PLAY_URL}
               target="_blank"

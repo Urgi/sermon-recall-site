@@ -90,9 +90,9 @@ export default async function PublicHomePage() {
             <article className="rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#05070a] p-6">
               <h2 className="text-lg font-semibold text-white">For church members</h2>
               <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-                Members use the Sermon Recall app on Android (iPhone coming soon). Your pastor
-                shares a church code; you create an account with email, join your church, and open
-                each day&apos;s devotional with guided reflection and application.
+                Members use the Sermon Recall app on iPhone and Android. Your pastor shares a
+                church code; you create an account with email, join your church, and open each
+                day&apos;s devotional with guided reflection and application.
               </p>
               <ul className="mt-4 space-y-2 text-[14px] text-[#cbd5e1]">
                 <li>• Daily devotionals tied to your church&apos;s sermon series</li>

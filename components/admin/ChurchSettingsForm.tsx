@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react';
 
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { CHURCH_TIMEZONE_OPTIONS } from '@/lib/church/timezones';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import {
   APP_LANGUAGES,
   type AppLanguage,
@@ -27,6 +28,7 @@ type Props = {
 
 export function ChurchSettingsForm({ initial }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [name, setName] = useState(initial.name);
   const [churchCode, setChurchCode] = useState(initial.churchCode);
   const [pastorName, setPastorName] = useState(initial.pastorName);
@@ -207,7 +209,7 @@ export function ChurchSettingsForm({ initial }: Props) {
           </Field>
           <Field
             id="church-settings-language"
-            label="Church language"
+            label={t('settings.churchLanguage')}
             hint="Default for sermons and devotionals."
           >
             <select

@@ -3,6 +3,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { reminderPushCopy } from '@/lib/i18n/push-copy';
 import type { ExpoPushMessage } from '@/lib/push/expo-push';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
 import { pruneStalePushTokens } from '@/lib/rate-limit';
@@ -201,7 +202,7 @@ export async function runDevotionalReminders(
   const { data: profiles, error: profilesError } = await admin
     .from('users')
     .select(
-      'id, church_id, devotional_notify_hour, devotional_notify_enabled, churches!users_church_id_fkey(timezone)',
+      'id, church_id, preferred_language, devotional_notify_hour, devotional_notify_enabled, churches!users_church_id_fkey(timezone)',
     )
     .in('id', userIds);
 
@@ -222,12 +223,14 @@ export async function runDevotionalReminders(
       tz: string;
       notifyHour: number | null;
       notifyEnabled: boolean;
+      preferredLanguage: string | null;
     }
   >();
   for (const p of profiles ?? []) {
     const row = p as {
       id: string;
       church_id: string | null;
+      preferred_language?: string | null;
       devotional_notify_hour: number | null;
       devotional_notify_enabled: boolean | null;
       churches: { timezone: string } | { timezone: string }[] | null;
@@ -237,6 +240,7 @@ export async function runDevotionalReminders(
     const tz = safeTz(tzRaw ?? undefined);
     profileMap.set(row.id, {
       church_id: row.church_id,
+      preferredLanguage: row.preferred_language ?? null,
       tz,
       notifyHour:
         typeof row.devotional_notify_hour === 'number' &&
@@ -313,14 +317,15 @@ export async function runDevotionalReminders(
       if (hour === customHour) {
         dedupeKey = `custom-${sermon.id}-${todayStr}-d${cycleDay}`;
         kind = 'custom';
-        const title = missedEarlier ? 'Still time to catch up' : 'Your devotional today';
-        const body = missedEarlier
-          ? `Days 1–${cycleDay} are open when you are ready — ${shortTitle}`
-          : `Day ${cycleDay} of 6 — ${shortTitle}`;
+        const copy = reminderPushCopy(profile.preferredLanguage, 'custom', {
+          missedEarlier,
+          cycleDay,
+          sermonTitle: shortTitle,
+        });
         msg = {
           to: token,
-          title,
-          body,
+          title: copy.title,
+          body: copy.body,
           sound: 'default',
           data: {
             kind: 'devotional_reminder',
@@ -339,14 +344,15 @@ export async function runDevotionalReminders(
     ) {
       dedupeKey = `morning-${sermon.id}-${todayStr}-d${cycleDay}`;
       kind = 'morning';
-      const title = missedEarlier ? 'Pick up where you left off' : 'Your devotional today';
-      const body = missedEarlier
-        ? `You can still open Days 1–${cycleDay} — ${shortTitle}`
-        : `Day ${cycleDay} of 6 — ${shortTitle}`;
+      const copy = reminderPushCopy(profile.preferredLanguage, 'morning', {
+        missedEarlier,
+        cycleDay,
+        sermonTitle: shortTitle,
+      });
       msg = {
         to: token,
-        title,
-        body,
+        title: copy.title,
+        body: copy.body,
         sound: 'default',
         data: {
           kind: 'devotional_reminder',
@@ -359,12 +365,15 @@ export async function runDevotionalReminders(
     } else if (hour >= MIDDAY_HOUR_START && hour < MIDDAY_HOUR_END) {
       dedupeKey = `midday-${sermon.id}-${todayStr}-d${cycleDay}`;
       kind = 'midday';
+      const copy = reminderPushCopy(profile.preferredLanguage, 'midday', {
+        missedEarlier,
+        cycleDay,
+        sermonTitle: shortTitle,
+      });
       msg = {
         to: token,
-        title: missedEarlier ? 'Grace for your rhythm' : 'Still time today',
-        body: missedEarlier
-          ? `No rush — finish Day ${cycleDay} (or any earlier day) when you can — ${shortTitle}`
-          : `Finish Day ${cycleDay} when you can — ${shortTitle}`,
+        title: copy.title,
+        body: copy.body,
         sound: 'default',
         data: {
           kind: 'devotional_reminder',

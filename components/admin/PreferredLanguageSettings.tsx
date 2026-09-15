@@ -10,8 +10,10 @@ import {
   normalizeAppLanguage,
 } from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 export function PreferredLanguageSettings() {
+  const { t, setLanguage: setUiLanguage } = useLanguage();
   const [language, setLanguage] = useState<AppLanguage>(DEFAULT_APP_LANGUAGE);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -56,7 +58,7 @@ export function PreferredLanguageSettings() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError('Sign in again to update language.');
+        setError(t('settings.signInAgain'));
         return;
       }
       const { error: updateError } = await supabase
@@ -67,16 +69,17 @@ export function PreferredLanguageSettings() {
         setError(updateError.message);
         return;
       }
-      setSuccess('Language preference saved.');
+      setUiLanguage(language);
+      setSuccess(t('settings.languageSaved'));
     } catch {
-      setError('Network error. Try again.');
+      setError(t('settings.networkError'));
     } finally {
       setPending(false);
     }
   }
 
   if (loading) {
-    return <p className="text-[14px] text-admin-muted">Loading…</p>;
+    return <p className="text-[14px] text-admin-muted">{t('settings.loading')}</p>;
   }
 
   return (
@@ -86,7 +89,7 @@ export function PreferredLanguageSettings() {
           htmlFor="preferred-language"
           className="block text-[13px] font-semibold text-[var(--admin-fg-strong)]"
         >
-          Preferred language
+          {t('settings.preferredLanguage')}
         </label>
         <select
           id="preferred-language"
@@ -112,7 +115,7 @@ export function PreferredLanguageSettings() {
         </p>
       ) : null}
       <button type="submit" disabled={pending} className="admin-btn-primary disabled:opacity-60">
-        {pending ? 'Saving…' : 'Save language'}
+        {pending ? t('settings.saving') : t('settings.saveLanguage')}
       </button>
     </form>
   );

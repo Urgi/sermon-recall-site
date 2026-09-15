@@ -1,6 +1,7 @@
 import { formatInTimeZone } from 'date-fns-tz';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { midweekBehindPushCopy } from '@/lib/i18n/push-copy';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
 import {
   cycleDiffDays,
@@ -113,18 +114,24 @@ export async function runMidweekBehindNudges(
   const userIds = Array.from(new Set(tokenRows.map((t) => t.user_id as string)));
   const { data: profiles } = await admin
     .from('users')
-    .select('id, church_id, devotional_notify_enabled')
+    .select('id, church_id, preferred_language, devotional_notify_enabled')
     .in('id', userIds);
 
   const profileMap = new Map<
     string,
-    { church_id: string | null; notifyEnabled: boolean }
+    { church_id: string | null; notifyEnabled: boolean; preferredLanguage: string | null }
   >();
   for (const p of profiles ?? []) {
-    const row = p as { id: string; church_id: string | null; devotional_notify_enabled: boolean | null };
+    const row = p as {
+      id: string;
+      church_id: string | null;
+      preferred_language?: string | null;
+      devotional_notify_enabled: boolean | null;
+    };
     profileMap.set(row.id, {
       church_id: row.church_id,
       notifyEnabled: row.devotional_notify_enabled !== false,
+      preferredLanguage: row.preferred_language ?? null,
     });
   }
 
@@ -194,12 +201,15 @@ export async function runMidweekBehindNudges(
       continue;
     }
 
-    const shortTitle = sermon.title.length > 80 ? `${sermon.title.slice(0, 77)}…` : sermon.title;
+    const copy = midweekBehindPushCopy(profile.preferredLanguage, {
+      expected,
+      sermonTitle: sermon.title,
+    });
     const { staleTokens } = await sendExpoPushMessages([
       {
         to: token,
-        title: 'A little behind is still on the path',
-        body: `You’re more than a day behind this week. Days 1–${expected} are open — pick up the next one when you can. ${shortTitle}`,
+        title: copy.title,
+        body: copy.body,
         sound: 'default',
         data: {
           kind: 'devotional_reminder',

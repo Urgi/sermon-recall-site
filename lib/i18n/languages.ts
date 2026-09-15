@@ -23,6 +23,7 @@ export function normalizeAppLanguage(value: unknown): AppLanguage {
 export function languageOptionLabel(code: AppLanguage): string {
   const opt = APP_LANGUAGES.find((o) => o.value === code);
   if (!opt) return code;
+  if (opt.nativeLabel === opt.label) return opt.label;
   return `${opt.label} (${opt.nativeLabel})`;
 }
 

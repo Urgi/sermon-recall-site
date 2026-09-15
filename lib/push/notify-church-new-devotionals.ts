@@ -5,6 +5,7 @@ import {
   localYmdInChurchTz,
   safeChurchTimeZone,
 } from '@/lib/devotionals/cycle';
+import { newWeekPushCopy } from '@/lib/i18n/push-copy';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
 import { pruneStalePushTokens } from '@/lib/rate-limit';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -54,7 +55,7 @@ async function notifyChurchNewDevotionalsInner(
 
   let query = admin
     .from('users')
-    .select('id, devotional_notify_enabled, user_push_tokens(expo_push_token)')
+    .select('id, preferred_language, devotional_notify_enabled, user_push_tokens(expo_push_token)')
     .eq('church_id', params.churchId);
 
   if (params.excludeUserId) {
@@ -68,10 +69,11 @@ async function notifyChurchNewDevotionalsInner(
   }
 
   const respectNotify = params.respectNotifyEnabled !== false;
-  const recipients: { userId: string; token: string }[] = [];
+  const recipients: { userId: string; token: string; language: string | null }[] = [];
   for (const r of rows ?? []) {
     const row = r as {
       id: string;
+      preferred_language?: string | null;
       devotional_notify_enabled: boolean | null;
       user_push_tokens:
         | { expo_push_token: string }
@@ -88,7 +90,7 @@ async function notifyChurchNewDevotionalsInner(
         : [embed.expo_push_token];
     for (const token of tokens) {
       if (typeof token === 'string' && token.length > 0) {
-        recipients.push({ userId: row.id, token });
+        recipients.push({ userId: row.id, token, language: row.preferred_language ?? null });
       }
     }
   }
@@ -99,8 +101,6 @@ async function notifyChurchNewDevotionalsInner(
     params.sermonTitle.length > 100
       ? `${params.sermonTitle.slice(0, 97)}…`
       : params.sermonTitle;
-  const title = 'Day 1 is ready';
-  const body = `Start this week’s journey — ${shortTitle}`;
   const dedupeKey = newWeekDedupeKey(params.sermonId);
 
   const messages = [];
@@ -114,8 +114,7 @@ async function notifyChurchNewDevotionalsInner(
     const { staleTokens } = await sendExpoPushMessages([
       {
         to: recipient.token,
-        title,
-        body,
+        ...newWeekPushCopy(recipient.language, shortTitle),
         sound: 'default',
         data: {
           kind: 'new_devotionals',
