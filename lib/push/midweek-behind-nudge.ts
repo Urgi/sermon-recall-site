@@ -114,24 +114,31 @@ export async function runMidweekBehindNudges(
   const userIds = Array.from(new Set(tokenRows.map((t) => t.user_id as string)));
   const { data: profiles } = await admin
     .from('users')
-    .select('id, church_id, preferred_language, devotional_notify_enabled')
+    .select('id, church_id, preferred_language, timezone, devotional_notify_enabled')
     .in('id', userIds);
 
   const profileMap = new Map<
     string,
-    { church_id: string | null; notifyEnabled: boolean; preferredLanguage: string | null }
+    {
+      church_id: string | null;
+      notifyEnabled: boolean;
+      preferredLanguage: string | null;
+      notifyTz: string | null;
+    }
   >();
   for (const p of profiles ?? []) {
     const row = p as {
       id: string;
       church_id: string | null;
       preferred_language?: string | null;
+      timezone?: string | null;
       devotional_notify_enabled: boolean | null;
     };
     profileMap.set(row.id, {
       church_id: row.church_id,
       notifyEnabled: row.devotional_notify_enabled !== false,
       preferredLanguage: row.preferred_language ?? null,
+      notifyTz: row.timezone?.trim() || null,
     });
   }
 
@@ -169,11 +176,12 @@ export async function runMidweekBehindNudges(
     const sermon = latestByChurch.get(profile.church_id);
     if (!sermon) continue;
 
-    const tz = tzByChurch.get(profile.church_id) ?? DEFAULT_TZ;
-    const todayStr = formatInTimeZone(now, tz, 'yyyy-MM-dd');
-    const hour = Number(formatInTimeZone(now, tz, 'H'));
+    const churchTz = tzByChurch.get(profile.church_id) ?? DEFAULT_TZ;
+    const notifyTz = safeTz(profile.notifyTz || churchTz);
+    const todayStr = formatInTimeZone(now, churchTz, 'yyyy-MM-dd');
+    const hour = Number(formatInTimeZone(now, notifyTz, 'H'));
     const anchor =
-      sermon.sermon_date?.trim() || formatInTimeZone(new Date(sermon.created_at), tz, 'yyyy-MM-dd');
+      sermon.sermon_date?.trim() || formatInTimeZone(new Date(sermon.created_at), churchTz, 'yyyy-MM-dd');
     const cycleDiff = cycleDiffDays(anchor, todayStr);
     const completed = completedByUserSermon.get(`${uid}:${sermon.id}`) ?? 0;
     const expected = expectedDayInSixDayWindow(cycleDiff);

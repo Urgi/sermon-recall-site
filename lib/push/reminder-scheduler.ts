@@ -136,8 +136,9 @@ function emptyResult(
  * Hourly cron: reminds members of the first incomplete devotional they can open today
  * (calendar window + post-week catch-up, aligned with the mobile app).
  *
- * - Users with `devotional_notify_hour` set get one ping that hour (church timezone).
- * - Others get default morning (6:00) and midday (12–14) windows.
+ * - Users with `devotional_notify_hour` set get one ping that hour (member device timezone).
+ * - Others get default morning (6:00) and midday (12–14) windows in their device timezone.
+ * - Which day is unlocked still uses the church timezone / sermon date.
  */
 export async function runDevotionalReminders(
   admin: SupabaseClient,
@@ -202,7 +203,7 @@ export async function runDevotionalReminders(
   const { data: profiles, error: profilesError } = await admin
     .from('users')
     .select(
-      'id, church_id, preferred_language, devotional_notify_hour, devotional_notify_enabled, churches!users_church_id_fkey(timezone)',
+      'id, church_id, preferred_language, timezone, devotional_notify_hour, devotional_notify_enabled, churches!users_church_id_fkey(timezone)',
     )
     .in('id', userIds);
 
@@ -220,7 +221,8 @@ export async function runDevotionalReminders(
     string,
     {
       church_id: string | null;
-      tz: string;
+      churchTz: string;
+      notifyTz: string;
       notifyHour: number | null;
       notifyEnabled: boolean;
       preferredLanguage: string | null;
@@ -231,17 +233,20 @@ export async function runDevotionalReminders(
       id: string;
       church_id: string | null;
       preferred_language?: string | null;
+      timezone?: string | null;
       devotional_notify_hour: number | null;
       devotional_notify_enabled: boolean | null;
       churches: { timezone: string } | { timezone: string }[] | null;
     };
     const embed = row.churches;
     const tzRaw = Array.isArray(embed) ? embed[0]?.timezone : embed?.timezone;
-    const tz = safeTz(tzRaw ?? undefined);
+    const churchTz = safeTz(tzRaw ?? undefined);
+    const notifyTz = safeTz(row.timezone?.trim() || churchTz);
     profileMap.set(row.id, {
       church_id: row.church_id,
       preferredLanguage: row.preferred_language ?? null,
-      tz,
+      churchTz,
+      notifyTz,
       notifyHour:
         typeof row.devotional_notify_hour === 'number' &&
         row.devotional_notify_hour >= 0 &&
@@ -283,15 +288,16 @@ export async function runDevotionalReminders(
       continue;
     }
 
-    const tz = profile.tz ?? DEFAULT_TZ;
+    const churchTz = profile.churchTz ?? DEFAULT_TZ;
+    const notifyTz = profile.notifyTz ?? churchTz;
     const sermon = latestSermonByChurch.get(churchId);
     if (!sermon) {
       skippedNoSermon += 1;
       continue;
     }
 
-    const todayStr = localDateInTz(now, tz);
-    const anchorStr = anchorDateString(sermon, tz);
+    const todayStr = localDateInTz(now, churchTz);
+    const anchorStr = anchorDateString(sermon, churchTz);
     const maxDay = maxUnlockedDayNumber(anchorStr, todayStr);
     const completedSet = completedByUser.get(uid) ?? new Set<string>();
     const target = firstIncompleteInWindow(sermon.id, maxDay, devsBySermon, completedSet);
@@ -300,7 +306,7 @@ export async function runDevotionalReminders(
       continue;
     }
 
-    const hour = localHourInTz(now, tz);
+    const hour = localHourInTz(now, notifyTz);
     const shortTitle =
       sermon.title.length > 80 ? `${sermon.title.slice(0, 77)}…` : sermon.title;
 
