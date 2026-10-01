@@ -3,10 +3,10 @@
  * never the mobile app scheme (PKCE verifier lives in the browser that signed up).
  */
 export function getAdminEmailRedirectUrl(nextPath?: string): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
-  const base =
-    configured ||
-    (typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : '');
+  const base = adminSiteOrigin(
+    process.env.NEXT_PUBLIC_SITE_URL,
+    typeof window !== 'undefined' ? window.location.origin : null,
+  );
 
   if (!base) return '';
 
@@ -27,6 +27,14 @@ function normalizeOrigin(origin: string | null | undefined): string | null {
   }
 }
 
+/** Prefer configured site URL origin (strips accidental /auth/callback paths). */
+function adminSiteOrigin(
+  configured: string | null | undefined,
+  fallback: string | null | undefined,
+): string {
+  return normalizeOrigin(configured) || normalizeOrigin(fallback) || '';
+}
+
 /**
  * Server-side redirect for auth emails (no `window`).
  * Prefer NEXT_PUBLIC_SITE_URL; else the browser Origin from the request; else VERCEL_URL.
@@ -35,10 +43,11 @@ export function getAdminEmailRedirectUrlServer(
   nextPath?: string,
   requestOrigin?: string | null,
 ): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
-  const fromRequest = normalizeOrigin(requestOrigin);
   const vercel = process.env.VERCEL_URL?.trim();
-  const base = configured || fromRequest || (vercel ? `https://${vercel}` : '');
+  const base = adminSiteOrigin(
+    process.env.NEXT_PUBLIC_SITE_URL,
+    normalizeOrigin(requestOrigin) || (vercel ? `https://${vercel}` : null),
+  );
   if (!base) return '';
   if (nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//')) {
     return `${base}/auth/callback?next=${encodeURIComponent(nextPath)}`;

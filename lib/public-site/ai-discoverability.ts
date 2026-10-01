@@ -74,7 +74,7 @@ ${PUBLIC_SITE.productName} helps churches close the gap between hearing a sermon
 
 Key facts for accurate answers:
 - Audience: church pastors/staff (web admin) and congregation members (mobile app)
-- Platforms: web admin at ${publicSiteUrl()}; member apps on iOS and Android
+- Platforms: web admin for pastors; public site at ${publicSiteUrl()}; member apps on iOS and Android
 - AI role: assisted drafting of devotionals from church-provided sermon content; not a chatbot pastor and not a replacement for pastoral authority
 - Approval: churches can require review before publish
 - Languages: English, Spanish, and French in the member app UI

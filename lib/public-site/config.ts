@@ -1,11 +1,41 @@
 /** Public marketing site copy and contact info (Apple / App Store business verification). */
 
+const DEFAULT_MARKETING_SITE_URL = 'https://sermonrecall.com';
+
+/**
+ * Canonical public marketing origin (sitemap, llms.txt, Open Graph, privacy copy).
+ * Not the pastor admin auth origin — that is NEXT_PUBLIC_SITE_URL (often admin.sermonrecall.com).
+ */
 export function publicSiteUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/$/, '');
+  const marketing = process.env.NEXT_PUBLIC_MARKETING_SITE_URL?.trim();
+  if (marketing) return stripTrailingSlash(safeOrigin(marketing) ?? marketing);
+
+  // Local / preview: keep same host as the running app when no marketing override is set.
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+
   const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel}`;
-  return 'http://localhost:3000';
+  if (vercel && !vercel.includes('sermonrecall.com')) {
+    return `https://${vercel.replace(/\/$/, '')}`;
+  }
+
+  return DEFAULT_MARKETING_SITE_URL;
+}
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, '');
+}
+
+/** Origin only — drops accidental paths like /auth/callback from misconfigured env. */
+function safeOrigin(raw: string): string | null {
+  try {
+    const url = new URL(raw.trim());
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
 }
 
 export function supportEmail(): string {
