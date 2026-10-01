@@ -10,14 +10,9 @@ export function publicSiteUrl(): string {
   const marketing = process.env.NEXT_PUBLIC_MARKETING_SITE_URL?.trim();
   if (marketing) return stripTrailingSlash(safeOrigin(marketing) ?? marketing);
 
-  // Local / preview: keep same host as the running app when no marketing override is set.
-  if (process.env.NODE_ENV === 'development') {
+  // Local only — never use VERCEL_URL here (deployment hosts are not the public brand domain).
+  if (process.env.NODE_ENV === 'development' && !process.env.VERCEL) {
     return 'http://localhost:3000';
-  }
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel && !vercel.includes('sermonrecall.com')) {
-    return `https://${vercel.replace(/\/$/, '')}`;
   }
 
   return DEFAULT_MARKETING_SITE_URL;
