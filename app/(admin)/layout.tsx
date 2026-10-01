@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -6,6 +7,10 @@ import { AdminMobileHeaderSlot, AdminSidebarSlot } from '@/components/admin/Admi
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

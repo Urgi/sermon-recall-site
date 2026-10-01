@@ -2,13 +2,21 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { FaqAccordion } from '@/components/public/FaqAccordion';
+import { JsonLd } from '@/components/public/JsonLd';
 import { PublicSiteFooter } from '@/components/public/PublicSiteFooter';
 import { PublicSiteHeader } from '@/components/public/PublicSiteHeader';
+import { faqPageJsonLd } from '@/lib/public-site/ai-discoverability';
 import { PUBLIC_FAQ, PUBLIC_SITE, supportEmail } from '@/lib/public-site/config';
 
 export const metadata: Metadata = {
   title: 'FAQ',
   description: `Frequently asked questions about ${PUBLIC_SITE.productName} for churches and members.`,
+  alternates: { canonical: '/faq' },
+  openGraph: {
+    title: `FAQ | ${PUBLIC_SITE.productName}`,
+    description: `Frequently asked questions about ${PUBLIC_SITE.productName} for churches and members.`,
+    url: '/faq',
+  },
 };
 
 export default function FaqPage() {
@@ -16,6 +24,7 @@ export default function FaqPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#05070a] text-[#e2e8f0]">
+      <JsonLd data={faqPageJsonLd()} />
       <PublicSiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold text-white">Frequently asked questions</h1>

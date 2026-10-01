@@ -34,6 +34,9 @@ export function PublicSiteFooter() {
           <Link href="/login" className="text-[#94a3b8] hover:text-[#38bdf8]">
             Pastor sign in
           </Link>
+          <a href="/llms.txt" className="text-[#94a3b8] hover:text-[#38bdf8]">
+            llms.txt
+          </a>
           <a href={`mailto:${email}`} className="text-[#94a3b8] hover:text-[#38bdf8]">
             {email}
           </a>

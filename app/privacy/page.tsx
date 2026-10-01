@@ -8,6 +8,7 @@ import { PUBLIC_SITE, publicSiteUrl, supportEmail } from '@/lib/public-site/conf
 export const metadata: Metadata = {
   title: 'Privacy policy',
   description: `Privacy policy for ${PUBLIC_SITE.productName} mobile app and church admin services.`,
+  alternates: { canonical: '/privacy' },
 };
 
 export default function PrivacyPage() {

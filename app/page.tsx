@@ -4,19 +4,27 @@ import { redirect } from 'next/navigation';
 
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { HomeFaqSection } from '@/components/public/HomeFaqSection';
+import { JsonLd } from '@/components/public/JsonLd';
 import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { PublicSiteFooter } from '@/components/public/PublicSiteFooter';
 import { PublicSiteHeader } from '@/components/public/PublicSiteHeader';
+import {
+  faqPageJsonLd,
+  organizationJsonLd,
+  softwareApplicationJsonLd,
+} from '@/lib/public-site/ai-discoverability';
 import { PUBLIC_SITE, supportEmail } from '@/lib/public-site/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = {
   title: 'Sermon Recall — Church devotional app',
   description: PUBLIC_SITE.shortDescription,
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'Sermon Recall',
     description: PUBLIC_SITE.shortDescription,
     type: 'website',
+    url: '/',
   },
 };
 
@@ -34,6 +42,7 @@ export default async function PublicHomePage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#05070a] text-[#e2e8f0]">
+      <JsonLd data={[organizationJsonLd(), softwareApplicationJsonLd(), faqPageJsonLd()]} />
       <PublicSiteHeader />
 
       <main className="flex-1">
