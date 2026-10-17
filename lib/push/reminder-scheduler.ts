@@ -1,4 +1,3 @@
-import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -6,12 +5,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { reminderPushCopy } from '@/lib/i18n/push-copy';
 import type { ExpoPushMessage } from '@/lib/push/expo-push';
 import { sendExpoPushMessages } from '@/lib/push/expo-push';
+import { newWeekDedupeKey } from '@/lib/push/notify-church-new-devotionals';
+import { devotionalTopic, planReminder, type PlanDevotional, type ReminderKind } from '@/lib/push/reminder-plan';
 import { pruneStalePushTokens } from '@/lib/rate-limit';
 
 export type ReminderTickResult = {
-  morningSent: number;
-  middaySent: number;
-  customHourSent: number;
+  sent: Record<ReminderKind, number>;
   skippedNoServiceRole: boolean;
   diagnostics: {
     publishedChurches: number;
@@ -19,7 +18,8 @@ export type ReminderTickResult = {
     devotionals: number;
     skippedNotifyOff: number;
     skippedNoSermon: number;
-    skippedAllComplete: number;
+    /** Nothing to send today: all done, caught up, or outside the sermon week + catch-up days. */
+    skippedNothingDue: number;
     skippedWrongHour: number;
     skippedDedupe: number;
     skippedNoProfile: number;
@@ -30,11 +30,8 @@ export type ReminderTickResult = {
 
 const DEFAULT_TZ = 'America/New_York';
 
-const DEFAULT_MORNING_START = 6;
-const DEFAULT_MORNING_END = 7;
-
-const MIDDAY_HOUR_START = 12;
-const MIDDAY_HOUR_END = 14;
+/** Members on "defaults" get one reminder at this local hour (matches the app's 7:00 AM default). */
+const DEFAULT_NOTIFY_HOUR = 7;
 
 type SermonRow = {
   id: string;
@@ -44,7 +41,7 @@ type SermonRow = {
   title: string;
 };
 
-type DevotionalRef = { id: string; sermon_id: string; day_number: number };
+type DevotionalRef = PlanDevotional & { sermon_id: string };
 
 function safeTz(raw: string | null | undefined): string {
   if (!raw?.trim()) return DEFAULT_TZ;
@@ -69,28 +66,6 @@ function anchorDateString(sermon: SermonRow, tz: string): string {
   return formatInTimeZone(new Date(sermon.created_at), tz, 'yyyy-MM-dd');
 }
 
-/** Max day number (1–6) calendar unlock allows (matches mobile `calendarMaxUnlockedDay`). */
-function maxUnlockedDayNumber(anchorStr: string, todayStr: string): number {
-  const diff = differenceInCalendarDays(parseISO(todayStr), parseISO(anchorStr));
-  if (diff < 0) return 1;
-  if (diff >= 6) return 6;
-  return Math.min(6, diff + 1);
-}
-
-function firstIncompleteInWindow(
-  sermonId: string,
-  maxDay: number,
-  devsBySermon: Map<string, DevotionalRef[]>,
-  completedDevotionalIds: Set<string>,
-): DevotionalRef | null {
-  const list = [...(devsBySermon.get(sermonId) ?? [])].sort((a, b) => a.day_number - b.day_number);
-  for (const d of list) {
-    if (d.day_number > maxDay) break;
-    if (!completedDevotionalIds.has(d.id)) return d;
-  }
-  return null;
-}
-
 async function tryReserveDedupe(
   admin: SupabaseClient,
   userId: string,
@@ -106,14 +81,16 @@ async function tryReserveDedupe(
   return false;
 }
 
+function emptySent(): Record<ReminderKind, number> {
+  return { today: 0, behind: 0, catchup1: 0, catchup2: 0 };
+}
+
 function emptyResult(
   now: Date,
   partial: Partial<ReminderTickResult['diagnostics']> = {},
 ): ReminderTickResult {
   return {
-    morningSent: 0,
-    middaySent: 0,
-    customHourSent: 0,
+    sent: emptySent(),
     skippedNoServiceRole: false,
     diagnostics: {
       publishedChurches: 0,
@@ -121,7 +98,7 @@ function emptyResult(
       devotionals: 0,
       skippedNotifyOff: 0,
       skippedNoSermon: 0,
-      skippedAllComplete: 0,
+      skippedNothingDue: 0,
       skippedWrongHour: 0,
       skippedDedupe: 0,
       skippedNoProfile: 0,
@@ -133,23 +110,21 @@ function emptyResult(
 }
 
 /**
- * Hourly cron: reminds members of the first incomplete devotional they can open today
- * (calendar window + post-week catch-up, aligned with the mobile app).
+ * Hourly cron. Each member gets at most one devotional reminder a day, at their chosen hour
+ * (or 7:00 AM local), following the schedule in `reminder-plan.ts`:
+ * daily during the sermon week, two catch-up nudges after it, then silence until the next sermon.
  *
- * - Users with `devotional_notify_hour` set get one ping that hour (member device timezone).
- * - Others get default morning (6:00) and midday (12–14) windows in their device timezone.
- * - Which day is unlocked still uses the church timezone / sermon date.
+ * - The hour uses the member's device time zone; which day is open uses the church time zone.
+ * - Only the church's latest published sermon is considered.
  */
 export async function runDevotionalReminders(
   admin: SupabaseClient,
   now: Date = new Date(),
 ): Promise<ReminderTickResult> {
-  let morningSent = 0;
-  let middaySent = 0;
-  let customHourSent = 0;
+  const sent = emptySent();
   let skippedNotifyOff = 0;
   let skippedNoSermon = 0;
-  let skippedAllComplete = 0;
+  let skippedNothingDue = 0;
   let skippedWrongHour = 0;
   let skippedDedupe = 0;
   let skippedNoProfile = 0;
@@ -174,7 +149,7 @@ export async function runDevotionalReminders(
 
   const { data: devRows } = await admin
     .from('devotionals')
-    .select('id, sermon_id, day_number')
+    .select('id, sermon_id, day_number, title')
     .in('sermon_id', sermonIdList)
     .order('day_number', { ascending: true });
 
@@ -223,7 +198,7 @@ export async function runDevotionalReminders(
       church_id: string | null;
       churchTz: string;
       notifyTz: string;
-      notifyHour: number | null;
+      notifyHour: number;
       notifyEnabled: boolean;
       preferredLanguage: string | null;
     }
@@ -252,7 +227,7 @@ export async function runDevotionalReminders(
         row.devotional_notify_hour >= 0 &&
         row.devotional_notify_hour <= 23
           ? row.devotional_notify_hour
-          : null,
+          : DEFAULT_NOTIFY_HOUR,
       notifyEnabled: row.devotional_notify_enabled !== false,
     });
   }
@@ -272,6 +247,16 @@ export async function runDevotionalReminders(
     completedByUser.get(uid)!.add(did);
   }
 
+  /** Who already got the one-shot "Day 1 is ready" push, so Day 1 isn't announced twice. */
+  const { data: newWeekRows } = await admin
+    .from('push_notification_dedupe')
+    .select('user_id, dedupe_key')
+    .in('user_id', userIds)
+    .in('dedupe_key', sermonIdList.map(newWeekDedupeKey));
+  const gotNewWeek = new Set(
+    (newWeekRows ?? []).map((r) => `${r.user_id as string}:${r.dedupe_key as string}`),
+  );
+
   for (const tr of tokenRows) {
     const token = tr.expo_push_token as string;
     const uid = tr.user_id as string;
@@ -282,137 +267,72 @@ export async function runDevotionalReminders(
       skippedNoProfile += 1;
       continue;
     }
-    const churchId = profile.church_id;
-    if (!churchId || !profile.notifyEnabled) {
+    if (!profile.church_id || !profile.notifyEnabled) {
       if (!profile.notifyEnabled) skippedNotifyOff += 1;
       continue;
     }
 
-    const churchTz = profile.churchTz ?? DEFAULT_TZ;
-    const notifyTz = profile.notifyTz ?? churchTz;
-    const sermon = latestSermonByChurch.get(churchId);
+    const sermon = latestSermonByChurch.get(profile.church_id);
     if (!sermon) {
       skippedNoSermon += 1;
       continue;
     }
 
-    const todayStr = localDateInTz(now, churchTz);
-    const anchorStr = anchorDateString(sermon, churchTz);
-    const maxDay = maxUnlockedDayNumber(anchorStr, todayStr);
-    const completedSet = completedByUser.get(uid) ?? new Set<string>();
-    const target = firstIncompleteInWindow(sermon.id, maxDay, devsBySermon, completedSet);
-    if (!target) {
-      skippedAllComplete += 1;
-      continue;
-    }
-
-    const hour = localHourInTz(now, notifyTz);
-    const shortTitle =
-      sermon.title.length > 80 ? `${sermon.title.slice(0, 77)}…` : sermon.title;
-
-    const cycleDay = target.day_number;
-    const missedEarlier = cycleDay >= 2;
-
-    let msg: ExpoPushMessage | null = null;
-    let dedupeKey: string | null = null;
-    let kind: 'morning' | 'midday' | 'custom' | null = null;
-
-    const customHour = profile.notifyHour;
-
-    if (customHour != null) {
-      if (hour === customHour) {
-        dedupeKey = `custom-${sermon.id}-${todayStr}-d${cycleDay}`;
-        kind = 'custom';
-        const copy = reminderPushCopy(profile.preferredLanguage, 'custom', {
-          missedEarlier,
-          cycleDay,
-          sermonTitle: shortTitle,
-        });
-        msg = {
-          to: token,
-          title: copy.title,
-          body: copy.body,
-          sound: 'default',
-          data: {
-            kind: 'devotional_reminder',
-            sermonId: sermon.id,
-            devotionalId: target.id,
-            dayNumber: cycleDay,
-            slot: 'preferred_hour',
-          },
-        };
-      }
-    } else if (
-      cycleDay >= 1 &&
-      cycleDay <= 6 &&
-      hour >= DEFAULT_MORNING_START &&
-      hour < DEFAULT_MORNING_END
-    ) {
-      dedupeKey = `morning-${sermon.id}-${todayStr}-d${cycleDay}`;
-      kind = 'morning';
-      const copy = reminderPushCopy(profile.preferredLanguage, 'morning', {
-        missedEarlier,
-        cycleDay,
-        sermonTitle: shortTitle,
-      });
-      msg = {
-        to: token,
-        title: copy.title,
-        body: copy.body,
-        sound: 'default',
-        data: {
-          kind: 'devotional_reminder',
-          sermonId: sermon.id,
-          devotionalId: target.id,
-          dayNumber: cycleDay,
-          slot: 'morning',
-        },
-      };
-    } else if (hour >= MIDDAY_HOUR_START && hour < MIDDAY_HOUR_END) {
-      dedupeKey = `midday-${sermon.id}-${todayStr}-d${cycleDay}`;
-      kind = 'midday';
-      const copy = reminderPushCopy(profile.preferredLanguage, 'midday', {
-        missedEarlier,
-        cycleDay,
-        sermonTitle: shortTitle,
-      });
-      msg = {
-        to: token,
-        title: copy.title,
-        body: copy.body,
-        sound: 'default',
-        data: {
-          kind: 'devotional_reminder',
-          sermonId: sermon.id,
-          devotionalId: target.id,
-          dayNumber: cycleDay,
-          slot: 'midday',
-        },
-      };
-    }
-
-    if (!msg || !dedupeKey || !kind) {
+    if (localHourInTz(now, profile.notifyTz) !== profile.notifyHour) {
       skippedWrongHour += 1;
       continue;
     }
 
-    const reserved = await tryReserveDedupe(admin, uid, dedupeKey);
+    const todayStr = localDateInTz(now, profile.churchTz);
+    const plan = planReminder({
+      sermonId: sermon.id,
+      anchorYmd: anchorDateString(sermon, profile.churchTz),
+      todayYmd: todayStr,
+      devotionals: devsBySermon.get(sermon.id) ?? [],
+      completedIds: completedByUser.get(uid) ?? new Set<string>(),
+      gotNewWeekPush: gotNewWeek.has(`${uid}:${newWeekDedupeKey(sermon.id)}`),
+    });
+    if (!plan) {
+      skippedNothingDue += 1;
+      continue;
+    }
+
+    const reserved = await tryReserveDedupe(admin, uid, plan.dedupeKey);
     if (!reserved) {
       skippedDedupe += 1;
       continue;
     }
+    // Doubles as the mid-week "behind" nudge for the pastor dashboard; a duplicate is fine.
+    if (plan.midweekKey) await tryReserveDedupe(admin, uid, plan.midweekKey);
+
+    const copy = reminderPushCopy(profile.preferredLanguage, plan.kind, {
+      sermonTitle: sermon.title,
+      targetDay: plan.target.day_number,
+      calendarDay: plan.calendarDay,
+      topic: devotionalTopic(plan.target.title),
+      remaining: plan.remaining,
+    });
+    const msg: ExpoPushMessage = {
+      to: token,
+      title: copy.title,
+      body: copy.body,
+      sound: 'default',
+      data: {
+        kind: 'devotional_reminder',
+        sermonId: sermon.id,
+        devotionalId: plan.target.id,
+        dayNumber: plan.target.day_number,
+        slot: plan.kind,
+      },
+    };
 
     const { staleTokens } = await sendExpoPushMessages([msg]);
     await pruneStalePushTokens(admin, staleTokens);
-    if (kind === 'morning') morningSent += 1;
-    else if (kind === 'midday') middaySent += 1;
-    else customHourSent += 1;
+    sent[plan.kind] += 1;
   }
 
   return {
-    morningSent,
-    middaySent,
-    customHourSent,
+    sent,
     skippedNoServiceRole: false,
     diagnostics: {
       publishedChurches: latestSermonByChurch.size,
@@ -420,7 +340,7 @@ export async function runDevotionalReminders(
       devotionals: allDevotionalIds.length,
       skippedNotifyOff,
       skippedNoSermon,
-      skippedAllComplete,
+      skippedNothingDue,
       skippedWrongHour,
       skippedDedupe,
       skippedNoProfile,

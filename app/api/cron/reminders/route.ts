@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 
 import { authorizeCronRequest } from '@/lib/cron-auth';
-import { runMidweekBehindNudges } from '@/lib/push/midweek-behind-nudge';
 import { runNewWeekDay1Notifications } from '@/lib/push/notify-church-new-devotionals';
 import { runDevotionalReminders } from '@/lib/push/reminder-scheduler';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
@@ -16,6 +15,7 @@ export const maxDuration = 60;
  *
  * Also sends one-shot “Day 1 / new week” pushes for sermons whose first
  * completable day has arrived (e.g. published early, waiting on sermon_date).
+ * The mid-week “behind” nudge is folded into the daily reminder (one ping a day).
  */
 export async function GET(req: Request) {
   const authResult = authorizeCronRequest(req);
@@ -37,8 +37,7 @@ export async function GET(req: Request) {
   try {
     const newWeek = await runNewWeekDay1Notifications(admin);
     const result = await runDevotionalReminders(admin);
-    const midweekBehind = await runMidweekBehindNudges(admin);
-    return NextResponse.json({ ok: true, newWeek, midweekBehind, ...result });
+    return NextResponse.json({ ok: true, newWeek, ...result });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error';
     console.warn('[cron/reminders]', msg);

@@ -6,84 +6,115 @@ function short(title: string, max = 80): string {
   return title.length > max ? `${title.slice(0, max - 3)}…` : title;
 }
 
+/** Pick a variant by calendar day so a member who stays behind never sees the same title twice in a row. */
+function rotate(calendarDay: number, variants: string[]): string {
+  return variants[calendarDay % variants.length];
+}
+
+export type ReminderCopyKind = 'today' | 'behind' | 'catchup1' | 'catchup2';
+
+/**
+ * Daily devotional reminder copy. It follows the calendar so no two days read the same:
+ * - today:    on pace — names today's topic.
+ * - behind:   names the next unfinished day and which calendar day opened today.
+ * - catchup1: first nudge after the sermon week ends.
+ * - catchup2: last nudge; says we'll go quiet until the next sermon.
+ */
 export function reminderPushCopy(
   language: unknown,
-  kind: 'custom' | 'morning' | 'midday',
-  opts: { missedEarlier: boolean; cycleDay: number; sermonTitle: string },
+  kind: ReminderCopyKind,
+  opts: {
+    sermonTitle: string;
+    targetDay: number;
+    calendarDay: number;
+    topic: string | null;
+    remaining: number;
+  },
 ): PushPair {
   const lang = normalizeAppLanguage(language);
-  const sermon = short(opts.sermonTitle);
-  const day = opts.cycleDay;
+  const sermon = short(opts.sermonTitle, 60);
+  const d = opts.targetDay;
+  const topic = opts.topic ? short(opts.topic, 60) : null;
+  const n = opts.remaining;
 
   if (lang === 'es') {
-    if (kind === 'midday') {
-      return {
-        title: opts.missedEarlier ? 'Gracia para tu ritmo' : 'Aún hay tiempo hoy',
-        body: opts.missedEarlier
-          ? `Sin prisa — termina el día ${day} (o uno anterior) cuando puedas — ${sermon}`
-          : `Termina el día ${day} cuando puedas — ${sermon}`,
-      };
+    const dayLabel = topic ? `Día ${d}: ${topic}` : `Día ${d}`;
+    switch (kind) {
+      case 'today':
+        return { title: dayLabel, body: `La lectura de hoy de “${sermon}”.` };
+      case 'behind':
+        return {
+          title: rotate(opts.calendarDay, [
+            `Retoma con el día ${d}`,
+            `El día ${d} te espera`,
+            `¿Unos minutos para el día ${d}?`,
+          ]),
+          body: `${topic ? `“${topic}” es el siguiente. ` : ''}Hoy se abrió el día ${opts.calendarDay} — sin prisa, a tu ritmo.`,
+        };
+      case 'catchup1':
+        return {
+          title: `Aún hay tiempo para “${sermon}”`,
+          body: `Los seis días están abiertos. Continúa con el día ${d}${topic ? `: ${topic}` : ''}.`,
+        };
+      case 'catchup2':
+        return {
+          title: 'Un último recordatorio',
+          body: `${n === 1 ? 'Te queda 1 día' : `Te quedan ${n} días`} de “${sermon}” cuando quieras. No te avisaremos más hasta el próximo sermón.`,
+        };
     }
-    return {
-      title:
-        kind === 'morning' && opts.missedEarlier
-          ? 'Retoma donde lo dejaste'
-          : opts.missedEarlier
-            ? 'Aún puedes ponerte al día'
-            : 'Tu devocional de hoy',
-      body: opts.missedEarlier
-        ? kind === 'morning'
-          ? `Todavía puedes abrir los días 1–${day} — ${sermon}`
-          : `Los días 1–${day} están abiertos cuando quieras — ${sermon}`
-        : `Día ${day} de 6 — ${sermon}`,
-    };
   }
 
   if (lang === 'fr') {
-    if (kind === 'midday') {
-      return {
-        title: opts.missedEarlier ? 'De la grâce pour votre rythme' : 'Il est encore temps',
-        body: opts.missedEarlier
-          ? `Pas de précipitation — terminez le jour ${day} (ou un jour précédent) quand vous pouvez — ${sermon}`
-          : `Terminez le jour ${day} quand vous pouvez — ${sermon}`,
-      };
+    const dayLabel = topic ? `Jour ${d} : ${topic}` : `Jour ${d}`;
+    switch (kind) {
+      case 'today':
+        return { title: dayLabel, body: `La lecture du jour de « ${sermon} ».` };
+      case 'behind':
+        return {
+          title: rotate(opts.calendarDay, [
+            `Reprenez au jour ${d}`,
+            `Le jour ${d} vous attend`,
+            `Quelques minutes pour le jour ${d} ?`,
+          ]),
+          body: `${topic ? `« ${topic} » est le suivant. ` : ''}Le jour ${opts.calendarDay} s’est ouvert aujourd’hui — sans pression, à votre rythme.`,
+        };
+      case 'catchup1':
+        return {
+          title: `Encore temps pour « ${sermon} »`,
+          body: `Les six jours sont ouverts. Reprenez au jour ${d}${topic ? ` : ${topic}` : ''}.`,
+        };
+      case 'catchup2':
+        return {
+          title: 'Un dernier rappel',
+          body: `${n === 1 ? 'Il vous reste 1 jour' : `Il vous reste ${n} jours`} de « ${sermon} » quand vous voulez. Nous ne vous relancerons plus avant la prochaine prédication.`,
+        };
     }
-    return {
-      title:
-        kind === 'morning' && opts.missedEarlier
-          ? 'Reprenez où vous en étiez'
-          : opts.missedEarlier
-            ? 'Il est encore temps de rattraper'
-            : 'Votre dévotion du jour',
-      body: opts.missedEarlier
-        ? kind === 'morning'
-          ? `Les jours 1–${day} sont encore ouverts — ${sermon}`
-          : `Les jours 1–${day} sont ouverts quand vous êtes prêt — ${sermon}`
-        : `Jour ${day} sur 6 — ${sermon}`,
-    };
   }
 
-  if (kind === 'midday') {
-    return {
-      title: opts.missedEarlier ? 'Grace for your rhythm' : 'Still time today',
-      body: opts.missedEarlier
-        ? `No rush — finish Day ${day} (or any earlier day) when you can — ${sermon}`
-        : `Finish Day ${day} when you can — ${sermon}`,
-    };
+  const dayLabel = topic ? `Day ${d}: ${topic}` : `Day ${d}`;
+  switch (kind) {
+    case 'today':
+      return { title: dayLabel, body: `Today’s reading from “${sermon}”.` };
+    case 'behind':
+      return {
+        title: rotate(opts.calendarDay, [
+          `Pick up with Day ${d}`,
+          `Day ${d} is still waiting`,
+          `A few quiet minutes for Day ${d}?`,
+        ]),
+        body: `${topic ? `“${topic}” is next. ` : ''}Day ${opts.calendarDay} opened today — no rush, go at your pace.`,
+      };
+    case 'catchup1':
+      return {
+        title: `Still time for “${sermon}”`,
+        body: `All six days are open. Pick up with ${dayLabel}.`,
+      };
+    case 'catchup2':
+      return {
+        title: 'One last nudge',
+        body: `${n === 1 ? '1 day' : `${n} days`} of “${sermon}” ${n === 1 ? 'is' : 'are'} waiting whenever you’re ready. We’ll stay quiet until the next sermon.`,
+      };
   }
-  return {
-    title:
-      kind === 'morning' && opts.missedEarlier
-        ? 'Pick up where you left off'
-        : opts.missedEarlier
-          ? 'Still time to catch up'
-          : 'Your devotional today',
-    body: opts.missedEarlier
-      ? kind === 'morning'
-        ? `You can still open Days 1–${day} — ${sermon}`
-        : `Days 1–${day} are open when you are ready — ${sermon}`
-      : `Day ${day} of 6 — ${sermon}`,
-  };
 }
 
 export function newWeekPushCopy(language: unknown, sermonTitle: string): PushPair {
@@ -96,28 +127,4 @@ export function newWeekPushCopy(language: unknown, sermonTitle: string): PushPai
     return { title: 'Le jour 1 est prêt', body: `Commencez le parcours de cette semaine — ${sermon}` };
   }
   return { title: 'Day 1 is ready', body: `Start this week’s journey — ${sermon}` };
-}
-
-export function midweekBehindPushCopy(
-  language: unknown,
-  opts: { expected: number; sermonTitle: string },
-): PushPair {
-  const lang = normalizeAppLanguage(language);
-  const sermon = short(opts.sermonTitle);
-  if (lang === 'es') {
-    return {
-      title: 'Un poco atrasado sigue en el camino',
-      body: `Llevas más de un día de retraso esta semana. Los días 1–${opts.expected} están abiertos — retoma el siguiente cuando puedas. ${sermon}`,
-    };
-  }
-  if (lang === 'fr') {
-    return {
-      title: 'Un peu de retard, toujours sur le chemin',
-      body: `Vous avez plus d’un jour de retard cette semaine. Les jours 1–${opts.expected} sont ouverts — reprenez le suivant quand vous pouvez. ${sermon}`,
-    };
-  }
-  return {
-    title: 'A little behind is still on the path',
-    body: `You’re more than a day behind this week. Days 1–${opts.expected} are open — pick up the next one when you can. ${sermon}`,
-  };
 }

@@ -1,12 +1,11 @@
 /**
- * Mid-week catch-up nudge: Day 4–6 of the six-day cycle, if the member is
- * more than one day behind (has finished fewer than expectedDay − 2 days).
+ * Mid-week "behind" rule: Day 4–6 of the six-day cycle, member more than one day behind.
+ * The daily reminder (`reminder-plan.ts`) records `midweekBehindDedupeKey` when it applies,
+ * so the pastor dashboard can report it.
  */
 
 export const MIDWEEK_MIN_DIFF = 3;
 export const MIDWEEK_MAX_DIFF = 5;
-export const MIDWEEK_NUDGE_HOUR_START = 12;
-export const MIDWEEK_NUDGE_HOUR_END = 14;
 
 export function midweekBehindDedupeKey(sermonId: string): string {
   return `behind-midweek-${sermonId}`;
@@ -43,18 +42,4 @@ export function daysBehind(expectedDay: number, completedCount: number): number 
 
 export function isMoreThanOneDayBehind(expectedDay: number, completedCount: number): boolean {
   return daysBehind(expectedDay, completedCount) > 1;
-}
-
-export function shouldSendMidweekBehindNudge(opts: {
-  cycleDiff: number;
-  completedCount: number;
-  localHour: number;
-}): boolean {
-  if (!isMidweekCatchupWindow(opts.cycleDiff)) return false;
-  if (opts.localHour < MIDWEEK_NUDGE_HOUR_START || opts.localHour >= MIDWEEK_NUDGE_HOUR_END) {
-    return false;
-  }
-  const expected = expectedDayInSixDayWindow(opts.cycleDiff);
-  if (expected == null) return false;
-  return isMoreThanOneDayBehind(expected, opts.completedCount);
 }
