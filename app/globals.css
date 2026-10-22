@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  /* Shared motion tokens: keep durations short and use one ease-out curve everywhere. */
+  :root {
+    --motion-fast: 120ms;
+    --motion-base: 180ms;
+    --motion-slow: 260ms;
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
   :root,
   [data-theme='dark'] {
     --admin-page-bg: #05070a;
@@ -52,6 +60,28 @@
       sans-serif;
     background-color: var(--admin-page-bg);
     color: var(--admin-fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* One visible keyboard focus style for anything that does not define its own. */
+  :where(a, button, summary, select, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+  }
+
+  :where(button:not(:disabled), [role='button']) {
+    cursor: pointer;
+  }
+
+  :where(button:disabled) {
+    cursor: not-allowed;
   }
 }
 
@@ -108,6 +138,7 @@
 
   .admin-main-wrap {
     display: flex;
+    min-width: 0;
     min-height: 100vh;
     flex: 1;
     flex-direction: column;
@@ -342,14 +373,39 @@
   }
 
   .admin-card {
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     border: 1px solid var(--admin-border);
     background-color: var(--admin-card-bg);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    background-image: linear-gradient(180deg, rgba(56, 189, 248, 0.04), transparent 40%);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 8px 24px -12px rgba(0, 0, 0, 0.4);
   }
 
   [data-theme='light'] .admin-card {
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    background-image: none;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 8px 24px -14px rgba(15, 23, 42, 0.14);
+  }
+
+  .admin-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    border: 1px solid var(--admin-border-strong);
+    padding: 1.5rem 1.75rem;
+    background:
+      radial-gradient(60rem 18rem at 100% -40%, rgba(56, 189, 248, 0.22), transparent 60%),
+      radial-gradient(40rem 16rem at 0% 120%, rgba(99, 102, 241, 0.16), transparent 60%),
+      var(--admin-card-bg);
+  }
+
+  [data-theme='light'] .admin-hero {
+    background:
+      radial-gradient(60rem 18rem at 100% -40%, rgba(14, 165, 233, 0.16), transparent 60%),
+      radial-gradient(40rem 16rem at 0% 120%, rgba(99, 102, 241, 0.1), transparent 60%),
+      #ffffff;
   }
 
   .admin-card-nested {
@@ -369,9 +425,24 @@
     outline: none;
   }
 
+  .admin-input {
+    transition:
+      border-color var(--motion-fast) ease,
+      box-shadow var(--motion-fast) ease;
+  }
+
+  .admin-input::placeholder {
+    color: var(--admin-dim);
+  }
+
   .admin-input:focus {
     border-color: var(--admin-accent);
     box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+  }
+
+  .admin-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .admin-btn-primary {
@@ -381,6 +452,12 @@
     font-size: 0.875rem;
     font-weight: 600;
     color: #fff;
+    background-image: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 16px -6px rgba(14, 165, 233, 0.65);
+    transition:
+      background-color var(--motion-fast) ease,
+      opacity var(--motion-fast) ease,
+      transform var(--motion-fast) var(--ease-out);
   }
 
   .admin-btn-primary:hover:not(:disabled) {
@@ -389,6 +466,7 @@
 
   .admin-btn-primary:disabled {
     opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .admin-btn-secondary {
@@ -398,6 +476,12 @@
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     color: var(--admin-muted);
+    transition:
+      background-color var(--motion-fast) ease,
+      border-color var(--motion-fast) ease,
+      color var(--motion-fast) ease,
+      opacity var(--motion-fast) ease,
+      transform var(--motion-fast) var(--ease-out);
   }
 
   .admin-btn-secondary:hover:not(:disabled) {
@@ -405,11 +489,37 @@
     color: var(--admin-accent);
   }
 
+  .admin-btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .admin-btn-primary:focus-visible {
+    outline: 2px solid var(--admin-accent);
+    outline-offset: 2px;
+  }
+
   .admin-stat-card {
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     border: 1px solid var(--admin-border);
     background-color: var(--admin-card-bg);
     padding: 1.25rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 8px 24px -14px rgba(0, 0, 0, 0.35);
+    transition:
+      transform var(--motion-base) var(--ease-out),
+      border-color var(--motion-fast) ease,
+      box-shadow var(--motion-base) ease;
+  }
+
+  a.admin-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px -12px rgba(14, 165, 233, 0.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    a.admin-stat-card:hover {
+      transform: none;
+    }
   }
 
   .admin-stat-label {
@@ -468,6 +578,10 @@
     font-weight: 500;
     color: var(--admin-dim);
     text-decoration: none;
+  }
+
+  .admin-link-back {
+    transition: color var(--motion-fast) ease;
   }
 
   .admin-link-back:hover {
@@ -687,10 +801,32 @@
     }
   }
 
-  @keyframes app-toast-slide-up {
+  @keyframes app-toast-in {
     from {
       opacity: 0;
-      transform: translateY(100%);
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes app-toast-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
+  @keyframes admin-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
@@ -698,24 +834,81 @@
     }
   }
 
-  @keyframes app-toast-slide-down {
+  @keyframes admin-fade-in {
     from {
       opacity: 0;
-      transform: translateY(-100%);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
     }
   }
 
-  .app-toast-enter {
-    animation: app-toast-slide-up 0.35s ease-out;
+  @keyframes admin-fade-out {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
   }
 
-  @media (min-width: 640px) {
+  @keyframes admin-modal-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes admin-modal-out {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(4px) scale(0.99);
+    }
+  }
+
+  /* Everything that moves is opt-in: with reduced motion the UI simply appears/disappears. */
+  @media (prefers-reduced-motion: no-preference) {
+    .admin-page-enter {
+      animation: admin-fade-up var(--motion-slow) var(--ease-out) backwards;
+    }
+
     .app-toast-enter {
-      animation: app-toast-slide-down 0.35s ease-out;
+      animation: app-toast-in var(--motion-slow) var(--ease-out) both;
+    }
+
+    .app-toast-leave {
+      animation: app-toast-out var(--motion-fast) ease-in both;
+    }
+
+    .admin-modal-backdrop[data-state='open'] {
+      animation: admin-fade-in var(--motion-base) ease-out both;
+    }
+
+    .admin-modal-backdrop[data-state='closed'] {
+      animation: admin-fade-out var(--motion-fast) ease-in both;
+    }
+
+    .admin-modal-panel[data-state='open'] {
+      animation: admin-modal-in var(--motion-base) var(--ease-out) both;
+    }
+
+    .admin-modal-panel[data-state='closed'] {
+      animation: admin-modal-out var(--motion-fast) ease-in both;
+    }
+
+    @media (hover: hover) {
+      .admin-btn-primary:active:not(:disabled),
+      .admin-btn-secondary:active:not(:disabled) {
+        transform: scale(0.98);
+      }
     }
   }
 }
