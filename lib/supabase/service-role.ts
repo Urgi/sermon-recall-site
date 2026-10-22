@@ -26,10 +26,7 @@ export function createServiceRoleClient(): SupabaseClient | null {
     },
     global: {
       // Pin the service-role JWT so nothing can overwrite Authorization with a user session.
-      headers: {
-        Authorization: `Bearer ${key}`,
-        apikey: key,
-      },
+      headers: adminHeaders(key),
     },
   });
 }
@@ -62,10 +59,7 @@ export async function deleteAuthUserWithServiceRole(
 
   const res = await fetch(`${url.replace(/\/$/, '')}/auth/v1/admin/users/${userId}`, {
     method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      apikey: key,
-    },
+    headers: adminHeaders(key),
   });
 
   if (res.ok || res.status === 404) {
@@ -93,7 +87,17 @@ export async function deleteAuthUserWithServiceRole(
   return { ok: false, status: 500, error: msg };
 }
 
+/** New-style Supabase secret keys (sb_secret_…) are not JWTs and go in `apikey` only. */
+function isSecretKey(key: string): boolean {
+  return key.startsWith('sb_secret_');
+}
+
+function adminHeaders(key: string): Record<string, string> {
+  return isSecretKey(key) ? { apikey: key } : { Authorization: `Bearer ${key}`, apikey: key };
+}
+
 function serviceRoleKeyLooksValid(key: string): boolean {
+  if (isSecretKey(key)) return true;
   try {
     const parts = key.split('.');
     if (parts.length < 2) return false;
