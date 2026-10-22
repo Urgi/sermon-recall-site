@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { format, parseISO, startOfWeek } from 'date-fns';
+import { enUS, es, fr } from 'date-fns/locale';
 import { useMemo, useState } from 'react';
 
 import { useLanguage } from '@/components/i18n/LanguageProvider';
@@ -18,6 +19,8 @@ import {
 
 import { DashboardShareCard } from '@/components/admin/DashboardShareCard';
 import { useAdminTheme } from '@/components/admin/ThemeProvider';
+import type { AppLanguage } from '@/lib/i18n/languages';
+import type { UiKey, UiVars } from '@/lib/i18n/ui';
 import type { PastorLifecycle } from '@/lib/admin/workflow-status';
 import type { PastorEngagementPayload, PastorMidweekNudgeStatus } from '@/lib/engagement/types';
 import { getAdminChartTheme } from '@/lib/theme/chart-theme';
@@ -54,18 +57,20 @@ function greeting(t: (key: 'dash.goodMorning' | 'dash.goodAfternoon' | 'dash.goo
   return t('dash.goodEvening');
 }
 
-function weekLabel(ymd: string): string {
+const DATE_LOCALES = { en: enUS, es, fr } as const;
+
+function weekLabel(ymd: string, language: AppLanguage): string {
   try {
-    return format(parseISO(ymd), 'MMM d');
+    return format(parseISO(ymd), 'MMM d', { locale: DATE_LOCALES[language] });
   } catch {
     return ymd;
   }
 }
 
-function formatSermonDate(ymd: string | null): string {
+function formatSermonDate(ymd: string | null, language: AppLanguage): string {
   if (!ymd) return '—';
   try {
-    return format(parseISO(ymd), 'MMM d, yyyy');
+    return format(parseISO(ymd), 'PP', { locale: DATE_LOCALES[language] });
   } catch {
     return ymd;
   }
@@ -101,7 +106,7 @@ export function DashboardOverview({
   recentSermons,
 }: Props) {
   const { resolved } = useAdminTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const chart = getAdminChartTheme(resolved);
   const [range, setRange] = useState<RangeId>('7');
   const [showAllCommitments, setShowAllCommitments] = useState(false);
@@ -129,11 +134,11 @@ export function DashboardOverview({
             ]
           : [];
     return weekly.slice(-RANGE_WEEKS[range]).map((w) => ({
-      label: weekLabel(w.week_start),
+      label: weekLabel(w.week_start, language),
       opened: w.opened_count,
       completed: w.completed_count,
     }));
-  }, [engagement, range]);
+  }, [engagement, range, language]);
 
   const metrics = [
     {
@@ -171,7 +176,7 @@ export function DashboardOverview({
       <div className="admin-hero flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-accent)]">
-            {format(new Date(), 'EEEE, MMMM d')}
+            {format(new Date(), 'EEEE, d MMMM', { locale: DATE_LOCALES[language] })}
             {churchName ? ` · ${churchName}` : ''}
           </p>
           <h1 className="mt-1.5 text-[2rem] font-bold tracking-tight text-[var(--admin-fg-strong)]">
@@ -408,7 +413,7 @@ export function DashboardOverview({
                         </Link>
                       </td>
                       <td className="admin-hint hidden px-5 py-3 sm:table-cell">
-                        {formatSermonDate(s.sermon_date)}
+                        {formatSermonDate(s.sermon_date, language)}
                       </td>
                       <td className="hidden px-5 py-3 tabular-nums text-[13px] text-[var(--admin-fg-secondary)] md:table-cell">
                         {members || '—'}
@@ -513,11 +518,8 @@ export function DashboardOverview({
           </h2>
           {midweekNudge && midweekNudge.phase !== 'none' ? (
             <>
-              <p className="admin-body mt-3 flex-1 text-[14px]">{midweekNudgeCopy(midweekNudge)}</p>
-              <p className="admin-hint mt-3 text-[12px]">
-                Automatic at midday on Day 4 (retries through Day 6). Goes only to members more than
-                one day behind who have reminders on.
-              </p>
+              <p className="admin-body mt-3 flex-1 text-[14px]">{midweekNudgeCopy(midweekNudge, t)}</p>
+              <p className="admin-hint mt-3 text-[12px]">{t('dash.nudgeHint')}</p>
             </>
           ) : canPublish ? (
             <>
@@ -539,40 +541,23 @@ export function DashboardOverview({
   );
 }
 
-function midweekNudgeCopy(nudge: PastorMidweekNudgeStatus): string {
+function midweekNudgeCopy(
+  nudge: PastorMidweekNudgeStatus,
+  t: (key: UiKey, vars?: UiVars) => string,
+): string {
   const sent = nudge.sent_count;
   const will = nudge.will_send_count;
-  if (nudge.phase === 'sent') {
-    if (sent === 0) return 'This week’s catch-up nudge has gone out. Nobody was more than a day behind.';
-    return sent === 1
-      ? 'This week’s catch-up nudge went to 1 member who was more than a day behind.'
-      : `This week’s catch-up nudge went to ${sent} members who were more than a day behind.`;
-  }
-  if (nudge.phase === 'due') {
-    if (will === 0) {
-      return 'Mid-week window is open. Nobody is more than a day behind right now, so no nudge will send.';
-    }
-    return will === 1
-      ? 'Today’s catch-up nudge will go to 1 member who is more than a day behind (midday, church time).'
-      : `Today’s catch-up nudge will go to ${will} members who are more than a day behind (midday, church time).`;
-  }
+  const pick = (n: number, zero: UiKey, one: UiKey, many: UiKey) =>
+    n === 0 ? t(zero) : n === 1 ? t(one) : t(many, { n });
+  if (nudge.phase === 'sent') return pick(sent, 'nudge.sentZero', 'nudge.sentOne', 'nudge.sentMany');
+  if (nudge.phase === 'due') return pick(will, 'nudge.dueZero', 'nudge.dueOne', 'nudge.dueMany');
   if (nudge.phase === 'upcoming') {
-    if (will === 0) {
-      return 'On Day 4 we send a catch-up nudge to anyone more than a day behind. Nobody is that far behind yet.';
-    }
-    return will === 1
-      ? 'On Day 4 we send a catch-up nudge. 1 member is already more than a day behind and would get it.'
-      : `On Day 4 we send a catch-up nudge. ${will} members are already more than a day behind and would get it.`;
+    return pick(will, 'nudge.upcomingZero', 'nudge.upcomingOne', 'nudge.upcomingMany');
   }
   if (nudge.phase === 'missed') {
-    if (sent > 0) {
-      return sent === 1
-        ? 'This week’s catch-up nudge went to 1 member.'
-        : `This week’s catch-up nudge went to ${sent} members.`;
-    }
-    return 'The mid-week window has passed. No catch-up nudge was sent — nobody was more than a day behind, or they had reminders off.';
+    return pick(sent, 'nudge.missedNone', 'nudge.missedOne', 'nudge.missedMany');
   }
-  return 'Mid-week we automatically nudge members who are more than a day behind.';
+  return t('dash.nudgeAuto');
 }
 
 function MetricIcon({ kind }: { kind: 'members' | 'active' | 'completed' | 'encourage' }) {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { normalizeChurchCode } from '@/lib/church/member-join';
 
 type Props = {
@@ -25,6 +26,7 @@ export function DashboardShareCard({
   size = 'sm',
   showEmail = true,
 }: Props) {
+  const { t } = useLanguage();
   const code = normalizeChurchCode(churchCode);
   const downloadName = useMemo(
     () => `sermon-recall-${code.replace(/[^a-zA-Z0-9_-]/g, '_')}-qr.png`,
@@ -42,9 +44,9 @@ export function DashboardShareCard({
   async function copy(label: string, text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      flash(`${label} copied.`);
+      flash(t('share.copied', { label }));
     } catch {
-      flash('Could not copy.');
+      flash(t('share.copyFail'));
     }
   }
 
@@ -57,7 +59,7 @@ export function DashboardShareCard({
     anchor.href = href;
     anchor.download = downloadName;
     anchor.click();
-    flash('QR download started.');
+    flash(t('share.qrStarted'));
   }
 
   async function sendEmail(e: React.FormEvent) {
@@ -73,13 +75,13 @@ export function DashboardShareCard({
       });
       const json = (await res.json()) as { message?: string; error?: string };
       if (!res.ok) {
-        flash(json.error ?? 'Could not send email.');
+        flash(json.error ?? t('share.emailFail'));
         return;
       }
-      flash(json.message ?? 'Sent.');
+      flash(json.message ?? t('share.sent'));
       setEmailTo('');
     } catch {
-      flash('Network error.');
+      flash(t('share.networkError'));
     } finally {
       setEmailPending(false);
     }
@@ -93,7 +95,7 @@ export function DashboardShareCard({
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex items-start justify-between gap-3 rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] px-3.5 py-3">
             <div className="min-w-0">
-              <p className="text-[12px] font-medium text-[var(--admin-muted)]">Church code</p>
+              <p className="text-[12px] font-medium text-[var(--admin-muted)]">{t('share.churchCode')}</p>
               <p
                 className={`mt-1 truncate font-mono font-bold tracking-wide text-[var(--admin-fg-strong)] ${
                   size === 'lg' ? 'text-[1.5rem] leading-none' : 'text-lg'
@@ -104,8 +106,8 @@ export function DashboardShareCard({
             </div>
             <button
               type="button"
-              onClick={() => void copy('Church code', code)}
-              aria-label="Copy church code"
+              onClick={() => void copy(t('share.churchCode'), code)}
+              aria-label={t('share.copyCode')}
               className="mt-0.5 shrink-0 rounded-md p-1 text-[var(--admin-link)] hover:bg-admin-nav-hover"
             >
               <CopyIcon />
@@ -114,7 +116,7 @@ export function DashboardShareCard({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => void copy('Join link', joinUrl)}
+              onClick={() => void copy(t('share.joinLink'), joinUrl)}
               className="admin-btn-secondary flex min-w-0 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[13px]"
             >
               <LinkIcon />
@@ -140,7 +142,7 @@ export function DashboardShareCard({
               type="email"
               value={emailTo}
               onChange={(e) => setEmailTo(e.target.value)}
-              placeholder="Email a member"
+              placeholder={t('share.emailPlaceholder')}
               className="admin-input min-w-0 flex-1 py-1.5 text-[13px]"
             />
             <button
@@ -148,7 +150,7 @@ export function DashboardShareCard({
               disabled={emailPending || !emailTo.trim()}
               className="admin-btn-secondary shrink-0 px-3 text-[13px]"
             >
-              {emailPending ? '…' : 'Send'}
+              {emailPending ? '…' : t('share.send')}
             </button>
           </form>
           ) : null}
@@ -164,7 +166,7 @@ export function DashboardShareCard({
               className={size === 'lg' ? 'block h-[140px] w-[140px]' : 'block h-[88px] w-[88px]'}
             />
           </div>
-          <p className="admin-hint mt-1.5 text-[11px]">Scan to join</p>
+          <p className="admin-hint mt-1.5 text-[11px]">{t('share.scan')}</p>
         </div>
       </div>
     </div>
