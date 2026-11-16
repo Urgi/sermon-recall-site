@@ -1,3 +1,4 @@
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -47,13 +48,13 @@ async function TeamPageBody() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
-        <h1 className="admin-heading">Team</h1>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="team.title" />
+        </h1>
         <p className="admin-body mt-2 max-w-2xl">
-          This is how people get pastor or admin access. Invite them by email and choose a role —
-          they never pick up elevated access from the member QR or church code. Congregation
-          members still join on{' '}
+          <AdminChromeCopy k="team.intro" />{' '}
           <Link href="/members" className="text-admin-link hover:underline">
-            Members
+            <AdminChromeCopy k="members.title" />
           </Link>
           .
         </p>

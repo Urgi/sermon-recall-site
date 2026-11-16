@@ -121,7 +121,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
   if (error) {
     return (
       <div className="space-y-2">
-        <p className="text-[13px] text-red-400" role="alert">
+        <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
           {error}
         </p>
         <button

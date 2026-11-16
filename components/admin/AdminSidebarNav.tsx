@@ -124,6 +124,17 @@ export function AdminSidebarNav({
       match: (p) => p.startsWith('/team'),
       count: teamCount,
     });
+    // Billing is owner/admin-pastor only — same audience as team management; the page re-checks can_manage_billing.
+    items.push({
+      href: '/billing',
+      label: t('nav.billing'),
+      icon: (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+          <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      ),
+    });
   }
   if (canViewNotifications) {
     items.push({ href: '/notifications', label: t('nav.notifications'), icon: <IconNotify /> });
@@ -147,7 +158,10 @@ export function AdminSidebarNav({
 
   if (variant === 'compact') {
     return (
-      <nav className="flex min-w-0 flex-wrap items-center gap-2">
+      <nav
+        aria-label="Main"
+        className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {items.map((item) => {
           const active = isActive(displayPath, item);
           return (
@@ -156,13 +170,16 @@ export function AdminSidebarNav({
               href={item.href}
               prefetch
               onClick={() => beginNavigation(item.href)}
-              className={`text-xs font-medium ${
-                active ? 'text-admin-fg-strong' : 'text-admin-link hover:underline'
+              aria-current={active ? 'page' : undefined}
+              className={`inline-flex min-h-10 shrink-0 items-center rounded-full border px-3.5 text-[13px] font-medium transition-colors duration-fast ${
+                active
+                  ? 'border-[color-mix(in_srgb,var(--admin-accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--admin-accent)_14%,transparent)] text-[var(--admin-fg-strong)]'
+                  : 'border-admin text-[var(--admin-muted)] hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)]'
               }`}
             >
               {item.href === '/notifications' ? t('nav.notifyShort') : item.label}
               {typeof item.count === 'number' ? (
-                <span className="ml-1 tabular-nums opacity-80">({item.count})</span>
+                <span className="ml-1.5 tabular-nums opacity-80">{item.count}</span>
               ) : null}
             </Link>
           );
@@ -172,7 +189,7 @@ export function AdminSidebarNav({
   }
 
   return (
-    <nav className="flex flex-col gap-1 text-[14px]">
+    <nav aria-label="Main" className="flex flex-col gap-1 text-[14px]">
       {items.map((item) => {
         const active = isActive(displayPath, item);
         return (
@@ -181,7 +198,8 @@ export function AdminSidebarNav({
             href={item.href}
             prefetch
             onClick={() => beginNavigation(item.href)}
-            className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition-colors ${
+            aria-current={active ? 'page' : undefined}
+            className={`relative flex items-center gap-2.5 rounded-lg px-3 py-2 font-medium transition-colors duration-fast ${
               active
                 ? 'bg-[color-mix(in_srgb,var(--admin-accent)_14%,transparent)] text-[var(--admin-fg-strong)]'
                 : 'text-[var(--admin-muted)] hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)]'

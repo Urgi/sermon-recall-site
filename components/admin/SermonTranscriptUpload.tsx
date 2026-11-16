@@ -209,12 +209,12 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         </div>
       ) : null}
       {error ? (
-        <p className="mt-2 text-[13px] text-red-400" role="alert">
+        <p className="mt-2 text-[13px] text-red-600 dark:text-red-400" role="alert">
           {error}
         </p>
       ) : null}
       {done ? (
-        <p className="mt-2 text-[13px] text-emerald-400" role="status">
+        <p className="mt-2 text-[13px] text-emerald-700 dark:text-emerald-400" role="status">
           {done}
         </p>
       ) : null}

@@ -46,7 +46,7 @@ export function JoinChurchForm() {
           required
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          className="mt-1 w-full max-w-xs rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[15px] uppercase text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2"
+          className="mt-1 w-full max-w-xs rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[15px] uppercase text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2"
         />
       </div>
       {error ? (

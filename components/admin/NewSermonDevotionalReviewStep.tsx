@@ -48,7 +48,7 @@ export function NewSermonDevotionalReviewStep({
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-violet-500/25 bg-admin-card p-5">
-        <p className="text-[15px] font-semibold text-violet-200">Review six-day journey</p>
+        <p className="text-[15px] font-semibold text-violet-700 dark:text-violet-200">Review six-day journey</p>
         <p className="mt-1 text-[13px] leading-relaxed text-admin-dim">
           Expand each day to preview, edit, or regenerate with AI. When you are satisfied, save the
           sermon — nothing goes live to members until published.
@@ -67,7 +67,7 @@ export function NewSermonDevotionalReviewStep({
       />
 
       {localError ? (
-        <p className="text-[13px] text-red-400" role="alert">
+        <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
           {localError}
         </p>
       ) : null}

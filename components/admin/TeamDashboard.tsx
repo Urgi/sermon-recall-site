@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { ModalShell } from '@/components/admin/ModalShell';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { TeamPermissionsMatrix } from '@/components/admin/TeamPermissionsMatrix';
 import type { StaffRole } from '@/lib/auth/permissions';
 import {
@@ -34,6 +36,8 @@ function StatusPill({ status }: { status: string }) {
 
 export function TeamDashboard() {
   const router = useRouter();
+  const { t } = useLanguage();
+  const [removeTarget, setRemoveTarget] = useState<TeamMemberRow | null>(null);
   const [team, setTeam] = useState<TeamSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +48,8 @@ export function TeamDashboard() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<StaffRole>('associate_pastor');
 
+  // Only the first load shows the full-page loader; later refreshes update in place (no flash).
   const load = useCallback(async () => {
-    setLoading(true);
     setError(null);
     const res = await fetch('/api/team', { credentials: 'include' });
     const data = (await res.json()) as { error?: string; team?: TeamSnapshot };
@@ -61,6 +65,12 @@ export function TeamDashboard() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!success) return;
+    const id = window.setTimeout(() => setSuccess(null), 6000);
+    return () => window.clearTimeout(id);
+  }, [success]);
 
   const callerRole = (team?.caller.role as StaffRole) ?? null;
   const assignable = useMemo(() => assignableRolesFor(callerRole), [callerRole]);
@@ -108,8 +118,8 @@ export function TeamDashboard() {
 
   if (loading) {
     return (
-      <div className="admin-card flex items-center justify-center py-16">
-        <p className="admin-hint">Loading team…</p>
+      <div className="admin-card flex items-center justify-center py-16" role="status">
+        <p className="admin-hint motion-safe:animate-pulse">{t('team.loading')}</p>
       </div>
     );
   }
@@ -117,7 +127,10 @@ export function TeamDashboard() {
   if (!team) {
     return (
       <div className="admin-card p-8 text-center">
-        <p className="text-red-500" role="alert">{error ?? 'Unable to load team.'}</p>
+        <p className="text-red-600 dark:text-red-400" role="alert">{error ?? t('team.loadFailed')}</p>
+        <button type="button" onClick={() => void load()} className="admin-btn-secondary mt-4">
+          {t('common.tryAgain')}
+        </button>
       </div>
     );
   }
@@ -129,10 +142,10 @@ export function TeamDashboard() {
     <div className="space-y-8">
       {(error || success) && (
         <div
-          className={`rounded-lg border px-4 py-3 text-[13px] ${
+          className={`admin-page-enter sticky top-3 z-20 rounded-lg border px-4 py-3 text-[13px] shadow-sm backdrop-blur ${
             error
-              ? 'border-red-500/30 bg-red-500/10 text-red-600'
-              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
+              ? 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
           }`}
           role={error ? 'alert' : 'status'}
         >
@@ -141,36 +154,36 @@ export function TeamDashboard() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active team" value={String(totalActive)} />
-        <StatCard label="Pending approval" value={String(pending_approvals.length)} highlight={pending_approvals.length > 0} />
-        <StatCard label="Invites outstanding" value={String(pendingInvites.length)} />
-        <StatCard label="Your role" value={ROLE_LABELS[(caller.role as StaffRole) ?? 'viewer'] ?? '—'} />
+        <StatCard label={t('team.statActive')} value={String(totalActive)} />
+        <StatCard label={t('team.statPending')} value={String(pending_approvals.length)} highlight={pending_approvals.length > 0} />
+        <StatCard label={t('team.statInvites')} value={String(pendingInvites.length)} />
+        <StatCard label={t('team.statRole')} value={ROLE_LABELS[(caller.role as StaffRole) ?? 'viewer'] ?? '—'} />
       </div>
 
       {caller.can_invite && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="admin-hint">
             {caller.can_manage
-              ? 'You can invite, approve, change roles, and remove team members.'
+              ? t('team.canManage')
               : caller.can_approve
-                ? 'You can approve pending requests.'
-                : 'You can send invitations.'}
+                ? t('team.canApprove')
+                : t('team.canInvite')}
           </p>
           <button type="button" onClick={() => setShowInvite((v) => !v)} className="admin-btn-primary">
-            {showInvite ? 'Close invite form' : 'Invite team member'}
+            {showInvite ? t('team.closeInvite') : t('team.invite')}
           </button>
         </div>
       )}
 
       {showInvite && caller.can_invite && (
-        <form onSubmit={onInvite} className="admin-card space-y-4 p-6">
-          <h2 className="admin-section-title">Invite by email</h2>
+        <form onSubmit={onInvite} className="admin-card admin-page-enter space-y-4 p-6">
+          <h2 className="admin-section-title">{t('team.inviteByEmail')}</h2>
           <p className="admin-hint">
-            They receive a secure link valid for 7 days. After accepting, you must approve their access.
+            {t('team.inviteHint')}
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="team-invite-email" className="admin-label">Email address</label>
+              <label htmlFor="team-invite-email" className="admin-label">{t('team.email')}</label>
               <input
                 id="team-invite-email"
                 type="email"
@@ -182,7 +195,7 @@ export function TeamDashboard() {
               />
             </div>
             <div>
-              <label htmlFor="team-invite-role" className="admin-label">Role</label>
+              <label htmlFor="team-invite-role" className="admin-label">{t('team.role')}</label>
               <select
                 id="team-invite-role"
                 value={inviteRole}
@@ -198,7 +211,7 @@ export function TeamDashboard() {
             </div>
           </div>
           <button type="submit" disabled={actionPending === 'invite'} className="admin-btn-primary">
-            {actionPending === 'invite' ? 'Sending…' : 'Send invitation'}
+            {actionPending === 'invite' ? t('team.sending') : t('team.sendInvite')}
           </button>
         </form>
       )}
@@ -206,7 +219,7 @@ export function TeamDashboard() {
       {owner && (
         <section className="admin-card overflow-hidden">
           <div className="border-b border-admin bg-admin-surface/50 px-6 py-3">
-            <h2 className="admin-section-title text-sm">Church owner</h2>
+            <h2 className="admin-section-title text-sm">{t('team.owner')}</h2>
           </div>
           <MemberTableRow
             member={owner as TeamMemberRow}
@@ -225,12 +238,12 @@ export function TeamDashboard() {
       <section className="admin-card overflow-hidden">
         <div className="flex items-center justify-between border-b border-admin px-6 py-4">
           <div>
-            <h2 className="admin-section-title">Active team members</h2>
-            <p className="admin-hint mt-0.5">Approved staff with access to church admin tools</p>
+            <h2 className="admin-section-title">{t('team.activeMembers')}</h2>
+            <p className="admin-hint mt-0.5">{t('team.activeMembersHint')}</p>
           </div>
         </div>
         {active_members.length === 0 ? (
-          <p className="admin-body px-6 py-8 text-center">No other team members yet.</p>
+          <p className="admin-body px-6 py-8 text-center">{t('team.noOthers')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-[13px]">
@@ -267,22 +280,7 @@ export function TeamDashboard() {
                         setSuccess('Role updated.');
                       })
                     }
-                    onRemove={() =>
-                      runAction(`remove-${m.membership_id}`, async () => {
-                        if (!window.confirm(`Remove ${displayName(m)} from the team? They will lose admin access.`)) {
-                          return;
-                        }
-                        const res = await fetch('/api/team/remove', {
-                          method: 'POST',
-                          credentials: 'include',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ membershipId: m.membership_id }),
-                        });
-                        const data = (await res.json()) as { error?: string };
-                        if (!res.ok) throw new Error(data.error ?? 'Could not remove member.');
-                        setSuccess('Team member removed.');
-                      })
-                    }
+                    onRemove={() => setRemoveTarget(m)}
                   />
                 ))}
               </tbody>
@@ -295,10 +293,10 @@ export function TeamDashboard() {
         <section className="admin-card overflow-hidden border-amber-500/25">
           <div className="border-b border-amber-500/20 bg-amber-500/5 px-6 py-4">
             <h2 className="admin-section-title text-amber-900 dark:text-amber-100">
-              Pending approval
+              {t('team.pendingApproval')}
             </h2>
             <p className="admin-hint mt-1 text-amber-900/80 dark:text-amber-100/70">
-              These people accepted an invite or requested access. Approve before they can use admin tools.
+              {t('team.pendingApprovalHint')}
             </p>
           </div>
           <ul className="divide-y divide-admin">
@@ -343,8 +341,8 @@ export function TeamDashboard() {
       {pendingInvites.length > 0 && (
         <section className="admin-card overflow-hidden">
           <div className="border-b border-admin px-6 py-4">
-            <h2 className="admin-section-title">Invited — not yet accepted</h2>
-            <p className="admin-hint mt-0.5">Waiting for them to open the email link and sign in</p>
+            <h2 className="admin-section-title">{t('team.invited')}</h2>
+            <p className="admin-hint mt-0.5">{t('team.invitedHint')}</p>
           </div>
           <ul className="divide-y divide-admin">
             {pendingInvites.map((inv) => (
@@ -388,6 +386,47 @@ export function TeamDashboard() {
           </ul>
         </section>
       )}
+
+      <ModalShell
+        open={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        labelledBy="team-remove-title"
+        panelClassName="admin-card max-w-md shadow-xl"
+      >
+        <div className="p-6">
+          <h3 id="team-remove-title" className="admin-section-title">
+            {t('team.removeTitle', { name: removeTarget ? displayName(removeTarget) : '' })}
+          </h3>
+          <p className="admin-body mt-2">{t('team.removeBody')}</p>
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <button type="button" onClick={() => setRemoveTarget(null)} className="admin-btn-secondary">
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const target = removeTarget;
+                setRemoveTarget(null);
+                if (!target) return;
+                void runAction(`remove-${target.membership_id}`, async () => {
+                  const res = await fetch('/api/team/remove', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ membershipId: target.membership_id }),
+                  });
+                  const data = (await res.json()) as { error?: string };
+                  if (!res.ok) throw new Error(data.error ?? 'Could not remove member.');
+                  setSuccess('Team member removed.');
+                });
+              }}
+              className="rounded-lg bg-red-600 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors duration-fast hover:bg-red-700"
+            >
+              {t('team.removeConfirm')}
+            </button>
+          </div>
+        </div>
+      </ModalShell>
 
       <TeamPermissionsMatrix
         highlightRole={(team.caller.role as StaffRole) ?? null}

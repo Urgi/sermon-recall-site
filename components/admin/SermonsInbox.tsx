@@ -5,6 +5,8 @@ import { format, parseISO } from 'date-fns';
 import { useMemo, useState } from 'react';
 
 import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import type { UiKey } from '@/lib/i18n/ui';
 import type { SermonsFilterId } from '@/lib/admin/sermons-filter';
 import type { PastorLifecycle } from '@/lib/admin/workflow-status';
 
@@ -18,12 +20,12 @@ export type SermonsInboxRow = {
   lifecycle: PastorLifecycle;
 };
 
-const FILTERS: { id: SermonsFilterId; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'review_needed', label: 'Ready for review' },
-  { id: 'processing', label: 'Processing' },
-  { id: 'failed', label: 'Failed' },
-  { id: 'published', label: 'Published' },
+const FILTERS: { id: SermonsFilterId; label: UiKey }[] = [
+  { id: 'all', label: 'sermons.filterAll' },
+  { id: 'review_needed', label: 'sermons.filterReview' },
+  { id: 'processing', label: 'sermons.filterProcessing' },
+  { id: 'failed', label: 'sermons.filterFailed' },
+  { id: 'published', label: 'sermons.filterPublished' },
 ];
 
 function countFor(rows: SermonsInboxRow[], id: SermonsFilterId): number {
@@ -65,7 +67,8 @@ function matchesQuery(row: SermonsInboxRow, q: string): boolean {
 }
 
 function filterChipClass(id: SermonsFilterId, selected: boolean): string {
-  const base = 'rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors';
+  const base =
+    'min-h-9 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors duration-fast';
   if (!selected) {
     return `${base} border-[var(--admin-border-strong)] text-[var(--admin-muted)] hover:text-[var(--admin-fg-strong)]`;
   }
@@ -84,70 +87,70 @@ function filterChipClass(id: SermonsFilterId, selected: boolean): string {
 }
 
 function statusPresentation(life: PastorLifecycle): {
-  label: string;
+  label: UiKey;
   wrap: string;
   icon: 'dot' | 'spin';
 } {
   switch (life) {
     case 'review_needed':
       return {
-        label: 'Ready for review',
+        label: 'sermons.statusReview',
         wrap: 'border-orange-400/60 text-orange-700 dark:text-orange-300',
         icon: 'dot',
       };
     case 'processing':
       return {
-        label: 'Processing',
+        label: 'sermons.statusProcessing',
         wrap: 'border-sky-400/60 text-sky-700 dark:text-sky-300',
         icon: 'spin',
       };
     case 'published':
       return {
-        label: 'Published',
+        label: 'sermons.statusPublished',
         wrap: 'border-emerald-400/60 text-emerald-700 dark:text-emerald-300',
         icon: 'dot',
       };
     case 'failed':
       return {
-        label: 'Failed',
+        label: 'sermons.statusFailed',
         wrap: 'border-red-400/60 text-red-700 dark:text-red-300',
         icon: 'dot',
       };
     case 'ready_to_publish':
       return {
-        label: 'Ready to publish',
+        label: 'sermons.statusReady',
         wrap: 'border-emerald-400/60 text-emerald-700 dark:text-emerald-300',
         icon: 'dot',
       };
     case 'archived':
       return {
-        label: 'Archived',
+        label: 'sermons.statusArchived',
         wrap: 'border-slate-500/50 text-slate-400',
         icon: 'dot',
       };
     default:
       return {
-        label: 'Draft',
+        label: 'sermons.statusDraft',
         wrap: 'border-slate-500/50 text-slate-400',
         icon: 'dot',
       };
   }
 }
 
-function actionFor(life: PastorLifecycle): { label: string; hrefSuffix?: string } {
+function actionFor(life: PastorLifecycle): { label: UiKey; hrefSuffix?: string } {
   switch (life) {
     case 'review_needed':
-      return { label: 'Review' };
+      return { label: 'sermons.actReview' };
     case 'processing':
-      return { label: 'View progress' };
+      return { label: 'sermons.actProgress' };
     case 'failed':
-      return { label: 'Retry' };
+      return { label: 'sermons.actRetry' };
     case 'ready_to_publish':
-      return { label: 'Publish' };
+      return { label: 'sermons.actPublish' };
     case 'draft':
-      return { label: 'Continue' };
+      return { label: 'sermons.actContinue' };
     default:
-      return { label: 'View' };
+      return { label: 'sermons.actView' };
   }
 }
 
@@ -160,6 +163,7 @@ export function SermonsInbox({
   initialFilter?: SermonsFilterId | null;
   canDelete?: boolean;
 }) {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<SermonsFilterId>(() => initialFilter ?? defaultFilter(rows));
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
@@ -174,17 +178,17 @@ export function SermonsInbox({
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <label className="relative block min-w-0 max-w-md flex-1">
-          <span className="sr-only">Search sermons</span>
+          <span className="sr-only">{t('sermons.search')}</span>
           <SearchIcon />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search sermons"
-            className="w-full rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] py-2.5 pl-10 pr-3 text-[14px] text-[var(--admin-fg-strong)] outline-none placeholder:text-[var(--admin-muted)] focus:border-[var(--admin-accent)] focus:shadow-[0_0_0_2px_rgba(14,165,233,0.25)]"
+            placeholder={t('sermons.search')}
+            className="w-full rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] py-2.5 pl-10 pr-3 text-[14px] text-[var(--admin-fg-strong)] outline-none transition-[border-color,box-shadow] duration-fast placeholder:text-[var(--admin-muted)] focus:border-[var(--admin-accent)] focus:shadow-[0_0_0_2px_rgba(14,165,233,0.25)]"
           />
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('sermons.filterLabel')}>
           {FILTERS.map((f) => {
             const n = countFor(rows, f.id);
             return (
@@ -192,9 +196,10 @@ export function SermonsInbox({
                 key={f.id}
                 type="button"
                 onClick={() => setFilter(f.id)}
+                aria-pressed={filter === f.id}
                 className={filterChipClass(f.id, filter === f.id)}
               >
-                {f.label}{' '}
+                {t(f.label)}{' '}
                 <span className="tabular-nums opacity-80">({n})</span>
               </button>
             );
@@ -206,17 +211,19 @@ export function SermonsInbox({
         <button
           type="button"
           onClick={() => setFilter('review_needed')}
-          className="flex w-full items-start gap-3 rounded-xl border border-orange-400/40 bg-orange-500/[0.07] px-4 py-3.5 text-left hover:bg-orange-500/10"
+          className="flex w-full items-start gap-3 rounded-xl border border-orange-400/40 bg-orange-500/[0.07] px-4 py-3.5 text-left transition-colors duration-fast hover:bg-orange-500/10"
         >
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-orange-400">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-orange-600 dark:text-orange-400">
             <ReviewDocIcon />
           </span>
           <span>
             <span className="block text-[15px] font-semibold text-orange-700 dark:text-orange-300">
-              {reviewCount} {reviewCount === 1 ? 'devotional is' : 'devotionals are'} ready for review
+              {reviewCount === 1
+                ? t('sermons.reviewBannerOne')
+                : t('sermons.reviewBanner', { n: reviewCount })}
             </span>
             <span className="mt-0.5 block text-[13px] text-[var(--admin-muted)]">
-              Review and approve them before they reach your church.
+              {t('sermons.reviewBannerHint')}
             </span>
           </span>
         </button>
@@ -224,12 +231,19 @@ export function SermonsInbox({
 
       {shown.length === 0 ? (
         <div className="admin-card p-10 text-center">
-          <p className="admin-body">
+          <p className="admin-section-title">
             {rows.length === 0
-              ? 'No sermons yet.'
+              ? t('sermons.emptyNone')
               : q
-                ? 'No sermons match that search.'
-                : 'No sermons in this view.'}
+                ? t('sermons.emptySearch')
+                : t('sermons.emptyView')}
+          </p>
+          <p className="admin-hint mx-auto mt-1 max-w-sm">
+            {rows.length === 0
+              ? t('sermons.emptyNoneHint')
+              : q
+                ? t('sermons.emptySearchHint')
+                : t('sermons.emptyViewHint')}
           </p>
         </div>
       ) : (
@@ -237,10 +251,10 @@ export function SermonsInbox({
           <table className="w-full text-left">
             <thead className="border-b border-admin text-[11px] font-semibold uppercase tracking-[0.08em] text-admin-dim">
               <tr>
-                <th className="px-5 py-3">Sermon</th>
-                <th className="hidden px-5 py-3 sm:table-cell">Sermon date</th>
-                <th className="px-5 py-3">Devotional status</th>
-                <th className="px-5 py-3 text-right">Action</th>
+                <th className="px-4 py-3 sm:px-5">{t('sermons.colSermon')}</th>
+                <th className="hidden px-5 py-3 sm:table-cell">{t('sermons.colDate')}</th>
+                <th className="px-4 py-3 sm:px-5">{t('sermons.colStatus')}</th>
+                <th className="px-4 py-3 sm:px-5 text-right">{t('sermons.colAction')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-admin">
@@ -249,8 +263,8 @@ export function SermonsInbox({
                 const action = actionFor(s.lifecycle);
                 const sub = subtitleFor(s);
                 return (
-                  <tr key={s.id} className="hover:bg-admin-nav-hover/40">
-                    <td className="px-5 py-4">
+                  <tr key={s.id} className="transition-colors duration-fast hover:bg-admin-nav-hover/40">
+                    <td className="px-4 py-4 sm:px-5">
                       <Link
                         href={`/sermons/${s.id}`}
                         className="text-[15px] font-medium text-[var(--admin-link)] hover:underline"
@@ -262,21 +276,21 @@ export function SermonsInbox({
                     <td className="hidden whitespace-nowrap px-5 py-4 text-[14px] text-[var(--admin-fg-strong)] sm:table-cell">
                       {formatSermonDate(s.sermon_date)}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-4 sm:px-5">
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-medium ${status.wrap}`}
                       >
                         {status.icon === 'spin' ? <SpinIcon /> : <StatusDot />}
-                        {status.label}
+                        {t(status.label)}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-4 py-4 text-right sm:px-5">
                       <div className="flex flex-col items-end gap-1.5">
                         <Link
                           href={`/sermons/${s.id}`}
                           className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--admin-link)] hover:underline"
                         >
-                          {action.label}
+                          {t(action.label)}
                           <span aria-hidden>→</span>
                         </Link>
                         {canDelete ? (

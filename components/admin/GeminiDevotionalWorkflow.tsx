@@ -411,7 +411,7 @@ export function GeminiDevotionalWorkflow({
 
       {!previewDays && !generating && hasTranscript && !canRegen ? (
         <div
-          className="rounded-lg border border-[#38bdf8]/25 bg-[#05070a]/40 px-4 py-3"
+          className="rounded-lg border border-[#38bdf8]/25 bg-admin-surface px-4 py-3"
           role="status"
         >
           <p className="text-[13px] leading-relaxed text-[var(--admin-fg)]/85">

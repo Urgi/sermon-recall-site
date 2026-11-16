@@ -9,7 +9,7 @@ export function SermonTranscriptLinkCard({ sermonId, characterCount }: Props) {
   return (
     <Link
       href={`/sermons/${sermonId}/transcript`}
-      className="admin-card block p-5 transition hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-nav-hover-bg)]"
+      className="admin-card block p-5 transition-colors duration-fast hover:border-[var(--admin-border-strong)] hover:bg-[var(--admin-nav-hover-bg)]"
     >
       <div className="flex items-start justify-between gap-4">
         <div>

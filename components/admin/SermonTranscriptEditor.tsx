@@ -90,7 +90,7 @@ export function SermonTranscriptEditor({
                 setError(null);
                 setSavedMessage(null);
               }}
-              className="text-[13px] font-medium text-sky-400 hover:text-sky-300"
+              className="text-[13px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300"
             >
               Edit transcript
             </button>
@@ -133,21 +133,21 @@ export function SermonTranscriptEditor({
             onChange={(e) => setDraft(e.target.value)}
             rows={24}
             spellCheck
-            className="w-full resize-y rounded-lg border border-[#38bdf8]/40 bg-[#05070a] px-4 py-3 text-[14px] leading-relaxed text-admin-fg outline-none focus:ring-2 focus:ring-sky-400/40"
+            className="w-full resize-y rounded-lg border border-[#38bdf8]/40 bg-admin-surface px-4 py-3 text-[14px] leading-relaxed text-admin-fg outline-none focus:ring-2 focus:ring-sky-400/40"
           />
         ) : (
-          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-admin bg-[#05070a]/60 p-4">
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg border border-admin bg-admin-surface p-4">
             <p className="admin-body whitespace-pre-wrap">{transcript}</p>
           </div>
         )}
 
         {savedMessage ? (
-          <p className="text-[13px] text-emerald-400" role="status">
+          <p className="text-[13px] text-emerald-700 dark:text-emerald-400" role="status">
             {savedMessage}
           </p>
         ) : null}
         {error ? (
-          <p className="text-[13px] text-red-400" role="alert">
+          <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
             {error}
           </p>
         ) : null}

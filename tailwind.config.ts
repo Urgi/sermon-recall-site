@@ -1,6 +1,8 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  // The portal themes via <html data-theme>, so `dark:` must follow that, not the OS setting.
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: ['./app/**/*.{js,ts,jsx,tsx,mdx}', './components/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -25,6 +27,23 @@ const config: Config = {
           link: 'var(--admin-link)',
           'nav-hover': 'var(--admin-nav-hover-bg)',
         },
+      },
+      transitionTimingFunction: {
+        'out-strong': 'var(--ease-out)',
+      },
+      transitionDuration: {
+        fast: 'var(--motion-fast)',
+        base: 'var(--motion-base)',
+        slow: 'var(--motion-slow)',
+      },
+      keyframes: {
+        hintFade: {
+          from: { opacity: '0', transform: 'translateY(2px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        hintFade: 'hintFade var(--motion-slow) var(--ease-out) both',
       },
       borderColor: {
         admin: 'var(--admin-border)',

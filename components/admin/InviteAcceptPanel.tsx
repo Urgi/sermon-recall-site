@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -52,7 +53,7 @@ export function InviteAcceptPanel({ token }: Props) {
 
   if (status === 'need_login') {
     return (
-      <div className="admin-card p-8 text-center">
+      <div className="admin-card p-6 text-center sm:p-8">
         <p className="admin-body">Sign in with the email address that received this invite.</p>
         <a
           href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
@@ -65,12 +66,39 @@ export function InviteAcceptPanel({ token }: Props) {
   }
 
   return (
-    <div className="admin-card p-8 text-center">
+    <div className="admin-card p-6 text-center sm:p-8" aria-live="polite">
       {status === 'loading' || status === 'accepting' ? (
-        <p className="admin-body">Accepting invitation…</p>
+        <div className="flex flex-col items-center gap-3" role="status">
+          <span
+            className="h-6 w-6 rounded-full border-2 border-sky-400/30 border-t-sky-400 motion-safe:animate-spin"
+            aria-hidden
+          />
+          <p className="admin-body">Accepting invitation…</p>
+        </div>
       ) : null}
-      {status === 'done' ? <p className="text-emerald-600 admin-body">{message}</p> : null}
-      {status === 'error' ? <p className="text-red-500 admin-body" role="alert">{message}</p> : null}
+      {status === 'done' ? (
+        <div role="status">
+          <p className="admin-body text-emerald-700 dark:text-emerald-400">{message}</p>
+          <p className="admin-hint mt-2">Taking you to your dashboard…</p>
+          <Link href="/dashboard?staff=pending" className="admin-btn-secondary mt-5 inline-block">
+            Go now
+          </Link>
+        </div>
+      ) : null}
+      {status === 'error' ? (
+        <div>
+          <p className="admin-body text-red-600 dark:text-red-400" role="alert">
+            {message}
+          </p>
+          <p className="admin-hint mt-2">
+            Ask the person who invited you to send a fresh link, or make sure you are signed in
+            with the invited email.
+          </p>
+          <Link href="/dashboard" className="admin-btn-secondary mt-5 inline-block">
+            Go to dashboard
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

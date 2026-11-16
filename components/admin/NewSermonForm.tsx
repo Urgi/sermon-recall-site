@@ -487,7 +487,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                     role="radio"
                     aria-checked={selected}
                     onClick={() => onModeChange(mode.id)}
-                    className={`rounded-full py-2 text-[13px] font-semibold transition-colors ${
+                    className={`min-h-10 rounded-full py-2 text-[13px] font-semibold transition-colors duration-fast ${
                       selected
                         ? 'bg-[var(--admin-fg-strong)] text-[var(--admin-card-bg)]'
                         : 'text-[var(--admin-muted)] hover:text-[var(--admin-fg-strong)]'
@@ -500,7 +500,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             </div>
 
             {inputKind === 'youtube' ? (
-              <div className="space-y-4">
+              <div className="admin-page-enter space-y-4">
                 <div>
                   <label htmlFor="sermon-youtube" className="admin-label">
                     YouTube URL <span className="text-red-500">*</span>
@@ -520,7 +520,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                     <button
                       type="button"
                       onClick={() => void pasteFromClipboard()}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2 text-[var(--admin-muted)] hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)]"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2.5 text-[var(--admin-muted)] transition-colors duration-fast hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)]"
                       aria-label="Paste from clipboard"
                       title="Paste from clipboard"
                     >
@@ -598,7 +598,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             ) : null}
 
             {inputKind === 'text' ? (
-              <div>
+              <div className="admin-page-enter">
                 <label htmlFor="sermon-script" className="sr-only">
                   Sermon text
                 </label>
@@ -616,7 +616,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             ) : null}
 
             {inputKind === 'file' ? (
-              <div>
+              <div className="admin-page-enter">
                 <label htmlFor="sermon-file" className="admin-label">
                   File <span className="text-red-500">*</span>
                 </label>
@@ -636,7 +636,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                       setError(null);
                     }
                   }}
-                  className={`mt-1.5 flex min-h-[9.5rem] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center transition-colors ${
+                  className={`mt-1.5 flex min-h-[9.5rem] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center transition-colors duration-fast focus-within:border-[var(--admin-accent)] focus-within:shadow-[0_0_0_2px_rgba(14,165,233,0.25)] ${
                     fileOver || mediaFile
                       ? 'border-[var(--admin-accent)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-surface-bg))]'
                       : 'border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] hover:border-[var(--admin-accent)]'
@@ -660,7 +660,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                       <span className="max-w-full truncate text-[14px] font-medium text-[var(--admin-fg-strong)]">
                         {mediaFile.name}
                       </span>
-                      <span className="admin-hint mt-1">Tap to replace</span>
+                      <span className="admin-hint mt-1">Click or drop a file to replace it</span>
                     </>
                   ) : (
                     <>
@@ -668,7 +668,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                         Choose file
                       </span>
                       <span className="admin-hint mt-1">
-                        Choose any audio, video, or text file.
+                        Drop a file here or click to browse — audio, video, or text.
                       </span>
                     </>
                   )}

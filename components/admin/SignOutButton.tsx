@@ -3,10 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [pending, setPending] = useState(false);
 
   async function signOut() {
@@ -25,10 +27,10 @@ export function SignOutButton({ className }: { className?: string }) {
       disabled={pending}
       className={
         className ??
-        'rounded-md px-2 py-2 text-left text-[14px] text-[#94a3b8] hover:bg-[#0a0f18] hover:text-[#38bdf8] disabled:opacity-50'
+        'w-full rounded-md px-2 py-2 text-left text-[14px] text-admin-muted transition-colors duration-fast hover:bg-admin-nav-hover hover:text-admin-accent disabled:opacity-50'
       }
     >
-      {pending ? 'Signing out…' : 'Sign out'}
+      {pending ? t('common.signingOut') : t('common.signOut')}
     </button>
   );
 }

@@ -43,7 +43,7 @@ export function SeedStubDevotionalsButton({ sermonId }: Props) {
         type="button"
         onClick={() => void run()}
         disabled={pending}
-        className="rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className="admin-btn-primary"
       >
         {pending ? 'Creating…' : 'Fill six-day placeholders (demo)'}
       </button>
@@ -52,7 +52,7 @@ export function SeedStubDevotionalsButton({ sermonId }: Props) {
         journey. Swap later for real AI-generated devotionals.
       </p>
       {error ? (
-        <p className="text-[13px] text-red-400" role="alert">
+        <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
           {error}
         </p>
       ) : null}

@@ -32,10 +32,10 @@ export function GeminiPreviewDayEditor({
                   : day.title || 'Untitled'}
               </span>
             </p>
-            <span className="text-[11px] font-medium text-violet-300 group-open:hidden">
+            <span className="text-[11px] font-medium text-violet-700 dark:text-violet-300 group-open:hidden">
               Edit before publish
             </span>
-            <span className="text-[11px] font-medium text-violet-200 hidden group-open:inline">
+            <span className="text-[11px] font-medium text-violet-700 dark:text-violet-200 hidden group-open:inline">
               Editing
             </span>
           </div>

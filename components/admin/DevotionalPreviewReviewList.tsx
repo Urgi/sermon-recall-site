@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { ModalShell } from '@/components/admin/ModalShell';
 import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerationHints';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import {
@@ -167,14 +168,12 @@ function DevotionalDayReviewModal({
   const editingBodyParagraphCount = editingMainContent ? countBodyParagraphs(mainContent) : 0;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="devotional-day-modal-title"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !regenBusy) onClose();
-      }}
+    <ModalShell
+      open
+      onClose={onClose}
+      labelledBy="devotional-day-modal-title"
+      locked={regenBusy}
+      panelClassName="max-w-2xl"
     >
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-admin bg-admin-card shadow-2xl">
         <div className="flex items-center justify-between gap-3 border-b border-admin px-5 py-4">
@@ -224,7 +223,7 @@ function DevotionalDayReviewModal({
                   type="button"
                   onClick={() => setEditingTitle(true)}
                   disabled={disabled || regenBusy}
-                  className="shrink-0 text-[12px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50"
+                  className="shrink-0 text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                 >
                   Edit title
                 </button>
@@ -233,7 +232,7 @@ function DevotionalDayReviewModal({
                   <button
                     type="button"
                     onClick={saveTitle}
-                    className="text-[12px] font-medium text-emerald-400 hover:text-emerald-300"
+                    className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                   >
                     Save
                   </button>
@@ -336,7 +335,7 @@ function DevotionalDayReviewModal({
                     type="button"
                     onClick={() => setEditingMainContent(true)}
                     disabled={disabled || regenBusy}
-                    className="text-[12px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50"
+                    className="text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                   >
                     Edit
                   </button>
@@ -345,7 +344,7 @@ function DevotionalDayReviewModal({
                     <button
                       type="button"
                       onClick={saveMainContent}
-                      className="text-[12px] font-medium text-emerald-400 hover:text-emerald-300"
+                      className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
                       Save
                     </button>
@@ -376,7 +375,7 @@ function DevotionalDayReviewModal({
                     className={`text-[11px] ${
                       editingBodyParagraphCount >= MIN_BODY_PARAGRAPHS
                         ? 'text-admin-dim'
-                        : 'text-amber-400/90'
+                        : 'text-amber-700 dark:text-amber-400/90'
                     }`}
                   >
                     {editingBodyParagraphCount} paragraph
@@ -399,7 +398,7 @@ function DevotionalDayReviewModal({
                     type="button"
                     onClick={() => setEditingReflection(true)}
                     disabled={disabled || regenBusy}
-                    className="text-[12px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-50"
+                    className="text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                   >
                     Edit
                   </button>
@@ -408,7 +407,7 @@ function DevotionalDayReviewModal({
                     <button
                       type="button"
                       onClick={saveReflection}
-                      className="text-[12px] font-medium text-emerald-400 hover:text-emerald-300"
+                      className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
                       Save
                     </button>
@@ -483,7 +482,7 @@ function DevotionalDayReviewModal({
           ) : null}
 
           {error ? (
-            <p className="text-[13px] text-red-400" role="alert">
+            <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
               {error}
             </p>
           ) : null}
@@ -491,7 +490,7 @@ function DevotionalDayReviewModal({
 
         <DevotionalGenerationHints active={regenBusy} variant="single-day" intervalMs={2400} />
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

@@ -1,3 +1,4 @@
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -46,7 +47,9 @@ async function MembersPageBody() {
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="admin-heading">Members</h1>
+          <h1 className="admin-heading">
+            <AdminChromeCopy k="members.title" />
+          </h1>
           <p className="admin-body mt-2">
             People who joined this church in the app.
             {memberCount > 0 ? (

@@ -206,7 +206,7 @@ export function ResetPasswordForm({ initialEmail = '', linkRejected = false }: P
           disabled={pending}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       <div>
@@ -224,7 +224,7 @@ export function ResetPasswordForm({ initialEmail = '', linkRejected = false }: P
           disabled={pending}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\s/g, ''))}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[17px] tracking-widest text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[17px] tracking-widest text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
         />
       </div>
       {error ? (
@@ -248,7 +248,7 @@ export function ResetPasswordForm({ initialEmail = '', linkRejected = false }: P
         type="button"
         disabled={resendPending || pending}
         onClick={() => void onResend()}
-        className="block w-full text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+        className="block min-h-11 w-full py-2 text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
       >
         {resendPending ? 'Sending…' : 'Resend reset code'}
       </button>

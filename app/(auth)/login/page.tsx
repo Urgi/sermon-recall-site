@@ -16,7 +16,7 @@ export default function LoginPage({
   const linkRejected = searchParams.error === 'use_code';
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-8 shadow-lg shadow-black/20">
+    <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-6 shadow-lg sm:p-8 shadow-black/20">
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
@@ -25,13 +25,13 @@ export default function LoginPage({
         Sign in with a one-time code sent to your church admin email — no password needed.
       </p>
       <LoginForm nextPath={next} initialEmail={initialEmail} linkRejected={linkRejected} />
-      <p className="mt-6 text-center text-[13px] text-[#64748b]">
+      <p className="mt-6 text-center text-[13px] text-[#94a3b8]">
         No account?{' '}
-        <Link href="/register" className="text-[#38bdf8] hover:underline">
+        <Link href="/register" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
           Register
         </Link>
         {' · '}
-        <Link href="/verify-email" className="text-[#38bdf8] hover:underline">
+        <Link href="/verify-email" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
           Enter confirmation code
         </Link>
       </p>

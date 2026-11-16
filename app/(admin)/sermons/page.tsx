@@ -1,3 +1,4 @@
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -62,15 +63,17 @@ async function SermonsListBody({ searchParams }: Props) {
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="admin-heading">Sermons</h1>
+          <h1 className="admin-heading">
+            <AdminChromeCopy k="sermons.title" />
+          </h1>
           <p className="admin-body mt-2">
-            Upload sermons and turn them into devotionals for your church.
+            <AdminChromeCopy k="sermons.pageIntro" />
           </p>
         </div>
         {canPublish && profile.church_id ? (
           <Link href="/sermons/new" className="admin-btn-primary inline-flex items-center gap-2">
             <UploadIcon />
-            Upload sermon
+            <AdminChromeCopy k="sermons.upload" />
           </Link>
         ) : null}
       </div>

@@ -18,7 +18,7 @@ type Props = {
 type Step = 'email' | 'code';
 
 const inputClass =
-  'mt-1 w-full rounded-xl border border-[rgba(56,189,248,0.22)] bg-[#0b1220] px-4 py-3.5 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
+  'mt-1 w-full rounded-xl border border-[rgba(56,189,248,0.22)] bg-[#0b1220] px-4 py-3.5 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
 
 export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
@@ -120,12 +120,16 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
   const codeReady = code.trim().length >= 6;
 
   return (
-    <form onSubmit={step === 'email' ? onSendCode : onVerify} className="mt-6 space-y-4">
+    <form
+      key={step}
+      onSubmit={step === 'email' ? onSendCode : onVerify}
+      className="admin-page-enter mt-6 space-y-4"
+    >
       {step === 'code' ? (
         <button
           type="button"
           onClick={backToEmail}
-          className="text-[14px] font-semibold text-[#38bdf8] hover:underline"
+          className="-ml-2 inline-flex min-h-10 items-center rounded-md px-2 text-[14px] font-semibold text-[#38bdf8] hover:underline"
         >
           ← Back
         </button>
@@ -141,11 +145,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             We sent a code to {email.trim().toLowerCase()}.
           </p>
         </div>
-      ) : (
-        <p className="text-[14px] leading-relaxed text-[#94a3b8]">
-          We’ll email you a one-time code — no password needed.
-        </p>
-      )}
+      ) : null}
 
       {linkRejected ? (
         <p
@@ -212,7 +212,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
         disabled={
           pending || (step === 'email' ? !emailReady : !codeReady)
         }
-        className="w-full rounded-full bg-[#0ea5e9] px-4 py-3.5 text-[16px] font-semibold text-white hover:bg-[#0284c7] disabled:cursor-not-allowed disabled:border disabled:border-[rgba(56,189,248,0.22)] disabled:bg-[#0b1220] disabled:text-[#64748b]"
+        className="w-full rounded-full bg-[#0ea5e9] px-4 py-3.5 text-[16px] font-semibold text-white transition-colors duration-fast hover:bg-[#0284c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#38bdf8] motion-safe:active:scale-[0.99] disabled:cursor-not-allowed disabled:border disabled:border-[rgba(56,189,248,0.22)] disabled:bg-[#0b1220] disabled:text-[#64748b]"
       >
         {pending
           ? step === 'email'
@@ -228,7 +228,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
           type="button"
           disabled={resendPending || pending}
           onClick={() => void onResend()}
-          className="block w-full py-2 text-center text-[15px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
+          className="block min-h-11 w-full py-2 text-center text-[15px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
         >
           {resendPending ? 'Sending…' : 'Resend code'}
         </button>

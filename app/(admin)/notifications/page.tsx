@@ -1,3 +1,4 @@
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
@@ -64,7 +65,9 @@ async function NotificationsPageBody({ searchParams }: Props) {
         >
           ← Dashboard
         </Link>
-        <h1 className="admin-heading mt-4">Notifications</h1>
+        <h1 className="admin-heading mt-4">
+          <AdminChromeCopy k="notify.title" />
+        </h1>
         <p className="admin-body mt-2">
           Send a one-time push to your church. Members also get automatic daily reminders, plus a
           mid-week catch-up nudge if they are more than a day behind.
@@ -72,14 +75,18 @@ async function NotificationsPageBody({ searchParams }: Props) {
       </div>
 
       <section id="notify-church" className="admin-card p-6">
-        <h2 className="admin-section-title">Notify your church</h2>
+        <h2 className="admin-section-title">
+          <AdminChromeCopy k="notify.composeTitle" />
+        </h2>
         <div className="mt-4">
           <PastorBroadcastForm encourageInactiveCount={encourageInactiveCount} />
         </div>
       </section>
 
       <section className="admin-card p-6">
-        <h2 className="admin-section-title">History</h2>
+        <h2 className="admin-section-title">
+          <AdminChromeCopy k="notify.history" />
+        </h2>
         <p className="admin-body mt-2">
           Custom push messages you and other pastors have sent to your church.
         </p>

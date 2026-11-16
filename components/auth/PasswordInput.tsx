@@ -16,7 +16,7 @@ export function PasswordInput({ id, className = '', disabled, ...rest }: Props) 
         {...rest}
         type={visible ? 'text' : 'password'}
         disabled={disabled}
-        className={`w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] py-2 pl-3 pr-11 text-[15px] text-white outline-none ring-sky-400/40 focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60 ${className}`}
+        className={`w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] py-2 pl-3 pr-11 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60 ${className}`}
       />
       <button
         type="button"

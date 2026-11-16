@@ -6,6 +6,8 @@ import { useCallback, useId, useState } from 'react';
 import type { StaffRole } from '@/lib/auth/permissions';
 import { formatTargetStaffRoles } from '@/lib/push/broadcast-audience';
 import { BroadcastRoleAudience } from '@/components/admin/BroadcastRoleAudience';
+import { ModalShell } from '@/components/admin/ModalShell';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 const DEFAULT_ROLES: StaffRole[] = ['owner', 'admin_pastor', 'associate_pastor'];
 
@@ -16,6 +18,7 @@ type Props = {
 
 export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const formId = useId();
   const [title, setTitle] = useState(
     encourageInactiveCount != null && encourageInactiveCount > 0
@@ -131,7 +134,7 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
         ) : null}
         <div>
           <label htmlFor="broadcast-title" className="admin-label">
-            Title <span className="admin-hint">(max 80 characters)</span>
+            {t('notify.fieldTitle')} <span className="admin-hint tabular-nums">· {title.length}/80</span>
           </label>
           <input
             id="broadcast-title"
@@ -142,12 +145,12 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="admin-input mt-1"
-            placeholder="e.g. Board meeting Tuesday"
+            placeholder={t('notify.placeholderTitle')}
           />
         </div>
         <div>
           <label htmlFor="broadcast-body" className="admin-label">
-            Message <span className="admin-hint">(max 320 characters)</span>
+            {t('notify.fieldMessage')} <span className="admin-hint tabular-nums">· {body.length}/320</span>
           </label>
           <textarea
             id="broadcast-body"
@@ -158,7 +161,7 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             className="admin-input mt-1"
-            placeholder="Your message…"
+            placeholder={t('notify.placeholderMessage')}
           />
         </div>
 
@@ -172,36 +175,39 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
 
         {title && body ? (
           <div className="admin-card-nested p-4">
-            <p className="admin-hint text-xs font-semibold uppercase">Preview</p>
+            <p className="admin-hint text-xs font-semibold uppercase">{t('notify.preview')}</p>
             <p className="mt-2 font-semibold text-admin-fg-strong">{title}</p>
             <p className="admin-body mt-1">{body}</p>
-            <p className="admin-hint mt-2 text-[12px]">To: {audienceSummary}</p>
+            <p className="admin-hint mt-2 text-[12px]">{t('notify.to', { audience: audienceSummary })}</p>
           </div>
         ) : null}
         <button type="submit" disabled={pending} className="admin-btn-primary">
-          {pending ? 'Sending…' : 'Review & send now'}
+          {pending ? t('notify.sending') : t('notify.review')}
         </button>
         {error ? (
-          <p className="text-[13px] text-red-500" role="alert">
+          <p className="text-[13px] text-red-600 dark:text-red-400" role="alert">
             {error}
           </p>
         ) : null}
-        {success ? <p className="text-[13px] text-emerald-600">{success}</p> : null}
+        {success ? (
+          <p className="text-[13px] text-emerald-700 dark:text-emerald-400" role="status">
+            {success}
+          </p>
+        ) : null}
         {pushWarnings ? (
-          <p className="text-[12px] text-amber-600">{pushWarnings.join(', ')}</p>
+          <p className="text-[12px] text-amber-700 dark:text-amber-500">{pushWarnings.join(', ')}</p>
         ) : null}
       </form>
 
-      {showConfirm ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-send-title"
-        >
-          <div className="admin-card max-w-md p-6 shadow-xl">
+      <ModalShell
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        labelledBy="confirm-send-title"
+        panelClassName="admin-card max-w-md shadow-xl"
+      >
+          <div className="p-6">
             <h3 id="confirm-send-title" className="admin-section-title">
-              Send notification now?
+              {t('notify.confirmTitle')}
             </h3>
             <p className="admin-body mt-2">
               This will push to: <span className="font-medium">{audienceSummary}</span>. Recipients
@@ -213,19 +219,18 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
             </div>
             <div className="mt-6 flex gap-3">
               <button type="button" onClick={() => void confirmSend()} className="admin-btn-primary">
-                Send now
+                {t('notify.sendNow')}
               </button>
               <button
                 type="button"
                 onClick={() => setShowConfirm(false)}
                 className="admin-btn-secondary"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+      </ModalShell>
     </>
   );
 }

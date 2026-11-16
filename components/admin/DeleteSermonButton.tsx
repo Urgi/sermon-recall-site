@@ -1,7 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useState } from 'react';
+import { useId, useState } from 'react';
+
+import { ModalShell } from '@/components/admin/ModalShell';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 type Props = {
   sermonId: string;
@@ -17,6 +20,7 @@ export function DeleteSermonButton({
   variant = 'button',
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const titleId = useId();
   const [open, setOpen] = useState(false);
   const [ack, setAck] = useState(false);
@@ -25,15 +29,6 @@ export function DeleteSermonButton({
 
   const label = sermonTitle.trim() || 'this sermon';
   const shortLabel = label.length > 80 ? `${label.slice(0, 77)}…` : label;
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !busy) setOpen(false);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [busy, open]);
 
   function close() {
     if (busy) return;
@@ -74,44 +69,37 @@ export function DeleteSermonButton({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-[13px] font-medium text-red-400 hover:underline"
+          className="inline-flex min-h-8 items-center text-[13px] font-medium text-red-500 hover:underline dark:text-red-400"
         >
-          Delete
+          {t('sermons.delete')}
         </button>
       ) : (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-1.5 text-[12px] font-semibold text-red-200 hover:bg-red-950/50"
+          className="rounded-lg border border-red-500/40 bg-red-50 dark:bg-red-950/30 px-3 py-1.5 text-[12px] font-semibold text-red-700 dark:text-red-200 hover:bg-red-100 dark:hover:bg-red-950/50"
         >
-          Delete sermon
+          {t('sermons.deleteConfirm')}
         </button>
       )}
 
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/70"
-            aria-label="Close"
-            onClick={close}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="relative w-full max-w-md rounded-xl border border-[var(--admin-border-strong)] bg-[var(--admin-card-bg)] p-6 shadow-xl"
-          >
+      <ModalShell
+        open={open}
+        onClose={close}
+        labelledBy={titleId}
+        locked={busy}
+        panelClassName="max-w-md rounded-xl border border-[var(--admin-border-strong)] bg-[var(--admin-card-bg)] shadow-xl"
+      >
+        <div className="p-6">
             <h2 id={titleId} className="text-lg font-semibold text-[var(--admin-fg-strong)]">
-              Delete this sermon?
+              {t('sermons.deleteTitle')}
             </h2>
             <p className="mt-2 text-[14px] leading-relaxed text-[var(--admin-fg-secondary)]">
-              This permanently removes <span className="font-semibold text-[var(--admin-fg-strong)]">“{shortLabel}”</span>,
-              its devotionals, and related member progress. This cannot be undone.
+              {t('sermons.deleteBody', { title: shortLabel })}
             </p>
             {published ? (
               <p className="mt-3 text-[13px] leading-relaxed text-amber-700 dark:text-amber-200">
-                This sermon is live. Members who started it will lose that journey.
+                {t('sermons.deleteLive')}
               </p>
             ) : null}
             <label className="mt-5 flex cursor-pointer items-start gap-3">
@@ -122,11 +110,11 @@ export function DeleteSermonButton({
                 className="mt-1 h-4 w-4 rounded border-admin"
               />
               <span className="text-[13px] leading-snug text-[var(--admin-fg-secondary)]">
-                I understand this cannot be undone.
+                {t('sermons.deleteAck')}
               </span>
             </label>
             {error ? (
-              <p className="mt-3 text-[13px] text-red-400" role="alert">
+              <p className="mt-3 text-[13px] text-red-600 dark:text-red-400" role="alert">
                 {error}
               </p>
             ) : null}
@@ -137,7 +125,7 @@ export function DeleteSermonButton({
                 onClick={close}
                 className="admin-btn-secondary px-4 py-2 text-[13px]"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -145,12 +133,11 @@ export function DeleteSermonButton({
                 onClick={() => void onConfirm()}
                 className="rounded-lg bg-red-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
-                {busy ? 'Deleting…' : 'Delete sermon'}
+                {busy ? t('sermons.deleting') : t('sermons.deleteConfirm')}
               </button>
             </div>
-          </div>
         </div>
-      ) : null}
+      </ModalShell>
     </>
   );
 }

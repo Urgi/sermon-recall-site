@@ -171,7 +171,7 @@ export function SermonPublishWizard({
 
       {canEdit ? (
         <section className="rounded-xl border border-red-500/25 bg-red-950/15 p-5">
-          <h2 className="text-[15px] font-semibold text-red-200">Delete sermon</h2>
+          <h2 className="text-[15px] font-semibold text-red-700 dark:text-red-200">Delete sermon</h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--admin-muted)]">
             Removes this sermon, its devotionals, and related member progress. You will be asked to
             confirm.

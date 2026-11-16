@@ -9,7 +9,7 @@ export function UnsavedWorkBanner({ children }: Props) {
   return (
     <div
       role="status"
-      className="rounded-lg border border-amber-500/35 bg-amber-950/25 px-4 py-3 text-[13px] leading-relaxed text-amber-100/95"
+      className="rounded-lg border border-amber-500/35 bg-amber-50 dark:bg-amber-950/25 px-4 py-3 text-[13px] leading-relaxed text-amber-900 dark:text-amber-100/95"
     >
       {children}
     </div>

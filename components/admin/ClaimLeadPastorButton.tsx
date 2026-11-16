@@ -37,16 +37,16 @@ export function ClaimLeadPastorButton() {
         type="button"
         onClick={() => void claim()}
         disabled={pending}
-        className="rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className="admin-btn-primary"
       >
         {pending ? 'Updating…' : 'Become lead pastor for this church'}
       </button>
-      <p className="text-[12px] leading-relaxed text-sky-100/75">
+      <p className="text-[12px] leading-relaxed text-sky-900/80 dark:text-sky-100/75">
         Only use this if you are the primary pastor and no one else has claimed admin yet (typical
         for a new church or demo).
       </p>
       {error ? (
-        <p className="text-[13px] text-red-300" role="alert">
+        <p className="text-[13px] text-red-600 dark:text-red-300" role="alert">
           {error}
         </p>
       ) : null}

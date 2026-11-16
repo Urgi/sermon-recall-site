@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { ToastCard } from '@/components/ToastCard';
 import { consumePendingAppToast, type PendingAppToast } from '@/lib/app-toast';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -124,48 +124,27 @@ export function AppToastHost() {
     };
   }, [searchParams, router]);
 
-  useEffect(() => {
-    if (toasts.length === 0) return;
-    const id = window.setTimeout(() => {
-      setToasts((t) => t.slice(1));
-    }, AUTO_DISMISS_MS);
-    return () => window.clearTimeout(id);
-  }, [toasts]);
+  const removeToast = useCallback((id: number) => {
+    setToasts((t) => t.filter((x) => x.id !== id));
+  }, []);
 
   if (toasts.length === 0) return null;
 
   return (
-    <div className="app-toast-stack pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4" aria-live="polite">
+    <div
+      className="app-toast-stack pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4"
+      aria-live="polite"
+    >
       {toasts.map((toast) => (
-        <div
+        <ToastCard
           key={toast.id}
-          role="status"
-          className={`app-toast-enter pointer-events-auto flex w-full max-w-md flex-col gap-2 rounded-xl border px-4 py-3 shadow-lg ${
-            toast.variant === 'error'
-              ? 'border-red-500/40 bg-red-950 text-red-50'
-              : 'border-emerald-500/40 bg-emerald-950 text-emerald-50'
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-[14px] leading-snug">{toast.message}</p>
-            <button
-              type="button"
-              onClick={() => setToasts((t) => t.filter((x) => x.id !== toast.id))}
-              className="shrink-0 text-[18px] leading-none opacity-60 hover:opacity-100"
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-          {toast.href ? (
-            <Link
-              href={toast.href}
-              className="text-[13px] font-medium text-sky-300 hover:text-sky-200 hover:underline"
-            >
-              {toast.hrefLabel ?? 'View'}
-            </Link>
-          ) : null}
-        </div>
+          message={toast.message}
+          variant={toast.variant}
+          href={toast.href}
+          hrefLabel={toast.hrefLabel}
+          autoDismissMs={toast.variant === 'error' || toast.href ? AUTO_DISMISS_MS : 6000}
+          onDismiss={() => removeToast(toast.id)}
+        />
       ))}
     </div>
   );
