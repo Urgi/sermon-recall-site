@@ -42,6 +42,7 @@ const PERMISSION_LABELS: Record<Permission, string> = {
   can_send_notifications: 'Send push notifications',
   can_schedule_notifications: 'Schedule push notifications',
   can_manage_church_settings: 'Manage church settings',
+  can_manage_billing: 'Manage billing and subscription',
 };
 
 const ALL_PERMISSIONS: Permission[] = [
@@ -56,6 +57,7 @@ const ALL_PERMISSIONS: Permission[] = [
   'can_send_notifications',
   'can_schedule_notifications',
   'can_manage_church_settings',
+  'can_manage_billing',
 ];
 
 export function permissionsForRole(role: StaffRole): Permission[] {

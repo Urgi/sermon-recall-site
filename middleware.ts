@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
     path.startsWith('/settings') ||
     path.startsWith('/notifications') ||
     path.startsWith('/team') ||
+    path.startsWith('/billing') ||
     path.startsWith('/members');
   const isAuthPage =
     path === '/login' ||

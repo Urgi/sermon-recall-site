@@ -22,7 +22,8 @@ export type Permission =
   | 'can_publish_devotionals'
   | 'can_send_notifications'
   | 'can_schedule_notifications'
-  | 'can_manage_church_settings';
+  | 'can_manage_church_settings'
+  | 'can_manage_billing';
 
 const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
   owner: new Set<Permission>([
@@ -37,6 +38,7 @@ const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
     'can_send_notifications',
     'can_schedule_notifications',
     'can_manage_church_settings',
+    'can_manage_billing',
   ]),
   admin_pastor: new Set<Permission>([
     'can_invite_users',
@@ -50,6 +52,7 @@ const ROLE_PERMISSIONS: Record<StaffRole, ReadonlySet<Permission>> = {
     'can_send_notifications',
     'can_schedule_notifications',
     'can_manage_church_settings',
+    'can_manage_billing',
   ]),
   associate_pastor: new Set<Permission>([
     'can_generate_devotionals',
