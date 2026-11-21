@@ -1,20 +1,53 @@
-/** Single paid plan. Placeholder price — the real price lives in Stripe; this label is display only. */
-export type PlanId = 'none' | 'standard';
+/**
+ * Paid plans. Prices live in Stripe; labels here are display only and must match.
+ * Member limits must match public.church_member_limit() in the database.
+ */
+export type PlanId = 'none' | 'standard' | 'plus';
+export type PaidPlanId = Exclude<PlanId, 'none'>;
+
+type PlanConfig = {
+  label: string;
+  priceLabel: string;
+  memberLimit: number;
+  priceEnv: string;
+};
+
+export const PAID_PLANS: Record<PaidPlanId, PlanConfig> = {
+  standard: {
+    label: 'Standard',
+    priceLabel: '$49.99/month',
+    memberLimit: 100,
+    priceEnv: 'STRIPE_PRICE_STANDARD_MONTHLY',
+  },
+  plus: {
+    label: 'Plus',
+    priceLabel: '$74.99/month',
+    memberLimit: 500,
+    priceEnv: 'STRIPE_PRICE_PLUS_MONTHLY',
+  },
+};
+
+/** Churches without a paid plan get the Standard limit. */
+export const NO_PLAN_MEMBER_LIMIT = PAID_PLANS.standard.memberLimit;
 
 export const PLAN_LABELS: Record<PlanId, string> = {
   none: 'No plan',
-  standard: 'Standard',
+  standard: PAID_PLANS.standard.label,
+  plus: PAID_PLANS.plus.label,
 };
 
-export const STANDARD_PRICE_LABEL = '$49.99/month';
+export function isPaidPlan(value: unknown): value is PaidPlanId {
+  return value === 'standard' || value === 'plus';
+}
 
-const PRICE_ENV = 'STRIPE_PRICE_STANDARD_MONTHLY';
-
-export function standardPriceId(): string | null {
-  return process.env[PRICE_ENV]?.trim() || null;
+export function priceIdFor(plan: PaidPlanId): string | null {
+  return process.env[PAID_PLANS[plan].priceEnv]?.trim() || null;
 }
 
 /** Reverse lookup: Stripe price ID → plan (used by the webhook). */
-export function planForPriceId(priceId: string | null | undefined): PlanId | null {
-  return priceId && priceId === standardPriceId() ? 'standard' : null;
+export function planForPriceId(priceId: string | null | undefined): PaidPlanId | null {
+  if (!priceId) return null;
+  if (priceId === priceIdFor('plus')) return 'plus';
+  if (priceId === priceIdFor('standard')) return 'standard';
+  return null;
 }

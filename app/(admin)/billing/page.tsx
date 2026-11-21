@@ -4,7 +4,15 @@ import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { BillingPanel } from '@/components/admin/BillingPanel';
 import { requireApprovedStaffSession } from '@/lib/auth/server';
 import { staffHasPermission } from '@/lib/auth/profile';
-import { PLAN_LABELS, STANDARD_PRICE_LABEL, standardPriceId, type PlanId } from '@/lib/billing/plans';
+import {
+  NO_PLAN_MEMBER_LIMIT,
+  PAID_PLANS,
+  PLAN_LABELS,
+  isPaidPlan,
+  priceIdFor,
+  type PaidPlanId,
+  type PlanId,
+} from '@/lib/billing/plans';
 import type { SubscriptionRow } from '@/lib/billing/subscriptions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -52,6 +60,21 @@ async function BillingPageBody({ checkout }: { checkout?: string }) {
   const active = Boolean(sub?.stripe_subscription_id) && ['active', 'trialing', 'past_due'].includes(status);
   const graceActive = status === 'past_due' && sub?.grace_until;
 
+  const { data: usage } = await supabase.rpc('pastor_church_member_usage');
+  const usageRow = usage as { member_count?: number; member_limit?: number } | null;
+  const memberCount = typeof usageRow?.member_count === 'number' ? usageRow.member_count : null;
+  const memberLimit =
+    usageRow?.member_limit ?? (active && isPaidPlan(plan) ? PAID_PLANS[plan].memberLimit : NO_PLAN_MEMBER_LIMIT);
+  const atLimit = memberCount !== null && memberCount >= memberLimit;
+
+  const planOptions = (Object.keys(PAID_PLANS) as PaidPlanId[]).map((id) => ({
+    id,
+    label: PAID_PLANS[id].label,
+    priceLabel: PAID_PLANS[id].priceLabel,
+    memberLimit: PAID_PLANS[id].memberLimit,
+    available: Boolean(priceIdFor(id)),
+  }));
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
@@ -91,15 +114,24 @@ async function BillingPageBody({ checkout }: { checkout?: string }) {
           </dd>
           <dt className="text-admin-dim">{sub?.cancel_at_period_end ? 'Ends on' : 'Renews on'}</dt>
           <dd>{fmt(sub?.current_period_end ?? null)}</dd>
+          <dt className="text-admin-dim">Members</dt>
+          <dd>{memberCount === null ? '—' : `${memberCount} / ${memberLimit}`}</dd>
         </dl>
+        {atLimit && (
+          <p className="admin-body mt-3 text-sm" role="alert">
+            Your church has reached its member limit. New members can&apos;t join until you upgrade
+            or remove members.
+          </p>
+        )}
         <p className="admin-body mt-3 text-xs">Test mode — use card 4242 4242 4242 4242.</p>
       </section>
 
       <BillingPanel
         hasCustomer={Boolean(sub?.stripe_customer_id)}
         hasActiveSubscription={active}
-        priceLabel={STANDARD_PRICE_LABEL}
-        available={Boolean(standardPriceId())}
+        currentPlan={active && isPaidPlan(plan) ? plan : null}
+        plans={planOptions}
+        memberCount={memberCount}
       />
     </div>
   );

@@ -1,12 +1,16 @@
 'use client';
 
 import { format, parseISO } from 'date-fns';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
+import { ModalShell } from '@/components/admin/ModalShell';
 import type { ChurchMemberRow } from '@/lib/admin/church-members';
 
 type Props = {
   members: ChurchMemberRow[];
+  /** Owner / admin pastor: show the Remove action. */
+  canRemove?: boolean;
 };
 
 function displayName(row: ChurchMemberRow): string {
@@ -32,9 +36,38 @@ function matchesQuery(row: ChurchMemberRow, q: string): boolean {
   return hay.includes(q);
 }
 
-export function MembersRoster({ members }: Props) {
+export function MembersRoster({ members, canRemove = false }: Props) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
+  const [removeTarget, setRemoveTarget] = useState<ChurchMemberRow | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const q = query.trim().toLowerCase();
+
+  async function confirmRemove() {
+    const target = removeTarget;
+    if (!target) return;
+    setRemoving(true);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/church/remove-member', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: target.id }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Could not remove member.');
+      setNotice({ kind: 'ok', text: `${displayName(target)} was removed from your church.` });
+      setRemoveTarget(null);
+      router.refresh();
+    } catch (e) {
+      setNotice({ kind: 'error', text: e instanceof Error ? e.message : 'Could not remove member.' });
+      setRemoveTarget(null);
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   const shown = useMemo(
     () => members.filter((m) => matchesQuery(m, q)),
@@ -43,6 +76,14 @@ export function MembersRoster({ members }: Props) {
 
   return (
     <div className="space-y-4">
+      {notice && (
+        <p
+          role={notice.kind === 'error' ? 'alert' : 'status'}
+          className={notice.kind === 'error' ? 'text-[14px] text-red-500' : 'admin-body text-[14px]'}
+        >
+          {notice.text}
+        </p>
+      )}
       <label className="relative block max-w-md">
         <span className="sr-only">Search members</span>
         <SearchIcon />
@@ -72,6 +113,11 @@ export function MembersRoster({ members }: Props) {
                 <th className="hidden px-5 py-3 sm:table-cell">Contact</th>
                 <th className="hidden px-5 py-3 md:table-cell">Joined</th>
                 <th className="px-5 py-3">Last active</th>
+                {canRemove && (
+                  <th className="px-5 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-admin">
@@ -94,12 +140,61 @@ export function MembersRoster({ members }: Props) {
                   <td className="whitespace-nowrap px-5 py-4 text-[14px] text-[var(--admin-fg-strong)]">
                     {formatWhen(m.last_active_at)}
                   </td>
+                  {canRemove && (
+                    <td className="whitespace-nowrap px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setRemoveTarget(m)}
+                        disabled={removing}
+                        className="text-[14px] font-medium text-red-500 hover:underline disabled:opacity-50"
+                        aria-label={`Remove ${displayName(m)}`}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      <ModalShell
+        open={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        labelledBy="member-remove-title"
+        locked={removing}
+        panelClassName="admin-card max-w-md shadow-xl"
+      >
+        <div className="p-6">
+          <h3 id="member-remove-title" className="admin-section-title">
+            Remove {removeTarget ? displayName(removeTarget) : ''}?
+          </h3>
+          <p className="admin-body mt-2">
+            They will no longer see your church&apos;s devotionals or notifications. Their account
+            stays, and they can rejoin later with your church code.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setRemoveTarget(null)}
+              disabled={removing}
+              className="admin-btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmRemove()}
+              disabled={removing}
+              className="rounded-lg bg-red-600 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors duration-fast hover:bg-red-700 disabled:opacity-60"
+            >
+              {removing ? 'Removing…' : 'Remove member'}
+            </button>
+          </div>
+        </div>
+      </ModalShell>
     </div>
   );
 }

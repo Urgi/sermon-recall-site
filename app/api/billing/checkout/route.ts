@@ -3,20 +3,26 @@ import { NextResponse } from 'next/server';
 import { writeAuditLog } from '@/lib/audit/log';
 import { authorizeApiPermission, getChurchForProfile } from '@/lib/auth/server';
 import { ensureStripeCustomer } from '@/lib/billing/customer';
-import { standardPriceId } from '@/lib/billing/plans';
+import { isPaidPlan, priceIdFor } from '@/lib/billing/plans';
 import { getStripe, siteUrl } from '@/lib/billing/stripe';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(req: Request) {
   const auth = await authorizeApiPermission('can_manage_billing');
   if (!auth.ok) return auth.response;
 
+  const body = (await req.json().catch(() => ({}))) as { plan?: unknown };
+  const plan = body.plan === undefined ? 'standard' : body.plan;
+  if (!isPaidPlan(plan)) {
+    return NextResponse.json({ error: 'Unknown plan.' }, { status: 400 });
+  }
+
   const stripe = getStripe();
   const admin = createServiceRoleClient();
-  const priceId = standardPriceId();
+  const priceId = priceIdFor(plan);
   if (!stripe || !admin || !priceId) {
     return NextResponse.json({ error: 'Billing is not configured yet.' }, { status: 503 });
   }
@@ -63,7 +69,7 @@ export async function POST() {
       action: 'billing.checkout_started',
       entityType: 'church',
       entityId: churchId,
-      metadata: { plan: 'standard' },
+      metadata: { plan },
     });
     return NextResponse.json({ url: session.url });
   } catch (e) {

@@ -23,6 +23,8 @@ export function JoinChurchForm() {
     if (rpcError) {
       if (rpcError.message.includes('invalid_church_code')) {
         setError('That church code was not found. Check spelling and try again.');
+      } else if (rpcError.message.includes('church_member_limit_reached')) {
+        setError('This church is full on its current plan. Ask your pastor to upgrade.');
       } else {
         setError(rpcError.message);
       }

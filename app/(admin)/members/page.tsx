@@ -6,6 +6,7 @@ import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { DashboardShareCard } from '@/components/admin/DashboardShareCard';
 import { MembersRoster } from '@/components/admin/MembersRoster';
 import { parseChurchMembers, type ChurchMemberRow } from '@/lib/admin/church-members';
+import { staffHasPermission } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -19,7 +20,8 @@ export default function MembersPage() {
 }
 
 async function MembersPageBody() {
-  const { profile } = await requireAdminSession();
+  const { profile, staffRole } = await requireAdminSession();
+  const canRemove = staffHasPermission(staffRole, profile, 'can_manage_team');
   const church = await getChurchForProfile(profile.church_id);
   const supabase = createServerSupabaseClient();
 
@@ -72,7 +74,7 @@ async function MembersPageBody() {
           </p>
         </div>
       ) : (
-        <MembersRoster members={members} />
+        <MembersRoster members={members} canRemove={canRemove} />
       )}
 
       <section id="invite">
