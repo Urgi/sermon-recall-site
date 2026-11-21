@@ -122,9 +122,7 @@ async function BillingPageBody({ checkout }: { checkout?: string }) {
             Your church has reached its member limit. New members can&apos;t join until you upgrade
             or remove members.
           </p>
-        )}
-        <p className="admin-body mt-3 text-xs">Test mode — use card 4242 4242 4242 4242.</p>
-      </section>
+        )}      </section>
 
       <BillingPanel
         hasCustomer={Boolean(sub?.stripe_customer_id)}
