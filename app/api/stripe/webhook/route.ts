@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
 import { getStripe } from '@/lib/billing/stripe';
-import { customerId, markPaymentFailed, syncSubscription } from '@/lib/billing/subscriptions';
+import { customerId, markPaymentFailed, markPaymentSucceeded, syncSubscription } from '@/lib/billing/subscriptions';
 import { createServiceRoleClient } from '@/lib/supabase/service-role';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +56,13 @@ export async function POST(req: Request) {
       case 'customer.subscription.deleted':
         await syncSubscription(admin, event.data.object as Stripe.Subscription);
         break;
+      case 'invoice.paid':
+      case 'invoice.payment_succeeded': {
+        const inv = event.data.object as Stripe.Invoice;
+        const cust = customerId(inv.customer);
+        if (cust) await markPaymentSucceeded(admin, cust);
+        break;
+      }
       case 'invoice.payment_failed': {
         const inv = event.data.object as Stripe.Invoice;
         const cust = customerId(inv.customer);

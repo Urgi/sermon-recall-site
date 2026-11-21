@@ -86,3 +86,11 @@ export async function markPaymentFailed(admin: SupabaseClient, customer: string)
     .update({ status: 'past_due', grace_until: grace, updated_at: new Date().toISOString() })
     .eq('church_id', data.church_id);
 }
+
+/** Invoice paid: clear the grace window; subscription.updated sets the final status. */
+export async function markPaymentSucceeded(admin: SupabaseClient, customer: string): Promise<void> {
+  await admin
+    .from('church_subscriptions')
+    .update({ grace_until: null, updated_at: new Date().toISOString() })
+    .eq('stripe_customer_id', customer);
+}
