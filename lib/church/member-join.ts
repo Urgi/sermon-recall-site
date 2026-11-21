@@ -1,17 +1,12 @@
 import { GOOGLE_PLAY_URL } from '@/lib/public-site/config';
+import { siteOrigin } from '@/lib/site-origin';
 
 /** Base URL for member join links (QR codes, emails). Defaults to admin/site URL. */
 export function memberJoinBaseUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_MEMBER_JOIN_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, '');
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (site) return site.replace(/\/$/, '');
-
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel}`;
-
-  return 'http://localhost:3000';
+  return siteOrigin();
 }
 
 export function normalizeChurchCode(code: string): string {

@@ -17,16 +17,4 @@ export function getStripe(): Stripe | null {
   return client;
 }
 
-/** Origin only: NEXT_PUBLIC_SITE_URL may carry a path (e.g. /auth/callback) used by auth emails. */
-export function siteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (raw) {
-    try {
-      const url = new URL(raw);
-      if (url.protocol === 'http:' || url.protocol === 'https:') return url.origin;
-    } catch {
-      // fall through
-    }
-  }
-  return 'http://localhost:3000';
-}
+export { siteOrigin as siteUrl } from '@/lib/site-origin';

@@ -1,3 +1,5 @@
+import { siteOrigin } from '@/lib/site-origin';
+
 type SendInviteEmailParams = {
   to: string;
   churchName: string;
@@ -6,16 +8,8 @@ type SendInviteEmailParams = {
   acceptUrl: string;
 };
 
-function adminBaseUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (explicit) return explicit.replace(/\/$/, '');
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) return `https://${vercel}`;
-  return 'http://localhost:3000';
-}
-
 export function buildInviteAcceptUrl(rawToken: string): string {
-  return `${adminBaseUrl()}/invite/${encodeURIComponent(rawToken)}`;
+  return `${siteOrigin()}/invite/${encodeURIComponent(rawToken)}`;
 }
 
 /**
@@ -58,5 +52,3 @@ export async function sendInviteEmail(params: SendInviteEmailParams): Promise<vo
     throw new Error(`Email send failed: ${text.slice(0, 200)}`);
   }
 }
-
-export { adminBaseUrl };
