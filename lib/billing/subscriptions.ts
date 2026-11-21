@@ -61,7 +61,8 @@ export async function syncSubscription(
     plan,
     status: sub.status,
     current_period_end: periodEndIso(sub),
-    cancel_at_period_end: sub.cancel_at_period_end,
+    // Newer API versions: portal cancellations set cancel_at and leave cancel_at_period_end false.
+    cancel_at_period_end: Boolean(sub.cancel_at_period_end || sub.cancel_at),
     updated_at: new Date().toISOString(),
   };
   if (sub.status === 'active' || sub.status === 'trialing') row.grace_until = null;
