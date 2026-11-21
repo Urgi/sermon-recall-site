@@ -288,7 +288,7 @@ export function SermonsInbox({
                       <div className="flex flex-col items-end gap-1.5">
                         <Link
                           href={`/sermons/${s.id}`}
-                          className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--admin-link)] hover:underline"
+                          className="-mr-1 inline-flex min-h-7 items-center gap-1 rounded-md px-1 text-[13px] font-semibold text-[var(--admin-link)] hover:underline"
                         >
                           {t(action.label)}
                           <span aria-hidden>→</span>

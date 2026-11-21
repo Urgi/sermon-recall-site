@@ -7,6 +7,13 @@ export type ChurchMemberRow = {
   last_active_at: string | null;
 };
 
+/** Accounts Apple's App Review team signs in with. Flagged in the roster so nobody removes them by accident. */
+const APP_REVIEW_EMAILS = new Set(['apple-review@sermonrecall.com']);
+
+export function isAppReviewAccount(row: Pick<ChurchMemberRow, 'email'>): boolean {
+  return Boolean(row.email && APP_REVIEW_EMAILS.has(row.email.toLowerCase()));
+}
+
 export type ChurchMembersPayload = {
   member_count: number;
   members: ChurchMemberRow[];

@@ -1,7 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { LoginForm } from '@/components/admin/LoginForm';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { authCardClass } from '@/components/auth/authFormStyles';
+
+export const metadata: Metadata = { title: 'Sign in' };
 
 export default function LoginPage({
   searchParams,
@@ -16,7 +20,7 @@ export default function LoginPage({
   const linkRejected = searchParams.error === 'use_code';
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-6 shadow-lg sm:p-8 shadow-black/20">
+    <div className={authCardClass}>
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
@@ -25,16 +29,20 @@ export default function LoginPage({
         Sign in with a one-time code sent to your church admin email — no password needed.
       </p>
       <LoginForm nextPath={next} initialEmail={initialEmail} linkRejected={linkRejected} />
-      <p className="mt-6 text-center text-[13px] text-[#94a3b8]">
-        No account?{' '}
-        <Link href="/register" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
-          Register
-        </Link>
-        {' · '}
-        <Link href="/verify-email" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
-          Enter confirmation code
-        </Link>
-      </p>
+      <div className="mt-6 space-y-1 border-t border-[rgba(56,189,248,0.12)] pt-4 text-center text-[13px] text-[#94a3b8]">
+        <p>
+          No account?{' '}
+          <Link href="/register" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
+            Create a church account
+          </Link>
+        </p>
+        <p>
+          Just registered?{' '}
+          <Link href="/verify-email" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
+            Confirm your new account
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -7,6 +8,8 @@ import { staffHasPermission } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
 import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistory';
+
+export const metadata: Metadata = { title: 'Notifications' };
 
 type Props = { searchParams: { encourage?: string; n?: string } };
 
@@ -59,13 +62,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <Link
-          href="/dashboard"
-          className="text-[13px] font-medium text-admin-dim hover:text-[#38bdf8]"
-        >
-          ← Dashboard
-        </Link>
-        <h1 className="admin-heading mt-4">
+        <h1 className="admin-heading">
           <AdminChromeCopy k="notify.title" />
         </h1>
         <p className="admin-body mt-2">

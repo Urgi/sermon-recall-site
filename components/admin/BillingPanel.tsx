@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
+import { ModalShell } from '@/components/admin/ModalShell';
 import type { PaidPlanId } from '@/lib/billing/plans';
+import { supportEmail } from '@/lib/public-site/config';
 
 export type PlanOption = {
   id: PaidPlanId;
@@ -40,10 +42,17 @@ export function BillingPanel({
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [confirmPlan, setConfirmPlan] = useState<PlanOption | null>(null);
+  // Keeps the dialog copy while it animates closed.
+  const lastConfirmRef = useRef<PlanOption | null>(null);
+  if (confirmPlan) lastConfirmRef.current = confirmPlan;
+  const dialogPlan = confirmPlan ?? lastConfirmRef.current;
 
   async function redirect(key: string, path: string, body?: unknown) {
     setBusy(key);
     setError(null);
+    setSuccess(null);
     try {
       const { url } = await post(path, body);
       if (!url) throw new Error('Something went wrong.');
@@ -55,17 +64,16 @@ export function BillingPanel({
   }
 
   async function switchPlan(plan: PlanOption) {
-    const ok = window.confirm(
-      `Switch to ${plan.label} (${plan.priceLabel}, up to ${plan.memberLimit} members)? ` +
-        'Your next invoice is adjusted for the rest of this billing period.',
-    );
-    if (!ok) return;
     setBusy(`switch-${plan.id}`);
     setError(null);
+    setSuccess(null);
     try {
       await post('/api/billing/change-plan', { plan: plan.id });
+      setConfirmPlan(null);
+      setSuccess(`You're now on ${plan.label}. Your next invoice reflects the change.`);
       router.refresh();
     } catch (e) {
+      setConfirmPlan(null);
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setBusy(null);
@@ -74,6 +82,16 @@ export function BillingPanel({
 
   return (
     <div className="space-y-4">
+      {success && (
+        <div className="admin-notice admin-notice--success" role="status">
+          <p>{success}</p>
+        </div>
+      )}
+      {error && (
+        <div className="admin-notice admin-notice--error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         {plans.map((plan) => {
           const isCurrent = hasActiveSubscription && currentPlan === plan.id;
@@ -95,7 +113,7 @@ export function BillingPanel({
                   disabled={!plan.available || busy !== null || (hasActiveSubscription && tooSmall)}
                   onClick={() =>
                     hasActiveSubscription
-                      ? switchPlan(plan)
+                      ? setConfirmPlan(plan)
                       : redirect(`checkout-${plan.id}`, '/api/billing/checkout', { plan: plan.id })
                   }
                 >
@@ -119,7 +137,13 @@ export function BillingPanel({
           );
         })}
       </div>
-      <p className="admin-body text-xs">More than 500 members? Contact us for a custom plan.</p>
+      <p className="admin-body text-xs">
+        More than 500 members?{' '}
+        <a href={`mailto:${supportEmail()}?subject=Custom%20plan`} className="admin-link">
+          Contact us
+        </a>{' '}
+        for a custom plan.
+      </p>
 
       {hasCustomer && (
         <div className="admin-card flex flex-wrap items-center justify-between gap-3 p-5">
@@ -134,11 +158,44 @@ export function BillingPanel({
           </button>
         </div>
       )}
-      {error && (
-        <p role="alert" className="text-sm text-red-500">
-          {error}
-        </p>
-      )}
+
+      <ModalShell
+        open={confirmPlan !== null}
+        onClose={() => setConfirmPlan(null)}
+        labelledBy="billing-switch-title"
+        locked={busy !== null}
+        panelClassName="admin-card max-w-md shadow-xl"
+      >
+        <div className="p-6">
+          <h3 id="billing-switch-title" className="admin-section-title">
+            Switch to {dialogPlan?.label}?
+          </h3>
+          {dialogPlan && (
+            <p className="admin-body mt-2">
+              {dialogPlan.priceLabel}, up to {dialogPlan.memberLimit} members. Your next invoice is
+              adjusted for the rest of this billing period.
+            </p>
+          )}
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirmPlan(null)}
+              disabled={busy !== null}
+              className="admin-btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => dialogPlan && void switchPlan(dialogPlan)}
+              disabled={busy !== null}
+              className="admin-btn-primary"
+            >
+              {busy?.startsWith('switch-') ? 'Switching…' : `Switch to ${dialogPlan?.label ?? 'plan'}`}
+            </button>
+          </div>
+        </div>
+      </ModalShell>
     </div>
   );
 }

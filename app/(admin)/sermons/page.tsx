@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -10,6 +11,8 @@ import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import { canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = { title: 'Sermons' };
 
 type Props = { searchParams: { filter?: string } };
 

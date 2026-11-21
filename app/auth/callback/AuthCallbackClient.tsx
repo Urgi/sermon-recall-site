@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -11,6 +12,13 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 export function AuthCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // If the redirect stalls (slow network, blocked storage), offer a way out instead of a spinner forever.
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setSlow(true), 6000);
+    return () => window.clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +65,14 @@ export function AuthCallbackClient() {
         className="h-8 w-8 animate-spin rounded-full border-2 border-sky-400/30 border-t-sky-400"
         aria-hidden
       />
-      <p className="text-center text-[15px] text-[#94a3b8]">Redirecting…</p>
+      <p className="text-center text-[15px] text-[#94a3b8]" role="status">
+        Redirecting…
+      </p>
+      {slow ? (
+        <Link href="/login" className="inline-flex min-h-10 items-center text-[14px] font-semibold text-[#38bdf8] hover:underline">
+          Taking too long? Go to sign in
+        </Link>
+      ) : null}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
@@ -16,6 +17,8 @@ import {
 import type { SubscriptionRow } from '@/lib/billing/subscriptions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+export const metadata: Metadata = { title: 'Billing' };
+
 export const dynamic = 'force-dynamic';
 
 export default function BillingPage({ searchParams }: { searchParams: { checkout?: string } }) {
@@ -23,6 +26,27 @@ export default function BillingPage({ searchParams }: { searchParams: { checkout
     <Suspense fallback={<AdminPageFallback />}>
       <BillingPageBody checkout={searchParams.checkout} />
     </Suspense>
+  );
+}
+
+const STATUS_BADGES: Record<string, { label: string; variant: string }> = {
+  active: { label: 'Active', variant: 'admin-badge--ready' },
+  trialing: { label: 'Trial', variant: 'admin-badge--submitted' },
+  past_due: { label: 'Payment failed', variant: 'admin-badge--failed' },
+  unpaid: { label: 'Unpaid', variant: 'admin-badge--failed' },
+  incomplete: { label: 'Incomplete', variant: 'admin-badge--processing' },
+  incomplete_expired: { label: 'Expired', variant: 'admin-badge--draft' },
+  canceled: { label: 'Canceled', variant: 'admin-badge--draft' },
+  paused: { label: 'Paused', variant: 'admin-badge--draft' },
+  none: { label: 'Not subscribed', variant: 'admin-badge--draft' },
+};
+
+function statusBadge(status: string): { label: string; variant: string } {
+  return (
+    STATUS_BADGES[status] ?? {
+      label: status.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()),
+      variant: 'admin-badge--draft',
+    }
   );
 }
 
@@ -86,20 +110,26 @@ async function BillingPageBody({ checkout }: { checkout?: string }) {
       </header>
 
       {checkout === 'success' && (
-        <div className="admin-card p-4" role="status">
-          Thanks! Your subscription is being confirmed — refresh in a moment if the plan below has
-          not updated.
+        <div className="admin-notice admin-notice--success" role="status">
+          <p>
+            <strong>Thanks for subscribing.</strong> Stripe is confirming your payment. If the plan
+            below hasn&apos;t updated yet, refresh in a moment.
+          </p>
         </div>
       )}
       {checkout === 'canceled' && (
-        <div className="admin-card p-4" role="status">
-          Checkout was canceled. You have not been charged.
+        <div className="admin-notice admin-notice--info" role="status">
+          <p>
+            <strong>Checkout canceled.</strong> You have not been charged.
+          </p>
         </div>
       )}
       {graceActive && (
-        <div className="admin-card p-4" role="alert">
-          Your last payment failed. Please update your payment method in Manage billing before{' '}
-          {fmt(sub!.grace_until)}.
+        <div className="admin-notice admin-notice--error" role="alert">
+          <p>
+            <strong>Your last payment failed.</strong> Update your payment method in Manage billing
+            before {fmt(sub!.grace_until)} to keep your plan.
+          </p>
         </div>
       )}
 
@@ -108,21 +138,30 @@ async function BillingPageBody({ checkout }: { checkout?: string }) {
         <dl className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
           <dt className="text-admin-dim">Plan</dt>
           <dd>{PLAN_LABELS[plan] ?? plan}</dd>
-          <dt className="text-admin-dim">Status</dt>
+          <dt className="self-center text-admin-dim">Status</dt>
           <dd>
-            <span className="admin-badge">{status === 'none' ? 'no subscription' : status.replace('_', ' ')}</span>
+            <span className={`admin-badge normal-case ${statusBadge(status).variant}`}>
+              {statusBadge(status).label}
+            </span>
           </dd>
-          <dt className="text-admin-dim">{sub?.cancel_at_period_end ? 'Ends on' : 'Renews on'}</dt>
-          <dd>{fmt(sub?.current_period_end ?? null)}</dd>
+          {active && sub?.current_period_end ? (
+            <>
+              <dt className="text-admin-dim">{sub.cancel_at_period_end ? 'Ends on' : 'Renews on'}</dt>
+              <dd>{fmt(sub.current_period_end)}</dd>
+            </>
+          ) : null}
           <dt className="text-admin-dim">Members</dt>
-          <dd>{memberCount === null ? '—' : `${memberCount} / ${memberLimit}`}</dd>
+          <dd className="tabular-nums">{memberCount === null ? '—' : `${memberCount} / ${memberLimit}`}</dd>
         </dl>
         {atLimit && (
-          <p className="admin-body mt-3 text-sm" role="alert">
-            Your church has reached its member limit. New members can&apos;t join until you upgrade
-            or remove members.
-          </p>
-        )}      </section>
+          <div className="admin-notice admin-notice--warning mt-4" role="alert">
+            <p>
+              <strong>Member limit reached.</strong> New members can&apos;t join until you upgrade or
+              remove members.
+            </p>
+          </div>
+        )}
+      </section>
 
       <BillingPanel
         hasCustomer={Boolean(sub?.stripe_customer_id)}

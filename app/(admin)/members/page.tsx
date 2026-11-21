@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -10,6 +11,8 @@ import { staffHasPermission } from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+export const metadata: Metadata = { title: 'Members' };
 
 export default function MembersPage() {
   return (

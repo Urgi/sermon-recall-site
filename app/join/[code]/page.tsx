@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -8,6 +9,15 @@ import { APP_STORE_URL, GOOGLE_PLAY_URL } from '@/lib/public-site/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 type Props = { params: { code: string } };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const supabase = createServerSupabaseClient();
+  const { data } = await supabase.rpc('get_church_join_public', {
+    p_code: normalizeChurchCode(params.code),
+  });
+  const name = (data?.[0] as { church_name?: string } | undefined)?.church_name;
+  return { title: name ? `Join ${name}` : 'Church code not found' };
+}
 
 export default async function MemberJoinPage({ params }: Props) {
   const code = normalizeChurchCode(params.code);
@@ -67,18 +77,19 @@ export default async function MemberJoinPage({ params }: Props) {
         <MemberAppStoreLinks className="mt-8 justify-center" />
         <a
           href={appDeepLink}
-          className="mt-4 inline-block rounded-lg bg-[#0ea5e9] px-5 py-3 text-[15px] font-semibold text-white no-underline hover:bg-[#0284c7]"
+          className="mt-4 inline-block rounded-lg bg-[#0379bd] px-5 py-3 text-[15px] font-semibold text-white no-underline hover:bg-[#0369a1]"
         >
           Open in app
         </a>
-        <p className="mt-6 text-[12px] text-[#64748b]">
+        <p className="mt-2 text-[12px] text-[#94a3b8]">Works on a phone with Sermon Recall installed.</p>
+        <p className="mt-6 text-[12px] text-[#94a3b8]">
           Pastors: share the QR from your{' '}
           <Link href="/dashboard" className="text-[#38bdf8] hover:underline">
             admin dashboard
           </Link>
           .
         </p>
-        <p className="mt-2 break-all font-mono text-[11px] text-[#475569]">{joinUrl}</p>
+        <p className="mt-2 break-all font-mono text-[11px] text-[#94a3b8]">{joinUrl}</p>
       </div>
     </div>
   );

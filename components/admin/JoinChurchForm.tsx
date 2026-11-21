@@ -59,7 +59,7 @@ export function JoinChurchForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-[#0ea5e9] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className="rounded-lg bg-[#0379bd] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0369a1] disabled:opacity-60"
       >
         {pending ? 'Joining…' : 'Join church'}
       </button>

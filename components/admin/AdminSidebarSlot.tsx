@@ -30,11 +30,11 @@ export async function AdminSidebarSlot() {
         teamCount={teamCount}
       />
       <div className="mt-auto border-t border-admin pt-4">
-        <p className="truncate px-2 text-[12px] text-admin-dim" title={user.email}>
+        <p className="truncate px-2 text-[13px] font-medium text-admin-fg-secondary" title={user.email}>
           {label}
         </p>
         {church ? (
-          <p className="truncate px-2 text-[11px] text-admin-dim" title={church.name}>
+          <p className="truncate px-2 text-[12px] text-admin-muted" title={church.name}>
             {church.name}
           </p>
         ) : null}
@@ -42,6 +42,13 @@ export async function AdminSidebarSlot() {
       </div>
     </>
   );
+}
+
+/** Church name for the phone header; falls back to the generic label when there is no church yet. */
+export async function AdminMobileChurchName({ fallback }: { fallback: React.ReactNode }) {
+  const { profile } = await requireAdminSession();
+  const church = await getChurchForProfile(profile.church_id);
+  return <>{church?.name?.trim() || fallback}</>;
 }
 
 export async function AdminMobileHeaderSlot() {

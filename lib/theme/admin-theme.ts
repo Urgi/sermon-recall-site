@@ -12,14 +12,14 @@ export function resolveAdminTheme(
 }
 
 export function readStoredAdminThemePreference(): AdminThemePreference {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'system';
   try {
     const raw = localStorage.getItem(ADMIN_THEME_STORAGE_KEY);
     if (raw === 'light' || raw === 'dark' || raw === 'system') return raw;
   } catch {
     /* ignore */
   }
-  return 'dark';
+  return 'system';
 }
 
 export function storeAdminThemePreference(preference: AdminThemePreference): void {

@@ -27,7 +27,7 @@ export function HomeFaqSection() {
           <FaqAccordion items={PUBLIC_FAQ} defaultOpenFirst />
         </div>
 
-        <p className="mt-8 text-center text-[14px] text-[#64748b]">
+        <p className="mt-8 text-center text-[14px] text-[#94a3b8]">
           Want the full list or something specific to your church?{' '}
           <Link href="/faq" className="font-medium text-[#38bdf8] hover:underline">
             View all FAQs

@@ -35,8 +35,8 @@ export function MemberAppStoreLinks({ className = '', size = 'default' }: Props)
         <span
           className={
             size === 'compact'
-              ? 'text-[13px] text-[#64748b]'
-              : 'text-[14px] text-[#64748b]'
+              ? 'text-[13px] text-[#94a3b8]'
+              : 'text-[14px] text-[#94a3b8]'
           }
         >
           iPhone coming soon

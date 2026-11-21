@@ -1,11 +1,15 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { RegisterForm } from '@/components/admin/RegisterForm';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { authCardClass } from '@/components/auth/authFormStyles';
+
+export const metadata: Metadata = { title: 'Create admin account' };
 
 export default function RegisterPage() {
   return (
-    <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-8 shadow-lg shadow-black/20">
+    <div className={authCardClass}>
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
@@ -19,9 +23,9 @@ export default function RegisterPage() {
         We email you a one-time code to finish creating your account. Enter it on the next screen.
       </p>
       <RegisterForm />
-      <p className="mt-6 text-center text-[13px] text-[#64748b]">
+      <p className="mt-6 text-center text-[13px] text-[#94a3b8]">
         Already have an account?{' '}
-        <Link href="/login" className="text-[#38bdf8] hover:underline">
+        <Link href="/login" className="inline-flex min-h-8 items-center text-[#38bdf8] hover:underline">
           Sign in
         </Link>
       </p>

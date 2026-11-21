@@ -38,7 +38,7 @@ export function BroadcastRoleAudience({
         {BROADCAST_TEAM_ROLES.map(({ role, label }) => (
           <label
             key={role}
-            className="flex cursor-pointer items-center gap-2 text-[14px] text-admin-fg-secondary"
+            className="flex min-h-8 cursor-pointer items-center gap-2 text-[14px] text-admin-fg-secondary"
           >
             <input
               type="checkbox"
@@ -51,7 +51,7 @@ export function BroadcastRoleAudience({
           </label>
         ))}
       </div>
-      <label className="flex cursor-pointer items-center gap-2 text-[14px] text-admin-fg-secondary">
+      <label className="flex min-h-8 cursor-pointer items-center gap-2 text-[14px] text-admin-fg-secondary">
         <input
           type="checkbox"
           checked={includeAllMembers}

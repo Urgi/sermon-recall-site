@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { canManageSermons } from '@/lib/auth/profile';
 import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/server';
 import { NewSermonForm } from '@/components/admin/NewSermonForm';
 import Link from 'next/link';
+
+export const metadata: Metadata = { title: 'New sermon' };
 
 export default async function NewSermonPage() {
   const { profile } = await requireAdminSession();

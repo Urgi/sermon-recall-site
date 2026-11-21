@@ -8,6 +8,12 @@ import { mapAuthError } from '@/lib/auth/mapAuthError';
 import { USE_CODE_NOT_LINK_MESSAGE } from '@/lib/auth/signup-email-messages';
 import { ensurePublicUserProfile } from '@/lib/auth/ensure-public-profile';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import {
+  authInputClass,
+  authLabelClass,
+  authPrimaryButtonClass,
+  authSecondaryButtonClass,
+} from '@/components/auth/authFormStyles';
 
 type Props = {
   nextPath: string;
@@ -16,13 +22,22 @@ type Props = {
 };
 
 type Step = 'email' | 'code';
+/** How the person reached the code step: we just emailed a code, or they already had one. */
+type CodeSource = 'sent' | 'existing';
 
-const inputClass =
-  'mt-1 w-full rounded-xl border border-[rgba(56,189,248,0.22)] bg-[#0b1220] px-4 py-3.5 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
+const inputClass = authInputClass;
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** True when someone typed or pasted their sign-in code into the email field. */
+function looksLikeCode(value: string): boolean {
+  return /^\d{6,8}$/.test(value.replace(/\s/g, ''));
+}
 
 export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>('email');
+  const [codeSource, setCodeSource] = useState<CodeSource>('sent');
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +57,6 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
 
   function backToEmail() {
     setStep('email');
-    setCode('');
     setError(null);
     setNotice(null);
   }
@@ -52,8 +66,16 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
     setError(null);
     setNotice(null);
     const trimmed = email.trim().toLowerCase();
+    if (looksLikeCode(trimmed)) {
+      keepCodeAndAskForEmail(trimmed);
+      return;
+    }
     if (!trimmed) {
       setError('Enter your email address.');
+      return;
+    }
+    if (!EMAIL_RE.test(trimmed)) {
+      setError('Enter a valid email address, like pastor@yourchurch.org.');
       return;
     }
     setPending(true);
@@ -64,8 +86,35 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
       setError(err);
       return;
     }
+    setCodeSource('sent');
     setStep('code');
     setNotice('Code sent. Check your inbox and spam.');
+  }
+
+  /** A code landed in the email field: hold on to it and ask for the email it was sent to. */
+  function keepCodeAndAskForEmail(value: string) {
+    setCode(value.replace(/\s/g, ''));
+    setEmail('');
+    setError(
+      'That looks like a sign-in code. Enter your email first, then choose “I already have a code”. We kept your code.',
+    );
+  }
+
+  /** Skip sending: go straight to the code screen for a code they already have. */
+  function goToCodeStep() {
+    setError(null);
+    setNotice(null);
+    const trimmed = email.trim().toLowerCase();
+    if (looksLikeCode(trimmed)) {
+      keepCodeAndAskForEmail(trimmed);
+      return;
+    }
+    if (!EMAIL_RE.test(trimmed)) {
+      setError('Enter the email your code was sent to first.');
+      return;
+    }
+    setCodeSource('existing');
+    setStep('code');
   }
 
   async function onVerify(e: React.FormEvent) {
@@ -123,6 +172,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
     <form
       key={step}
       onSubmit={step === 'email' ? onSendCode : onVerify}
+      noValidate
       className="admin-page-enter mt-6 space-y-4"
     >
       {step === 'code' ? (
@@ -142,7 +192,8 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
           </p>
           <h2 className="mt-2 text-[28px] font-bold leading-tight text-white">Enter your code</h2>
           <p className="mt-2 text-[15px] leading-relaxed text-[#94a3b8]">
-            We sent a code to {email.trim().toLowerCase()}.
+            {codeSource === 'sent' ? 'We sent a code to ' : 'Enter the code we emailed to '}
+            <span className="break-all text-[#e2e8f0]">{email.trim().toLowerCase()}</span>.
           </p>
         </div>
       ) : null}
@@ -158,15 +209,18 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
 
       {step === 'email' ? (
         <div>
-          <label htmlFor="login-email" className="block text-[13px] font-semibold text-white">
+          <label htmlFor="login-email" className={authLabelClass}>
             Email
           </label>
           <input
             id="login-email"
             name="email"
             type="email"
+            inputMode="email"
             autoComplete="email"
             required
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'login-error' : undefined}
             disabled={pending}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -197,7 +251,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
       )}
 
       {error ? (
-        <p className="text-[13px] text-red-400" role="alert">
+        <p id="login-error" className="text-[13px] leading-relaxed text-red-400" role="alert">
           {error}
         </p>
       ) : null}
@@ -212,7 +266,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
         disabled={
           pending || (step === 'email' ? !emailReady : !codeReady)
         }
-        className="w-full rounded-full bg-[#0ea5e9] px-4 py-3.5 text-[16px] font-semibold text-white transition-colors duration-fast hover:bg-[#0284c7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#38bdf8] motion-safe:active:scale-[0.99] disabled:cursor-not-allowed disabled:border disabled:border-[rgba(56,189,248,0.22)] disabled:bg-[#0b1220] disabled:text-[#64748b]"
+        className={authPrimaryButtonClass}
       >
         {pending
           ? step === 'email'
@@ -223,6 +277,17 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             : 'Verify code'}
       </button>
 
+      {step === 'email' ? (
+        <button
+          type="button"
+          onClick={goToCodeStep}
+          disabled={pending}
+          className={authSecondaryButtonClass}
+        >
+          I already have a code
+        </button>
+      ) : null}
+
       {step === 'code' ? (
         <button
           type="button"
@@ -230,7 +295,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
           onClick={() => void onResend()}
           className="block min-h-11 w-full py-2 text-center text-[15px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
         >
-          {resendPending ? 'Sending…' : 'Resend code'}
+          {resendPending ? 'Sending…' : codeSource === 'existing' ? 'Email me a new code' : 'Resend code'}
         </button>
       ) : null}
     </form>

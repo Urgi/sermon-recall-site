@@ -12,6 +12,12 @@ import {
 } from '@/lib/auth/signup-email-messages';
 import { ensurePublicUserProfile } from '@/lib/auth/ensure-public-profile';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import {
+  authHintClass,
+  authInputClass,
+  authLabelClass,
+  authPrimaryButtonClass,
+} from '@/components/auth/authFormStyles';
 
 type Props = {
   initialEmail?: string;
@@ -97,8 +103,11 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
   return (
     <form onSubmit={onVerify} className="mt-6 space-y-4">
       <p className="text-[14px] leading-relaxed text-[#94a3b8]">
-        Enter the one-time code from your email. Links in that email will not sign you in — the
-        code is required.
+        Enter the one-time code we emailed when you registered. Already have an account?{' '}
+        <Link href="/login" className="text-[#38bdf8] hover:underline">
+          Sign in instead
+        </Link>
+        .
       </p>
 
       {linkRejected ? (
@@ -111,7 +120,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
       ) : null}
 
       <div>
-        <label htmlFor="verify-email" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="verify-email" className={authLabelClass}>
           Email
         </label>
         <input
@@ -123,14 +132,14 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           disabled={pending}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={authInputClass}
         />
       </div>
       <div>
-        <label htmlFor="verify-code" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="verify-code" className={authLabelClass}>
           Confirmation code
         </label>
-        <p className="mt-0.5 text-[12px] text-[#64748b]">6-digit code from your email (check spam).</p>
+        <p className={authHintClass}>6-digit code from your email (check spam).</p>
         <input
           id="verify-code"
           name="code"
@@ -143,7 +152,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           placeholder="123456"
-          className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 font-mono text-[17px] tracking-widest text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60"
+          className={`${authInputClass} font-mono text-[17px] tracking-widest`}
         />
       </div>
 
@@ -161,7 +170,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className={authPrimaryButtonClass}
       >
         {pending ? 'Verifying…' : 'Verify code'}
       </button>
@@ -175,7 +184,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         {resendPending ? 'Sending…' : 'Resend code'}
       </button>
 
-      <p className="text-center text-[13px] text-[#64748b]">
+      <p className="text-center text-[13px] text-[#94a3b8]">
         <Link href="/login" className="text-[#38bdf8] hover:underline">
           Back to sign in
         </Link>

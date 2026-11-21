@@ -61,7 +61,7 @@ export function ForgotPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className="w-full rounded-lg bg-[#0379bd] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0369a1] disabled:opacity-60"
       >
         {pending ? 'Sending…' : 'Send reset code'}
       </button>

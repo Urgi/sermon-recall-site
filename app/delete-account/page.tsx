@@ -88,7 +88,7 @@ export default function DeleteAccountPage() {
           </p>
         </section>
 
-        <p className="mt-10 text-[14px] text-[#64748b]">
+        <p className="mt-10 text-[14px] text-[#94a3b8]">
           See also our{' '}
           <Link href="/privacy" className="text-[#38bdf8] hover:underline">
             privacy policy

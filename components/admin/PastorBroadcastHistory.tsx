@@ -204,7 +204,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
             <button
               type="button"
               onClick={() => toggleExpand(item.id)}
-              className="mt-2 text-[13px] font-medium text-admin-link hover:underline"
+              className="-ml-2 mt-1 inline-flex min-h-8 items-center rounded-md px-2 text-[13px] font-medium text-admin-link hover:underline"
             >
               {expanded ? 'Hide who opened' : 'See who opened'}
             </button>

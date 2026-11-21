@@ -9,16 +9,16 @@ export function PublicSiteHeader() {
         <Link href="/" className="shrink-0" aria-label="Sermon Recall home">
           <SermonRecallLogo variant="header" className="h-9 w-auto" priority />
         </Link>
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4" aria-label="Main">
           <Link
             href="/faq"
-            className="hidden text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0] sm:inline"
+            className="inline-flex min-h-10 items-center px-1 text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0]"
           >
             FAQ
           </Link>
           <Link
             href="/support"
-            className="hidden text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0] sm:inline"
+            className="inline-flex min-h-10 items-center px-1 text-[14px] font-medium text-[#94a3b8] hover:text-[#e2e8f0]"
           >
             Support
           </Link>

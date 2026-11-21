@@ -1,5 +1,9 @@
+import type { Metadata } from 'next';
 import { VerifyEmailForm } from '@/components/admin/VerifyEmailForm';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
+import { authCardClass } from '@/components/auth/authFormStyles';
+
+export const metadata: Metadata = { title: 'Confirm your account' };
 
 export default function VerifyEmailPage({
   searchParams,
@@ -10,11 +14,11 @@ export default function VerifyEmailPage({
   const linkRejected = searchParams.error === 'use_code';
 
   return (
-    <div className="w-full max-w-md rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-8 shadow-lg shadow-black/20">
+    <div className={authCardClass}>
       <div className="mb-6 flex justify-center">
         <SermonRecallLogo variant="hero" className="h-24 w-auto" priority />
       </div>
-      <h1 className="text-xl font-bold text-white">Enter your code</h1>
+      <h1 className="text-xl font-bold text-white">Confirm your new account</h1>
       <VerifyEmailForm initialEmail={email} linkRejected={linkRejected} />
     </div>
   );

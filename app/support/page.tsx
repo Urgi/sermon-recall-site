@@ -21,8 +21,7 @@ export default function SupportPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold text-white">Support & contact</h1>
         <p className="mt-3 text-[16px] leading-relaxed text-[#94a3b8]">
-          {PUBLIC_SITE.productName} is operated by {PUBLIC_SITE.legalName}. We help churches deliver
-          sermon-based devotionals to their members through a secure admin portal and mobile app.
+          {PUBLIC_SITE.productName} helps churches deliver sermon-based devotionals to their members through a secure admin portal and mobile app.
         </p>
 
         <section className="mt-10 rounded-xl border border-[rgba(56,189,248,0.15)] bg-[#0a0f18] p-6">
@@ -36,7 +35,7 @@ export default function SupportPage() {
           >
             {email}
           </a>
-          <p className="mt-4 text-[14px] text-[#64748b]">
+          <p className="mt-4 text-[14px] text-[#94a3b8]">
             We aim to respond within two business days.
           </p>
         </section>
@@ -54,7 +53,7 @@ export default function SupportPage() {
             </p>
             <Link
               href="/login"
-              className="mt-3 inline-block text-[14px] font-semibold text-[#38bdf8] hover:underline"
+              className="mt-2 inline-flex min-h-10 items-center text-[14px] font-semibold text-[#38bdf8] hover:underline"
             >
               Pastor sign in →
             </Link>

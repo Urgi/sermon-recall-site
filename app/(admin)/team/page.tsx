@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -6,6 +7,8 @@ import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { canAccessTeamNav } from '@/lib/auth/profile';
 import { getChurchForProfile, requireApprovedStaffSession } from '@/lib/auth/server';
 import { TeamDashboard } from '@/components/admin/TeamDashboard';
+
+export const metadata: Metadata = { title: 'Team' };
 
 export default function TeamPage() {
   return (

@@ -2,10 +2,10 @@
 
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { ModalShell } from '@/components/admin/ModalShell';
-import type { ChurchMemberRow } from '@/lib/admin/church-members';
+import { isAppReviewAccount, type ChurchMemberRow } from '@/lib/admin/church-members';
 
 type Props = {
   members: ChurchMemberRow[];
@@ -42,6 +42,11 @@ export function MembersRoster({ members, canRemove = false }: Props) {
   const [removeTarget, setRemoveTarget] = useState<ChurchMemberRow | null>(null);
   const [removing, setRemoving] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  // Keeps the dialog's copy in place while it animates closed after removeTarget is cleared.
+  const lastTargetRef = useRef<ChurchMemberRow | null>(null);
+  if (removeTarget) lastTargetRef.current = removeTarget;
+  const dialogTarget = removeTarget ?? lastTargetRef.current;
+  const dialogIsReviewer = dialogTarget ? isAppReviewAccount(dialogTarget) : false;
   const q = query.trim().toLowerCase();
 
   async function confirmRemove() {
@@ -77,12 +82,20 @@ export function MembersRoster({ members, canRemove = false }: Props) {
   return (
     <div className="space-y-4">
       {notice && (
-        <p
+        <div
           role={notice.kind === 'error' ? 'alert' : 'status'}
-          className={notice.kind === 'error' ? 'text-[14px] text-red-500' : 'admin-body text-[14px]'}
+          className={`admin-notice ${notice.kind === 'error' ? 'admin-notice--error' : 'admin-notice--success'}`}
         >
-          {notice.text}
-        </p>
+          <p className="min-w-0 flex-1">{notice.text}</p>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="-my-1 -mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[var(--admin-muted)] hover:bg-admin-nav-hover hover:text-[var(--admin-fg-strong)]"
+            aria-label="Dismiss"
+          >
+            <span aria-hidden className="text-lg leading-none">×</span>
+          </button>
+        </div>
       )}
       <label className="relative block max-w-md">
         <span className="sr-only">Search members</span>
@@ -106,6 +119,7 @@ export function MembersRoster({ members, canRemove = false }: Props) {
         </div>
       ) : (
         <div className="admin-card overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="border-b border-admin text-[11px] font-semibold uppercase tracking-[0.08em] text-admin-dim">
               <tr>
@@ -114,7 +128,7 @@ export function MembersRoster({ members, canRemove = false }: Props) {
                 <th className="hidden px-5 py-3 md:table-cell">Joined</th>
                 <th className="px-5 py-3">Last active</th>
                 {canRemove && (
-                  <th className="px-5 py-3">
+                  <th className="hidden px-5 py-3 sm:table-cell">
                     <span className="sr-only">Actions</span>
                   </th>
                 )}
@@ -124,12 +138,30 @@ export function MembersRoster({ members, canRemove = false }: Props) {
               {shown.map((m) => (
                 <tr key={m.id} className="hover:bg-admin-nav-hover/40">
                   <td className="px-5 py-4">
-                    <p className="text-[15px] font-medium text-[var(--admin-fg-strong)]">
-                      {displayName(m)}
+                    <p className="flex flex-wrap items-center gap-2 text-[15px] font-medium text-[var(--admin-fg-strong)]">
+                      <span className="min-w-0 break-words">{displayName(m)}</span>
+                      {isAppReviewAccount(m) && (
+                        <span
+                          className="admin-badge admin-badge--reviewer px-2 py-0.5 text-[11px]"
+                          title="Apple's App Review team signs in with this account. Keep it in your church."
+                        >
+                          App Review account
+                        </span>
+                      )}
                     </p>
-                    <p className="mt-1 text-[13px] text-[var(--admin-muted)] sm:hidden">
+                    <p className="mt-1 break-all text-[13px] text-[var(--admin-muted)] sm:hidden">
                       {contactLine(m)}
                     </p>
+                    {canRemove && (
+                      <div className="mt-1 sm:hidden">
+                        <RemoveButton
+                          name={displayName(m)}
+                          disabled={removing}
+                          onClick={() => setRemoveTarget(m)}
+                          className="-ml-2"
+                        />
+                      </div>
+                    )}
                   </td>
                   <td className="hidden px-5 py-4 text-[14px] text-[var(--admin-fg-strong)] sm:table-cell">
                     {contactLine(m)}
@@ -141,22 +173,20 @@ export function MembersRoster({ members, canRemove = false }: Props) {
                     {formatWhen(m.last_active_at)}
                   </td>
                   {canRemove && (
-                    <td className="whitespace-nowrap px-5 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => setRemoveTarget(m)}
+                    <td className="hidden whitespace-nowrap px-5 py-4 text-right sm:table-cell">
+                      <RemoveButton
+                        name={displayName(m)}
                         disabled={removing}
-                        className="text-[14px] font-medium text-red-500 hover:underline disabled:opacity-50"
-                        aria-label={`Remove ${displayName(m)}`}
-                      >
-                        Remove
-                      </button>
+                        onClick={() => setRemoveTarget(m)}
+                        className="-mr-2"
+                      />
                     </td>
                   )}
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -169,8 +199,16 @@ export function MembersRoster({ members, canRemove = false }: Props) {
       >
         <div className="p-6">
           <h3 id="member-remove-title" className="admin-section-title">
-            Remove {removeTarget ? displayName(removeTarget) : ''}?
+            Remove {dialogTarget ? displayName(dialogTarget) : 'member'}?
           </h3>
+          {dialogIsReviewer && (
+            <p className="admin-notice admin-notice--warning mt-3" role="alert">
+              <span>
+                <strong>This is the App Review account.</strong> Apple&apos;s reviewers sign in with
+                it to test the app. Removing it can hold up your next App Store review.
+              </span>
+            </p>
+          )}
           <p className="admin-body mt-2">
             They will no longer see your church&apos;s devotionals or notifications. Their account
             stays, and they can rejoin later with your church code.
@@ -196,6 +234,30 @@ export function MembersRoster({ members, canRemove = false }: Props) {
         </div>
       </ModalShell>
     </div>
+  );
+}
+
+function RemoveButton({
+  name,
+  disabled,
+  onClick,
+  className = '',
+}: {
+  name: string;
+  disabled: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex min-h-8 items-center rounded-md px-2 text-[14px] font-medium text-red-600 hover:bg-red-500/10 disabled:opacity-50 dark:text-red-400 ${className}`}
+      aria-label={`Remove ${name}`}
+    >
+      Remove
+    </button>
   );
 }
 

@@ -204,14 +204,14 @@ export function DashboardOverview({
         </div>
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {metrics.map((m) => {
           const body = (
             <>
               <MetricIcon kind={m.icon} />
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">{m.label}</p>
-                <p className="mt-2 text-[2.25rem] font-bold leading-none tracking-tight tabular-nums text-[var(--admin-fg-strong)]">
+                <p className="mt-2 text-[1.875rem] font-bold leading-none sm:text-[2.25rem] tracking-tight tabular-nums text-[var(--admin-fg-strong)]">
                   {engagement ? m.value : '—'}
                 </p>
                 {m.pct !== undefined ? (
@@ -226,7 +226,8 @@ export function DashboardOverview({
               </div>
             </>
           );
-          const className = 'admin-stat-card flex items-start gap-4';
+          const className =
+            'admin-stat-card flex flex-col gap-3 max-sm:p-4 sm:flex-row sm:items-start sm:gap-4';
           if ('href' in m && m.href) {
             return (
               <Link
@@ -266,7 +267,7 @@ export function DashboardOverview({
                   aria-pressed={range === id}
                   className={`min-h-8 rounded-full px-3 py-1 transition-colors duration-fast ${
                     range === id
-                      ? 'bg-[#0ea5e9] text-white shadow-[0_4px_12px_-4px_rgba(14,165,233,0.7)]'
+                      ? 'bg-[#0379bd] text-white shadow-[0_4px_12px_-4px_rgba(14,165,233,0.7)]'
                       : 'text-[var(--admin-muted)] hover:text-[var(--admin-fg-strong)]'
                   }`}
                 >
@@ -306,7 +307,7 @@ export function DashboardOverview({
                     iconType="circle"
                     iconSize={8}
                     wrapperStyle={{ color: chart.legendColor, fontSize: 12 }}
-                    formatter={(value) => <span className="text-[12px]">{value}</span>}
+                    formatter={(value) => <span className="text-[12px] text-[var(--admin-muted)]">{value}</span>}
                   />
                   <Area
                     type="monotone"
@@ -378,7 +379,7 @@ export function DashboardOverview({
             <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">{t('dash.recentSermons')}</h2>
             <Link
               href="/sermons?filter=all"
-              className="text-[14px] font-medium text-[var(--admin-link)] hover:underline"
+              className="-mr-2 inline-flex min-h-8 items-center rounded-md px-2 text-[14px] font-medium text-[var(--admin-link)] hover:underline"
             >
               {t('common.viewAll')}
             </Link>

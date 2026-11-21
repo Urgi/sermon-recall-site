@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
@@ -11,6 +11,8 @@ import { staffHasPermission } from '@/lib/auth/profile';
 import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/server';
 import { DEFAULT_CHURCH_TIMEZONE } from '@/lib/church/timezones';
 import { normalizeAppLanguage } from '@/lib/i18n/languages';
+
+export const metadata: Metadata = { title: 'Settings' };
 
 export default function AdminSettingsPage() {
   return (
@@ -30,10 +32,7 @@ async function AdminSettingsBody() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <Link href="/dashboard" className="text-[13px] font-medium text-[var(--admin-link)] hover:underline">
-          ← Dashboard
-        </Link>
-        <h1 className="admin-heading mt-4">
+        <h1 className="admin-heading">
           <SettingsLocalizedText as="span" k="settings.title" />
         </h1>
         <p className="mt-2 text-[14px] leading-relaxed text-[var(--admin-muted)]">

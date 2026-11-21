@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import {
@@ -8,6 +9,8 @@ import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { SermonPublishWizard } from '@/components/admin/SermonPublishWizard';
+
+export const metadata: Metadata = { title: 'Review sermon' };
 
 type Props = { params: { id: string } };
 

@@ -14,10 +14,15 @@ import {
   languageOptionLabel,
 } from '@/lib/i18n/languages';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import {
+  authHintClass,
+  authInputClass,
+  authLabelClass,
+  authPrimaryButtonClass,
+} from '@/components/auth/authFormStyles';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
 
-const inputClass =
-  'mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2 disabled:opacity-60';
+const inputClass = authInputClass;
 
 export function RegisterForm() {
   const router = useRouter();
@@ -66,7 +71,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4">
       <div>
-        <label htmlFor="reg-name" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="reg-name" className={authLabelClass}>
           Full name
         </label>
         <input
@@ -81,7 +86,7 @@ export function RegisterForm() {
         />
       </div>
       <div>
-        <label htmlFor="reg-email" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="reg-email" className={authLabelClass}>
           Email
         </label>
         <input
@@ -97,10 +102,10 @@ export function RegisterForm() {
         />
       </div>
       <div>
-        <label htmlFor="reg-language" className="block text-[13px] font-medium text-[#94a3b8]">
+        <label htmlFor="reg-language" className={authLabelClass}>
           Preferred language
         </label>
-        <p className="mt-0.5 text-[12px] leading-snug text-[#64748b]">
+        <p className={authHintClass}>
           English, Spanish, or French — you can change this later in settings.
         </p>
         <select
@@ -138,7 +143,7 @@ export function RegisterForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-[#0ea5e9] px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-[#0284c7] disabled:opacity-60"
+        className={authPrimaryButtonClass}
       >
         {pending ? 'Sending…' : 'Email me a code'}
       </button>

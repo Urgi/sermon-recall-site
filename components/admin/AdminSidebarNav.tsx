@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useAdminNav } from '@/components/admin/AdminNavContext';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
@@ -158,10 +158,7 @@ export function AdminSidebarNav({
 
   if (variant === 'compact') {
     return (
-      <nav
-        aria-label="Main"
-        className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
+      <CompactNavScroller activeKey={displayPath}>
         {items.map((item) => {
           const active = isActive(displayPath, item);
           return (
@@ -184,7 +181,7 @@ export function AdminSidebarNav({
             </Link>
           );
         })}
-      </nav>
+      </CompactNavScroller>
     );
   }
 
@@ -219,6 +216,60 @@ export function AdminSidebarNav({
           </Link>
         );
       })}
+    </nav>
+  );
+}
+
+/**
+ * Horizontal tab row for phones: fades the edge that has more tabs behind it and keeps the
+ * current tab scrolled into view, so Billing / Notifications / Settings are discoverable.
+ */
+function CompactNavScroller({ activeKey, children }: { activeKey: string; children: ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+
+  const measure = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const active = el.querySelector<HTMLElement>('[aria-current="page"]');
+    if (active) {
+      const target = active.offsetLeft - (el.clientWidth - active.offsetWidth) / 2;
+      el.scrollTo({ left: Math.max(0, target) });
+    }
+    measure();
+  }, [activeKey, measure]);
+
+  useEffect(() => {
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+
+  const mask =
+    edges.left && edges.right
+      ? 'linear-gradient(to right, transparent, #000 2rem, #000 calc(100% - 2.5rem), transparent)'
+      : edges.right
+        ? 'linear-gradient(to right, #000 calc(100% - 2.5rem), transparent)'
+        : edges.left
+          ? 'linear-gradient(to right, transparent, #000 2rem)'
+          : undefined;
+
+  return (
+    <nav
+      ref={ref}
+      aria-label="Main"
+      onScroll={measure}
+      style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
+      className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {children}
     </nav>
   );
 }

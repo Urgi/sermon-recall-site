@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
-import { AdminMobileHeaderSlot, AdminSidebarSlot } from '@/components/admin/AdminSidebarSlot';
+import {
+  AdminMobileChurchName,
+  AdminMobileHeaderSlot,
+  AdminSidebarSlot,
+} from '@/components/admin/AdminSidebarSlot';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
 import { SignOutButton } from '@/components/admin/SignOutButton';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
@@ -36,7 +40,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link href="/dashboard" className="flex min-w-0 items-center gap-2" aria-label="Dashboard home">
                 <SermonRecallLogo variant="header" className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
                 <span className="truncate text-sm font-semibold text-admin-fg-strong">
-                  <AdminChromeCopy k="nav.churchAdmin" />
+                  <Suspense fallback={<AdminChromeCopy k="nav.churchAdmin" />}>
+                    <AdminMobileChurchName fallback={<AdminChromeCopy k="nav.churchAdmin" />} />
+                  </Suspense>
                 </span>
               </Link>
               <SignOutButton className="min-h-10 rounded-md px-3 text-[13px] text-admin-muted transition-colors duration-fast hover:bg-admin-nav-hover hover:text-admin-accent" />

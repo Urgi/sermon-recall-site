@@ -63,7 +63,7 @@ export default async function PublicHomePage() {
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/login"
-                className="w-full rounded-lg bg-[#0ea5e9] px-6 py-3 text-center text-[15px] font-semibold text-white hover:bg-[#0284c7] sm:w-auto"
+                className="w-full rounded-lg bg-[#0379bd] px-6 py-3 text-center text-[15px] font-semibold text-white hover:bg-[#0369a1] sm:w-auto"
               >
                 Pastor sign in
               </Link>
@@ -91,7 +91,7 @@ export default async function PublicHomePage() {
                 <li>• Member join codes and shareable links</li>
                 <li>• Congregation engagement overview</li>
               </ul>
-              <Link href="/login" className="mt-5 inline-block text-[14px] font-semibold text-[#38bdf8] hover:underline">
+              <Link href="/login" className="mt-3 inline-flex min-h-10 items-center text-[14px] font-semibold text-[#38bdf8] hover:underline">
                 Sign in to admin portal →
               </Link>
             </article>
@@ -109,7 +109,7 @@ export default async function PublicHomePage() {
                 <li>• Private progress on your own account</li>
               </ul>
               <MemberAppStoreLinks className="mt-5" />
-              <p className="mt-4 text-[14px] text-[#64748b]">
+              <p className="mt-4 text-[14px] text-[#94a3b8]">
                 Ask your pastor for your church&apos;s join code or link.
               </p>
             </article>
@@ -164,12 +164,14 @@ export default async function PublicHomePage() {
                 {email}
               </a>
             </p>
-            <Link href="/#faq" className="mt-3 inline-block text-[14px] text-[#64748b] hover:text-[#94a3b8]">
-              Read the FAQ →
-            </Link>
-            <Link href="/support" className="mt-1 inline-block text-[14px] text-[#64748b] hover:text-[#94a3b8]">
-              Visit support page →
-            </Link>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-[14px]">
+              <Link href="/faq" className="inline-flex min-h-10 items-center text-[#94a3b8] hover:text-[#e2e8f0]">
+                Read the FAQ →
+              </Link>
+              <Link href="/support" className="inline-flex min-h-10 items-center text-[#94a3b8] hover:text-[#e2e8f0]">
+                Visit support page →
+              </Link>
+            </div>
           </div>
         </section>
       </main>

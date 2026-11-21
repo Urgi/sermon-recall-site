@@ -50,7 +50,7 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((o) => !o)}
-        className="admin-input mt-0 flex max-w-xs items-center justify-between gap-2 text-left"
+        className="admin-input mt-0 flex w-full items-center sm:max-w-xs justify-between gap-2 text-left"
       >
         <span className={value ? 'text-[var(--admin-fg-strong)]' : 'text-[var(--admin-dim)]'}>
           {displayLabel}
@@ -84,7 +84,7 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
             <div className="mt-2 border-t border-[rgba(56,189,248,0.12)] pt-2">
               <button
                 type="button"
-                className="text-[13px] font-medium text-[#64748b] hover:text-[#38bdf8]"
+                className="inline-flex min-h-8 items-center text-[13px] font-medium text-[var(--admin-muted)] hover:text-[var(--admin-accent)]"
                 onClick={() => {
                   onChange('');
                   setOpen(false);

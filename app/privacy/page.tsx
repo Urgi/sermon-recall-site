@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       <PublicSiteHeader />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6">
         <h1 className="text-3xl font-bold text-white">Privacy policy</h1>
-        <p className="mt-2 text-[14px] text-[#64748b]">Last updated: {updated}</p>
+        <p className="mt-2 text-[14px] text-[#94a3b8]">Last updated: {updated}</p>
 
         <div className="prose prose-invert mt-8 max-w-none space-y-6 text-[15px] leading-relaxed text-[#cbd5e1]">
           <p>

@@ -22,7 +22,7 @@
     --admin-fg-strong: #f8fafc;
     --admin-fg-secondary: #cbd5e1;
     --admin-muted: #94a3b8;
-    --admin-dim: #64748b;
+    --admin-dim: #7c8aa0;
     --admin-border: rgba(56, 189, 248, 0.12);
     --admin-border-strong: rgba(56, 189, 248, 0.25);
     --admin-accent: #38bdf8;
@@ -40,10 +40,10 @@
     --admin-fg-strong: #020617;
     --admin-fg-secondary: #334155;
     --admin-muted: #64748b;
-    --admin-dim: #94a3b8;
+    --admin-dim: #64748b;
     --admin-border: #e2e8f0;
     --admin-border-strong: #cbd5e1;
-    --admin-accent: #0284c7;
+    --admin-accent: #0369a1;
     --admin-link: #0369a1;
     --admin-nav-hover-bg: #f1f5f9;
   }
@@ -447,12 +447,13 @@
 
   .admin-btn-primary {
     border-radius: 0.5rem;
-    background-color: #0ea5e9;
+    background-color: #0379bd;
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
     font-weight: 600;
     color: #fff;
-    background-image: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    /* Darker sky so white label text clears WCAG AA (4.5:1) at 14px. */
+    background-image: linear-gradient(180deg, #0379bd, #0369a1);
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 6px 16px -6px rgba(14, 165, 233, 0.65);
     transition:
       background-color var(--motion-fast) ease,
@@ -461,7 +462,8 @@
   }
 
   .admin-btn-primary:hover:not(:disabled) {
-    background-color: #0284c7;
+    background-color: #0369a1;
+    background-image: linear-gradient(180deg, #0369a1, #075985);
   }
 
   .admin-btn-primary:disabled {
@@ -692,6 +694,56 @@
 
   [data-theme='light'] .admin-badge--failed {
     color: #b91c1c;
+  }
+
+  /* Inline status notices (success / warning / error / info) that sit in page flow. */
+  .admin-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--admin-border-strong);
+    background-color: var(--admin-card-bg);
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--admin-fg);
+  }
+
+  .admin-notice strong {
+    font-weight: 600;
+    color: var(--admin-fg-strong);
+  }
+
+  .admin-notice--success {
+    border-color: rgba(16, 185, 129, 0.35);
+    background-color: rgba(16, 185, 129, 0.1);
+  }
+
+  .admin-notice--warning {
+    border-color: rgba(245, 158, 11, 0.4);
+    background-color: rgba(245, 158, 11, 0.1);
+  }
+
+  .admin-notice--error {
+    border-color: rgba(248, 113, 113, 0.45);
+    background-color: rgba(248, 113, 113, 0.1);
+  }
+
+  .admin-notice--info {
+    border-color: rgba(56, 189, 248, 0.35);
+    background-color: rgba(56, 189, 248, 0.08);
+  }
+
+  .admin-badge--reviewer {
+    border-color: rgba(56, 189, 248, 0.35);
+    background-color: rgba(56, 189, 248, 0.12);
+    color: #7dd3fc;
+    text-transform: none;
+  }
+
+  [data-theme='light'] .admin-badge--reviewer {
+    color: #0369a1;
   }
 
   /* Team permissions matrix — horizontal scroll + sticky column/header */

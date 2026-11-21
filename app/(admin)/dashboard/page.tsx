@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import {
   canManageSermonsWithStaff,
   staffHasPermission,
@@ -17,6 +18,8 @@ import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import { pastorLifecycle } from '@/lib/admin/workflow-status';
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
+
+export const metadata: Metadata = { title: 'Dashboard' };
 
 type Props = { searchParams: { staff?: string; error?: string } };
 
