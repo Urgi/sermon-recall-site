@@ -179,7 +179,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       setPdfText(json.text);
       setPdfNote(
         [
-          json.pages ? tr('pdf.pages', { pages: json.pages }) : '',
+          json.pages ? (json.pages === 1 ? tr('pdf.page1') : tr('pdf.pages', { pages: json.pages })) : '',
           json.truncated ? tr('pdf.truncated', { chars: PDF_MAX_CHARS.toLocaleString() }) : '',
         ]
           .filter(Boolean)
