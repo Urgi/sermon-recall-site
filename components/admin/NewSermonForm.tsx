@@ -7,6 +7,8 @@ import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPolle
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
 import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
 import { SermonWizardProgress } from '@/components/admin/SermonWizardProgress';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { PDF_MAX_CHARS, PDF_MAX_MB } from '@/lib/transcription/pdf-limits';
 import { languagePromptName, normalizeAppLanguage } from '@/lib/i18n/languages';
 import { sermonWizardCopy } from '@/lib/admin/sermon-wizard';
 import {
@@ -14,6 +16,7 @@ import {
   parseYouTubeUrl,
 } from '@/lib/transcription/constants';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+import type { UiKey } from '@/lib/i18n/ui';
 import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
 type Props = {
@@ -22,7 +25,7 @@ type Props = {
   defaultPastorName?: string | null;
 };
 
-type InputKind = 'youtube' | 'file' | 'text';
+type InputKind = 'youtube' | 'file' | 'text' | 'pdf';
 type NewSermonStep = 'details' | 'source';
 
 type VideoMeta = {
@@ -37,6 +40,7 @@ function safeFileName(name: string): string {
 
 export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: Props) {
   const router = useRouter();
+  const { t: tr } = useLanguage();
   const languageLabel = languagePromptName(normalizeAppLanguage(sermonLanguage));
   const [wizardStep, setWizardStep] = useState<NewSermonStep>('details');
   const [inputKind, setInputKind] = useState<InputKind>('text');
@@ -46,6 +50,10 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
   const [scriptOrNotes, setScriptOrNotes] = useState('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [fileOver, setFileOver] = useState(false);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfText, setPdfText] = useState('');
+  const [pdfNote, setPdfNote] = useState<string | null>(null);
+  const [pdfReading, setPdfReading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [ownsRecording, setOwnsRecording] = useState(false);
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
@@ -109,14 +117,18 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     setError(null);
     setMediaProgress(null);
     setQueuedJobId(null);
+    setPdfFile(null);
+    setPdfText('');
+    setPdfNote(null);
     if (next === 'text') {
       setMediaFile(null);
       setYoutubeUrl('');
       setVideoMeta(null);
       setOwnsRecording(false);
     }
-    if (next === 'file') {
+    if (next === 'file' || next === 'pdf') {
       setScriptOrNotes('');
+      if (next === 'pdf') setMediaFile(null);
       setYoutubeUrl('');
       setVideoMeta(null);
       setOwnsRecording(false);
@@ -124,6 +136,59 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     if (next === 'youtube') {
       setScriptOrNotes('');
       setMediaFile(null);
+    }
+  }
+
+  async function onPdfPicked(f: File | null) {
+    setError(null);
+    setPdfNote(null);
+    setPdfText('');
+    setPdfFile(f);
+    if (!f) return;
+    if (f.size > PDF_MAX_MB * 1024 * 1024) {
+      setError(tr('pdf.err.too_large', { mb: PDF_MAX_MB }));
+      return;
+    }
+    setPdfReading(true);
+    try {
+      const body = new FormData();
+      body.append('file', f);
+      const res = await fetch('/api/sermons/extract-pdf', {
+        method: 'POST',
+        credentials: 'include',
+        body,
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        code?: string;
+        error?: string;
+        text?: string;
+        pages?: number;
+        truncated?: boolean;
+      };
+      if (!res.ok || !json.text) {
+        const known = ['not_pdf', 'too_large', 'empty_file', 'password', 'corrupt', 'no_text', 'rate_limit'];
+        setError(
+          known.includes(json.code ?? '')
+            ? tr(`pdf.err.${json.code}` as UiKey, { mb: PDF_MAX_MB })
+            : res.status === 401 || res.status === 403
+              ? (json.error ?? tr('pdf.err.generic'))
+              : tr('pdf.err.generic'),
+        );
+        return;
+      }
+      setPdfText(json.text);
+      setPdfNote(
+        [
+          json.pages ? tr('pdf.pages', { pages: json.pages }) : '',
+          json.truncated ? tr('pdf.truncated', { chars: PDF_MAX_CHARS.toLocaleString() }) : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+      );
+    } catch {
+      setError(tr('pdf.err.generic'));
+    } finally {
+      setPdfReading(false);
     }
   }
 
@@ -199,10 +264,14 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     setPending(true);
 
     try {
-      if (inputKind === 'text') {
-        const notes = scriptOrNotes.trim();
+      if (inputKind === 'text' || inputKind === 'pdf') {
+        const notes = (inputKind === 'pdf' ? pdfText : scriptOrNotes).trim();
         if (!notes) {
-          setError('Paste sermon text, or choose another source.');
+          setError(
+            inputKind === 'pdf'
+              ? tr('pdf.err.generic')
+              : 'Paste sermon text, or choose another source.',
+          );
           return;
         }
 
@@ -398,6 +467,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
   const sourceModes: { id: InputKind; label: string }[] = [
     { id: 'text', label: 'Paste text' },
     { id: 'file', label: 'Upload' },
+    { id: 'pdf', label: tr('pdf.mode') },
   ];
 
   const sourceReady =
@@ -405,7 +475,9 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       ? Boolean(ownsRecording && parseYouTubeUrl(youtubeUrl))
       : inputKind === 'file'
         ? Boolean(mediaFile)
-        : Boolean(scriptOrNotes.trim());
+        : inputKind === 'pdf'
+          ? Boolean(pdfText.trim()) && !pdfReading
+          : Boolean(scriptOrNotes.trim());
 
   return (
     <div className="mx-auto max-w-md space-y-6">
@@ -476,7 +548,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             <div
               role="radiogroup"
               aria-label="Sermon source"
-              className="grid grid-cols-2 rounded-full border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] p-1"
+              className="grid grid-cols-3 rounded-full border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] p-1"
             >
               {sourceModes.map((mode) => {
                 const selected = inputKind === mode.id;
@@ -612,6 +684,84 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                   onChange={(e) => setScriptOrNotes(e.target.value)}
                   className="admin-input min-h-[10rem] resize-y leading-relaxed placeholder:text-[var(--admin-dim)]"
                 />
+              </div>
+            ) : null}
+
+            {inputKind === 'pdf' ? (
+              <div className="admin-page-enter space-y-4">
+                <div>
+                  <label htmlFor="sermon-pdf" className="admin-label">
+                    PDF <span className="text-red-500">*</span>
+                  </label>
+                  <label
+                    htmlFor="sermon-pdf"
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setFileOver(true);
+                    }}
+                    onDragLeave={() => setFileOver(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setFileOver(false);
+                      void onPdfPicked(e.dataTransfer.files?.[0] ?? null);
+                    }}
+                    className={`mt-1.5 flex min-h-[7.5rem] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center transition-colors duration-fast focus-within:border-[var(--admin-accent)] focus-within:shadow-[0_0_0_2px_rgba(14,165,233,0.25)] ${
+                      fileOver || pdfFile
+                        ? 'border-[var(--admin-accent)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-surface-bg))]'
+                        : 'border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] hover:border-[var(--admin-accent)]'
+                    }`}
+                  >
+                    <input
+                      id="sermon-pdf"
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="sr-only"
+                      disabled={pending || pdfReading}
+                      onChange={(ev) => {
+                        const f = ev.target.files?.[0] ?? null;
+                        ev.target.value = '';
+                        void onPdfPicked(f);
+                      }}
+                    />
+                    {pdfReading ? (
+                      <span className="text-[14px] font-medium text-[var(--admin-fg-strong)]" role="status">
+                        {tr('pdf.reading')}
+                      </span>
+                    ) : pdfFile ? (
+                      <>
+                        <span className="max-w-full truncate text-[14px] font-medium text-[var(--admin-fg-strong)]">
+                          {pdfFile.name}
+                        </span>
+                        <span className="admin-hint mt-1">{tr('pdf.replace')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[14px] font-semibold text-[var(--admin-fg-strong)]">
+                          {tr('pdf.choose')}
+                        </span>
+                        <span className="admin-hint mt-1">{tr('pdf.drop', { mb: PDF_MAX_MB })}</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+                {pdfText ? (
+                  <div>
+                    <label htmlFor="sermon-pdf-text" className="admin-label">
+                      {tr('pdf.review')}
+                    </label>
+                    <p className="admin-hint mt-1">
+                      {tr('pdf.reviewHint')}
+                      {pdfNote ? ` ${pdfNote}` : ''}
+                    </p>
+                    <textarea
+                      id="sermon-pdf-text"
+                      rows={12}
+                      value={pdfText}
+                      onChange={(e) => setPdfText(e.target.value)}
+                      className="admin-input mt-1 min-h-[12rem] resize-y leading-relaxed"
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

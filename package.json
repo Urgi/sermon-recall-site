@@ -23,6 +23,7 @@
     "recharts": "^3.8.1",
     "stripe": "^23.0.0",
     "tsx": "^4.19.3",
+    "unpdf": "^1.7.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {
