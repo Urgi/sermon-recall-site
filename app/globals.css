@@ -5,6 +5,11 @@
 @layer base {
   /* Shared motion tokens: keep durations short and use one ease-out curve everywhere. */
   :root {
+    /* Brand palette (Mark B logo pack) — fixed across themes; see .cursor/brand-assets.md. */
+    --brand-sky: #12c6fb;
+    --brand-blue: #0057ee;
+    --brand-navy: #021635;
+    --brand-ink: #0b1626;
     --motion-fast: 120ms;
     --motion-base: 180ms;
     --motion-slow: 260ms;
@@ -963,4 +968,16 @@
       }
     }
   }
+}
+
+/* Brand logo ink (see components/branding/SermonRecallLogo.tsx): on-dark by default,
+   on-light only inside the admin shell when the admin theme is light. */
+.brand-logo-light {
+  display: none !important;
+}
+[data-theme='light'] .admin-shell .brand-logo-light {
+  display: revert !important;
+}
+[data-theme='light'] .admin-shell .brand-logo-dark {
+  display: none !important;
 }

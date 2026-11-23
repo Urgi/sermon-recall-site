@@ -45,18 +45,12 @@ export const metadata: Metadata = {
     siteName: PUBLIC_SITE.productName,
     title: PUBLIC_SITE.productName,
     description: PUBLIC_SITE.shortDescription,
-    images: [
-      {
-        url: '/sermonrecalllogo/logo.png',
-        alt: `${PUBLIC_SITE.productName} logo`,
-      },
-    ],
+    // Share image comes from app/opengraph-image.png.
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: PUBLIC_SITE.productName,
     description: PUBLIC_SITE.shortDescription,
-    images: ['/sermonrecalllogo/logo.png'],
   },
   robots: {
     index: true,
@@ -66,10 +60,7 @@ export const metadata: Metadata = {
       follow: true,
     },
   },
-  icons: {
-    icon: '/sermonrecalllogo/logo.png',
-    apple: '/sermonrecalllogo/logo.png',
-  },
+  // Icons come from app/favicon.ico, app/icon.png and app/apple-icon.png.
 };
 
 export default function RootLayout({

@@ -94,7 +94,7 @@ export function organizationJsonLd(): Record<string, unknown> {
     name: PUBLIC_SITE.productName,
     legalName: PUBLIC_SITE.legalName,
     url,
-    logo: `${url}/sermonrecalllogo/logo.png`,
+    logo: `${url}/brand/app-icon.png`,
     email: supportEmail(),
     description: PUBLIC_SITE.shortDescription,
     sameAs: [APP_STORE_URL, GOOGLE_PLAY_URL],
