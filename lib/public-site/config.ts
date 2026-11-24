@@ -40,7 +40,7 @@ export function supportEmail(): string {
 export const PUBLIC_SITE = {
   productName: 'Sermon Recall',
   legalName: 'Sermon Recall',
-  tagline: 'Listen. Remember. Grow.',
+  tagline: 'A six-day devotional journey from every sermon.',
   shortDescription:
     "Sermon Recall helps churches turn Saturday/Sunday's message into a six-day devotional journey so members remember and apply what they heard.",
 } as const;

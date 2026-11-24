@@ -11,10 +11,7 @@ export function HomeFaqSection() {
     >
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
-          <p className="text-[13px] font-semibold uppercase tracking-[0.2em] text-[#38bdf8]">
-            Common questions
-          </p>
-          <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             Built for pastors, elders, and ministry leaders
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[16px] leading-relaxed text-[#94a3b8]">

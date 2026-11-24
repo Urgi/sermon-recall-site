@@ -49,10 +49,7 @@ export default async function PublicHomePage() {
         <section className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-3xl text-center">
             <SermonRecallLogo variant="hero" className="mx-auto h-28 w-auto" priority />
-            <p className="mt-6 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#38bdf8]">
-              {PUBLIC_SITE.tagline}
-            </p>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-6 text-3xl font-bold tracking-tight text-white sm:text-4xl">
               Help your church remember and live out Saturday/Sunday&apos;s message
             </h1>
             <p className="mt-5 text-[17px] leading-relaxed text-[#94a3b8]">
@@ -122,18 +119,18 @@ export default async function PublicHomePage() {
             {[
               {
                 step: '1',
-                title: 'Pastor publishes',
-                body: 'Staff upload a sermon and publish a reviewed six-day devotional cycle.',
+                title: 'Pastors publish a six-day cycle',
+                body: 'Staff upload a sermon, review the devotionals, and publish them.',
               },
               {
                 step: '2',
-                title: 'Members join',
-                body: 'Congregation members install the app and enter the church code from their pastor.',
+                title: 'Members join with the church code',
+                body: 'Congregation members install the app and enter the code from their pastor.',
               },
               {
                 step: '3',
-                title: 'Daily growth',
-                body: 'Members complete each day with scripture, reflection, and an application commitment.',
+                title: 'Members complete one day at a time',
+                body: 'Each day has scripture, a reflection, and an application commitment.',
               },
             ].map((item) => (
               <li key={item.step} className="text-center">
