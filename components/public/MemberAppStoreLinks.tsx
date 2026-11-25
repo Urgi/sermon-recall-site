@@ -1,3 +1,6 @@
+'use client';
+
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { APP_STORE_URL, GOOGLE_PLAY_URL } from '@/lib/public-site/config';
 
 type Props = {
@@ -7,6 +10,7 @@ type Props = {
 };
 
 export function MemberAppStoreLinks({ className = '', size = 'default' }: Props) {
+  const { t } = useLanguage();
   const linkClass =
     size === 'compact'
       ? 'inline-flex items-center rounded-lg border border-[rgba(56,189,248,0.35)] bg-[#0a0f18] px-3 py-2 text-[13px] font-semibold text-[#38bdf8] hover:bg-[#0f172a]'
@@ -20,7 +24,7 @@ export function MemberAppStoreLinks({ className = '', size = 'default' }: Props)
         rel="noopener noreferrer"
         className={linkClass}
       >
-        Get it on Google Play
+        {t('pub.storePlay')}
       </a>
       {APP_STORE_URL ? (
         <a
@@ -29,7 +33,7 @@ export function MemberAppStoreLinks({ className = '', size = 'default' }: Props)
           rel="noopener noreferrer"
           className={linkClass}
         >
-          Download on the App Store
+          {t('pub.storeApple')}
         </a>
       ) : (
         <span
@@ -39,7 +43,7 @@ export function MemberAppStoreLinks({ className = '', size = 'default' }: Props)
               : 'text-[14px] text-[#94a3b8]'
           }
         >
-          iPhone coming soon
+          {t('pub.storeSoon')}
         </span>
       )}
     </div>

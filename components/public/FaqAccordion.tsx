@@ -2,18 +2,18 @@
 
 import { useId, useState } from 'react';
 
-type FaqItem = {
-  question: string;
-  answer: string;
-};
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { PUBLIC_FAQ_KEYS } from '@/lib/public-site/config';
 
 type Props = {
-  items: readonly FaqItem[];
   /** Open the first item by default on the homepage for discoverability. */
   defaultOpenFirst?: boolean;
 };
 
-export function FaqAccordion({ items, defaultOpenFirst = false }: Props) {
+/** The public FAQ in the visitor's language. */
+export function FaqAccordion({ defaultOpenFirst = false }: Props) {
+  const { t } = useLanguage();
+  const items = PUBLIC_FAQ_KEYS.map((item) => ({ question: t(item.question), answer: t(item.answer) }));
   const baseId = useId();
   const [openIndex, setOpenIndex] = useState<number | null>(defaultOpenFirst ? 0 : null);
 
@@ -25,7 +25,7 @@ export function FaqAccordion({ items, defaultOpenFirst = false }: Props) {
         const buttonId = `${baseId}-button-${index}`;
 
         return (
-          <div key={item.question} className="px-1 first:pt-1 last:pb-1">
+          <div key={index} className="px-1 first:pt-1 last:pb-1">
             <h3>
               <button
                 id={buttonId}

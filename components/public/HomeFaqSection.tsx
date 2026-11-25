@@ -1,9 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { FaqAccordion } from '@/components/public/FaqAccordion';
-import { PUBLIC_FAQ } from '@/lib/public-site/config';
+import { RichCopy } from '@/components/public/RichCopy';
 
 export function HomeFaqSection() {
+  const { t } = useLanguage();
   return (
     <section
       id="faq"
@@ -12,28 +16,33 @@ export function HomeFaqSection() {
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Built for pastors, elders, and ministry leaders
+            {t('pub.homeFaq.title')}
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[16px] leading-relaxed text-[#94a3b8]">
-            Straight answers to the questions church boards ask before adopting a sermon
-            follow-up tool — from pastoral oversight to AI, members, and visitors.
+            {t('pub.homeFaq.lead')}
           </p>
         </div>
 
         <div className="mt-10">
-          <FaqAccordion items={PUBLIC_FAQ} defaultOpenFirst />
+          <FaqAccordion defaultOpenFirst />
         </div>
 
         <p className="mt-8 text-center text-[14px] text-[#94a3b8]">
-          Want the full list or something specific to your church?{' '}
-          <Link href="/faq" className="font-medium text-[#38bdf8] hover:underline">
-            View all FAQs
-          </Link>{' '}
-          or{' '}
-          <Link href="/support" className="font-medium text-[#38bdf8] hover:underline">
-            contact support
-          </Link>
-          .
+          <RichCopy
+            k="pub.homeFaq.more"
+            parts={{
+              all: (
+                <Link href="/faq" className="font-medium text-[#38bdf8] hover:underline">
+                  {t('pub.homeFaq.viewAll')}
+                </Link>
+              ),
+              contact: (
+                <Link href="/support" className="font-medium text-[#38bdf8] hover:underline">
+                  {t('pub.homeFaq.contact')}
+                </Link>
+              ),
+            }}
+          />
         </p>
       </div>
     </section>
