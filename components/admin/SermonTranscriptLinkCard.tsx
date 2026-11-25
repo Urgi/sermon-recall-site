@@ -1,11 +1,14 @@
 import Link from 'next/link';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+
 type Props = {
   sermonId: string;
   characterCount: number;
 };
 
 export function SermonTranscriptLinkCard({ sermonId, characterCount }: Props) {
+  const { t } = useLanguage();
   return (
     <Link
       href={`/sermons/${sermonId}/transcript`}
@@ -14,16 +17,16 @@ export function SermonTranscriptLinkCard({ sermonId, characterCount }: Props) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-admin-accent">
-            Source transcript
+            {t('tx.title')}
           </p>
           <p className="admin-body mt-1">
-            Open the full transcript to read or edit. This text powers devotional generation.
+            {t('tx.linkHint')}
           </p>
           <p className="admin-hint mt-2 text-[12px]">
-            {characterCount.toLocaleString()} characters
+            {t('tx.charsShort', { n: characterCount.toLocaleString() })}
           </p>
         </div>
-        <span className="shrink-0 text-[13px] font-medium text-[var(--admin-accent)]">View →</span>
+        <span className="shrink-0 text-[13px] font-medium text-[var(--admin-accent)]">{t('tx.view')}</span>
       </div>
     </Link>
   );

@@ -1,3 +1,4 @@
+import { tr, type UiKey } from '@/lib/i18n/ui';
 import {
   hasPermission,
   type Permission,
@@ -29,76 +30,123 @@ export type PermissionMatrixRow = {
 export const PERMISSION_MATRIX_ROWS: PermissionMatrixRow[] = [
   {
     id: 'invite_users',
-    label: 'Invite users',
+    get label() {
+      return tr('pm.invite_users' as UiKey);
+    },
     permissions: ['can_invite_users'],
-    tooltip: 'Send email invitations to join the church team.',
+    get tooltip() {
+      return tr('pm.invite_users.tip' as UiKey);
+    },
   },
   {
     id: 'approve_users',
-    label: 'Approve users',
+    get label() {
+      return tr('pm.approve_users' as UiKey);
+    },
     permissions: ['can_approve_users'],
-    tooltip: 'Approve or reject staff after they accept an invite.',
+    get tooltip() {
+      return tr('pm.approve_users.tip' as UiKey);
+    },
   },
   {
     id: 'manage_team',
-    label: 'Manage team members',
+    get label() {
+      return tr('pm.manage_team' as UiKey);
+    },
     permissions: ['can_manage_team'],
-    tooltip: 'Change roles for active team members (owner and admin pastor only).',
+    get tooltip() {
+      return tr('pm.manage_team.tip' as UiKey);
+    },
   },
   {
     id: 'remove_team',
-    label: 'Remove team members',
+    get label() {
+      return tr('pm.remove_team' as UiKey);
+    },
     permissions: ['can_manage_team'],
-    tooltip: 'Remove staff from the church workspace (same access as manage team).',
+    get tooltip() {
+      return tr('pm.remove_team.tip' as UiKey);
+    },
   },
   {
     id: 'generate_devotionals',
-    label: 'Generate devotionals',
+    get label() {
+      return tr('pm.generate_devotionals' as UiKey);
+    },
     permissions: ['can_generate_devotionals'],
-    tooltip: 'Run AI generation and transcription workflows.',
+    get tooltip() {
+      return tr('pm.generate_devotionals.tip' as UiKey);
+    },
   },
   {
     id: 'edit_devotionals',
-    label: 'Edit devotionals',
+    get label() {
+      return tr('pm.edit_devotionals' as UiKey);
+    },
     permissions: ['can_edit_devotionals'],
-    tooltip: 'Edit devotional content in the admin portal.',
+    get tooltip() {
+      return tr('pm.edit_devotionals.tip' as UiKey);
+    },
   },
   {
     id: 'submit_for_approval',
-    label: 'Submit for approval',
+    get label() {
+      return tr('pm.submit_for_approval' as UiKey);
+    },
     permissions: ['can_submit_for_approval'],
-    tooltip: 'Submit generated devotionals for pastor review.',
+    get tooltip() {
+      return tr('pm.submit_for_approval.tip' as UiKey);
+    },
   },
   {
     id: 'approve_devotionals',
-    label: 'Approve devotionals',
+    get label() {
+      return tr('pm.approve_devotionals' as UiKey);
+    },
     permissions: ['can_approve_devotionals'],
-    tooltip: 'Approve or request changes on submitted devotionals.',
+    get tooltip() {
+      return tr('pm.approve_devotionals.tip' as UiKey);
+    },
   },
   {
     id: 'publish_devotionals',
-    label: 'Publish devotionals',
+    get label() {
+      return tr('pm.publish_devotionals' as UiKey);
+    },
     permissions: ['can_publish_devotionals'],
-    tooltip: 'Publish approved content to the member app.',
+    get tooltip() {
+      return tr('pm.publish_devotionals.tip' as UiKey);
+    },
   },
   {
     id: 'send_notifications',
-    label: 'Send notifications',
+    get label() {
+      return tr('pm.send_notifications' as UiKey);
+    },
     permissions: ['can_send_notifications'],
-    tooltip: 'Send immediate push notifications to members.',
+    get tooltip() {
+      return tr('pm.send_notifications.tip' as UiKey);
+    },
   },
   {
     id: 'manage_church_settings',
-    label: 'Manage church settings',
+    get label() {
+      return tr('pm.manage_church_settings' as UiKey);
+    },
     permissions: ['can_manage_church_settings'],
-    tooltip: 'Update church profile and workspace settings.',
+    get tooltip() {
+      return tr('pm.manage_church_settings.tip' as UiKey);
+    },
   },
   {
     id: 'view_analytics',
-    label: 'View analytics',
+    get label() {
+      return tr('pm.view_analytics' as UiKey);
+    },
     permissions: ['can_generate_devotionals'],
-    tooltip:
-      'View member engagement on the dashboard (same access gate as sermon management today).',
+    get tooltip() {
+      return tr('pm.view_analytics.tip' as UiKey);
+    },
   },
 ];
 

@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { tr } from '@/lib/i18n/ui';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = { token: string };
 
 export function InviteAcceptPanel({ token }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [status, setStatus] = useState<'loading' | 'need_login' | 'accepting' | 'done' | 'error'>(
     'loading',
   );
@@ -33,20 +36,20 @@ export function InviteAcceptPanel({ token }: Props) {
           const data = (await res.json()) as { error?: string; pendingApproval?: boolean };
           if (!res.ok) {
             setStatus('error');
-            setMessage(data.error ?? 'Could not accept invite.');
+            setMessage(data.error ?? tr('invite.errFallback'));
             return;
           }
           setStatus('done');
           setMessage(
             data.pendingApproval
-              ? 'Invite accepted. A church admin must approve your access before you can manage content.'
-              : 'Invite accepted.',
+              ? tr('invite.acceptedPending')
+              : tr('invite.accepted'),
           );
           setTimeout(() => router.replace('/dashboard?staff=pending'), 2000);
         })
         .catch(() => {
           setStatus('error');
-          setMessage('Network error.');
+          setMessage(tr('common.networkError'));
         });
     });
   }, [token, router]);
@@ -54,12 +57,12 @@ export function InviteAcceptPanel({ token }: Props) {
   if (status === 'need_login') {
     return (
       <div className="admin-card p-6 text-center sm:p-8">
-        <p className="admin-body">Sign in with the email address that received this invite.</p>
+        <p className="admin-body">{t('invite.signInPrompt')}</p>
         <a
           href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
           className="admin-btn-primary mt-6 inline-block"
         >
-          Sign in
+          {t('auth.signIn')}
         </a>
       </div>
     );
@@ -73,15 +76,15 @@ export function InviteAcceptPanel({ token }: Props) {
             className="h-6 w-6 rounded-full border-2 border-sky-400/30 border-t-sky-400 motion-safe:animate-spin"
             aria-hidden
           />
-          <p className="admin-body">Accepting invitation…</p>
+          <p className="admin-body">{t('invite.accepting')}</p>
         </div>
       ) : null}
       {status === 'done' ? (
         <div role="status">
           <p className="admin-body text-emerald-700 dark:text-emerald-400">{message}</p>
-          <p className="admin-hint mt-2">Taking you to your dashboard…</p>
+          <p className="admin-hint mt-2">{t('invite.taking')}</p>
           <Link href="/dashboard?staff=pending" className="admin-btn-secondary mt-5 inline-block">
-            Go now
+            {t('invite.goNow')}
           </Link>
         </div>
       ) : null}
@@ -91,11 +94,10 @@ export function InviteAcceptPanel({ token }: Props) {
             {message}
           </p>
           <p className="admin-hint mt-2">
-            Ask the person who invited you to send a fresh link, or make sure you are signed in
-            with the invited email.
+            {t('invite.askFresh')}
           </p>
           <Link href="/dashboard" className="admin-btn-secondary mt-5 inline-block">
-            Go to dashboard
+            {t('invite.toDashboard')}
           </Link>
         </div>
       ) : null}

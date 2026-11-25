@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { authorizeApiPermission } from '@/lib/auth/server';
 import { buildInviteAcceptUrl, sendInviteEmail } from '@/lib/email/send-invite';
 import { generateInviteToken, hashInviteToken } from '@/lib/invites/token';
-import { getChurchForProfile } from '@/lib/auth/server';
+import { getChurchSettingsForProfile } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const church = await getChurchForProfile(auth.ctx.profile.church_id);
+  const church = await getChurchSettingsForProfile(auth.ctx.profile.church_id);
   const acceptUrl = buildInviteAcceptUrl(rawToken);
 
   if (invite?.invited_email) {
@@ -54,6 +54,7 @@ export async function POST(req: Request) {
         inviterName: auth.ctx.profile.full_name ?? auth.ctx.user.email ?? 'A pastor',
         role: invite.invited_role as string,
         acceptUrl,
+        language: church?.sermon_language,
       });
     } catch (e) {
       console.warn('[invites/resend] email', e);

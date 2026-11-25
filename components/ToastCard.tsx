@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+
 export type ToastCardProps = {
   message: string;
   variant: 'success' | 'error';
@@ -24,6 +26,7 @@ export function ToastCard({
   autoDismissMs = 6000,
   onDismiss,
 }: ToastCardProps) {
+  const { t } = useLanguage();
   const [leaving, setLeaving] = useState(false);
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
@@ -75,7 +78,7 @@ export function ToastCard({
         type="button"
         onClick={dismiss}
         className="-m-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[18px] leading-none opacity-60 transition-opacity duration-fast hover:opacity-100"
-        aria-label="Dismiss"
+        aria-label={t('common.dismiss')}
       >
         ×
       </button>

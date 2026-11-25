@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import type { SermonWorkflowStatus } from '@/lib/admin/workflow-status';
 import {
   canPublishWorkflow,
@@ -32,6 +34,7 @@ export function SermonWorkflowPanel({
   hideApproveAction = false,
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -48,7 +51,7 @@ export function SermonWorkflowPanel({
     const data = (await res.json()) as { error?: string };
     setPending(false);
     if (!res.ok) {
-      setError(data.error ?? 'Action failed.');
+      setError(data.error ? localizeApiError(data.error) : t('common.error'));
       return;
     }
     router.refresh();
@@ -61,15 +64,15 @@ export function SermonWorkflowPanel({
           {workflowStatusLabel(workflowStatus)}
         </span>
         {approvalRequired ? (
-          <span className="admin-hint">Approval required before publish</span>
+          <span className="admin-hint">{t('wfp.approvalRequired')}</span>
         ) : (
-          <span className="admin-hint">Direct publish enabled</span>
+          <span className="admin-hint">{t('wfp.directPublish')}</span>
         )}
       </div>
 
       {changesRequestedNote ? (
         <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[13px] text-amber-800 dark:text-amber-100">
-          Changes requested: {changesRequestedNote}
+          {t('wfp.changesRequested', { note: changesRequestedNote })}
         </p>
       ) : null}
 
@@ -82,12 +85,12 @@ export function SermonWorkflowPanel({
               onClick={() => void post('/api/devotionals/approve', { sermonId })}
               className="admin-btn-primary"
             >
-              Approve devotionals
+              {t('wfp.approve')}
             </button>
           )}
           <div>
             <label className="admin-label" htmlFor="changes-note">
-              Request changes (optional note)
+              {t('wfp.requestNote')}
             </label>
             <textarea
               id="changes-note"
@@ -102,19 +105,19 @@ export function SermonWorkflowPanel({
               onClick={() => void post('/api/devotionals/request-changes', { sermonId, note })}
               className="admin-btn-secondary mt-2"
             >
-              Request changes
+              {t('wfp.requestChanges')}
             </button>
           </div>
         </div>
       ) : null}
 
       {canPublish && canPublishWorkflow(workflowStatus) ? (
-        <p className="admin-hint mt-3">Ready to publish — use Publish to app in the preview section.</p>
+        <p className="admin-hint mt-3">{t('wfp.readyPublish')}</p>
       ) : null}
 
       {!canRegenerateWorkflow(workflowStatus) ? (
         <p className="admin-hint mt-2">
-          Regeneration is locked while this devotional is in review or live.
+          {t('wfp.regenLocked')}
         </p>
       ) : null}
 

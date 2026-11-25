@@ -4,12 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { BroadcastHistoryItem } from '@/app/api/church/broadcast-history/route';
 import type { BroadcastRecipientRow } from '@/app/api/church/broadcast/[id]/recipients/route';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import type { StaffRole } from '@/lib/auth/permissions';
+import { localizeApiError } from '@/lib/i18n/api-errors';
+import { tr } from '@/lib/i18n/ui';
+import { ROLE_LABELS } from '@/lib/team/role-guide';
 import { formatTargetStaffRoles } from '@/lib/push/broadcast-audience';
 
-function formatSentAt(iso: string): string {
+function formatSentAt(iso: string, language: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat(language, {
       dateStyle: 'medium',
       timeStyle: 'short',
     }).format(new Date(iso));
@@ -20,7 +24,7 @@ function formatSentAt(iso: string): string {
 
 function formatRole(role: string | null): string {
   if (!role) return '—';
-  return role.replace(/_/g, ' ');
+  return ROLE_LABELS[role as StaffRole] ?? role.replace(/_/g, ' ');
 }
 
 type Props = {
@@ -28,6 +32,7 @@ type Props = {
 };
 
 export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
+  const { t, language } = useLanguage();
   const [items, setItems] = useState<BroadcastHistoryItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,13 +54,13 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
         items?: BroadcastHistoryItem[];
       };
       if (!res.ok) {
-        setError(data.error ?? 'Could not load history.');
+        setError(data.error ? localizeApiError(data.error) : tr('notify.err.history'));
         setItems([]);
         return;
       }
       setItems(data.items ?? []);
     } catch {
-      setError('Network error.');
+      setError(tr('common.networkError'));
       setItems([]);
     } finally {
       setLoading(false);
@@ -83,7 +88,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
       if (!res.ok) {
         setRecipientsById((prev) => ({
           ...prev,
-          [broadcastId]: { loading: false, rows: [], error: data.error ?? 'Failed to load' },
+          [broadcastId]: { loading: false, rows: [], error: data.error ? localizeApiError(data.error) : tr('notify.err.recipients') },
         }));
         return;
       }
@@ -94,7 +99,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
     } catch {
       setRecipientsById((prev) => ({
         ...prev,
-        [broadcastId]: { loading: false, rows: [], error: 'Network error' },
+        [broadcastId]: { loading: false, rows: [], error: tr('common.networkError') },
       }));
     }
   }
@@ -113,7 +118,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
   if (loading) {
     return (
       <p className="text-[14px] text-admin-dim" role="status">
-        Loading notification history…
+        {t('notify.loadingHistory')}
       </p>
     );
   }
@@ -129,7 +134,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
           onClick={() => void load()}
           className="text-[13px] font-medium text-admin-link hover:underline"
         >
-          Try again
+          {t('common.tryAgain')}
         </button>
       </div>
     );
@@ -138,8 +143,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
   if (!items?.length) {
     return (
       <p className="text-[14px] leading-relaxed text-admin-dim">
-        No notifications sent yet. When you send one, it appears here with who opened the full
-        message in the app.
+        {t('notify.emptyHistory')}
       </p>
     );
   }
@@ -153,7 +157,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
           item.target_staff_roles?.length
             ? formatTargetStaffRoles(item.target_staff_roles as StaffRole[])
             : null,
-          item.include_all_members ? 'all members' : null,
+          item.include_all_members ? t('notify.allMembersShort') : null,
         ]
           .filter(Boolean)
           .join(' · ');
@@ -169,35 +173,38 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
                 dateTime={item.created_at}
                 className="shrink-0 text-[12px] tabular-nums text-admin-dim"
               >
-                {formatSentAt(item.created_at)}
+                {formatSentAt(item.created_at, language)}
               </time>
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-admin-fg-secondary whitespace-pre-wrap">
               {item.body}
             </p>
             <p className="mt-2 text-[12px] text-admin-dim">
-              {item.recipient_count} recipient{item.recipient_count === 1 ? '' : 's'}
+              {item.recipient_count === 1
+                ? t('notify.recipients1')
+                : t('notify.recipientsN', { n: item.recipient_count })}
               {item.opened_count > 0 ? (
                 <>
                   {' '}
                   ·{' '}
                   <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {item.opened_count} opened full message
+                    {t('notify.openedN', { n: item.opened_count })}
                   </span>
                 </>
               ) : (
-                ' · no opens yet'
+                ` · ${t('notify.noOpens')}`
               )}
               {audienceLabel ? (
                 <>
                   {' '}
-                  · To: <span className="text-admin-muted">{audienceLabel}</span>
+                  · {t('notify.toLabel', { audience: '' })}
+                  <span className="text-admin-muted">{audienceLabel}</span>
                 </>
               ) : null}
               {item.sender_name ? (
                 <>
                   {' '}
-                  · by <span className="text-admin-muted">{item.sender_name}</span>
+                  · {t('notify.byLabel', { name: item.sender_name })}
                 </>
               ) : null}
             </p>
@@ -206,21 +213,21 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
               onClick={() => toggleExpand(item.id)}
               className="-ml-2 mt-1 inline-flex min-h-8 items-center rounded-md px-2 text-[13px] font-medium text-admin-link hover:underline"
             >
-              {expanded ? 'Hide who opened' : 'See who opened'}
+              {expanded ? t('notify.hideOpened') : t('notify.seeOpened')}
             </button>
             {expanded ? (
               <div className="mt-3 border-t border-admin pt-3">
                 {recState?.loading ? (
-                  <p className="text-[13px] text-admin-dim">Loading recipients…</p>
+                  <p className="text-[13px] text-admin-dim">{t('notify.loadingRecipients')}</p>
                 ) : recState?.error ? (
                   <p className="text-[13px] text-red-500">{recState.error}</p>
                 ) : recState?.rows.length ? (
                   <table className="w-full text-left text-[13px]">
                     <thead>
                       <tr className="text-admin-dim">
-                        <th className="pb-2 pr-3 font-medium">Name</th>
-                        <th className="pb-2 pr-3 font-medium">Role</th>
-                        <th className="pb-2 font-medium">Opened</th>
+                        <th className="pb-2 pr-3 font-medium">{t('notify.colName')}</th>
+                        <th className="pb-2 pr-3 font-medium">{t('notify.colRole')}</th>
+                        <th className="pb-2 font-medium">{t('notify.colOpened')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -229,17 +236,17 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
                           <td className="py-2 pr-3">
                             {r.full_name ?? r.user_id.slice(0, 8)}
                             {!r.has_push ? (
-                              <span className="admin-hint ml-1 text-[11px]">(no push)</span>
+                              <span className="admin-hint ml-1 text-[11px]">{t('notify.noPush')}</span>
                             ) : null}
                           </td>
                           <td className="py-2 pr-3">{formatRole(r.staff_role)}</td>
                           <td className="py-2">
                             {r.opened_at ? (
                               <span className="text-emerald-600 dark:text-emerald-400">
-                                Yes · {formatSentAt(r.opened_at)}
+                                {t('notify.openedYes', { when: formatSentAt(r.opened_at, language) })}
                               </span>
                             ) : (
-                              <span className="text-admin-dim">Not yet</span>
+                              <span className="text-admin-dim">{t('notify.openedNo')}</span>
                             )}
                           </td>
                         </tr>
@@ -248,7 +255,7 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
                   </table>
                 ) : (
                   <p className="text-[13px] text-admin-dim">
-                    No per-person tracking for this send (older notification).
+                    {t('notify.oldNoTracking')}
                   </p>
                 )}
               </div>

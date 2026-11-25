@@ -1,3 +1,4 @@
+import { inviteCopy, inviteRoleName } from '@/lib/email/email-copy';
 import { siteOrigin } from '@/lib/site-origin';
 
 type SendInviteEmailParams = {
@@ -6,6 +7,8 @@ type SendInviteEmailParams = {
   inviterName: string;
   role: string;
   acceptUrl: string;
+  /** Church language (en, es, fr). */
+  language?: string | null;
 };
 
 export function buildInviteAcceptUrl(rawToken: string): string {
@@ -20,12 +23,13 @@ export async function sendInviteEmail(params: SendInviteEmailParams): Promise<vo
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.INVITE_EMAIL_FROM?.trim() ?? 'Sermon Recall <onboarding@resend.dev>';
 
-  const subject = `You're invited to ${params.churchName} on Sermon Recall`;
+  const copy = inviteCopy(params.language);
+  const subject = copy.subject(params.churchName);
   const html = `
-    <p>Hi,</p>
-    <p>${params.inviterName} invited you to join <strong>${params.churchName}</strong> as <strong>${params.role.replace(/_/g, ' ')}</strong>.</p>
-    <p><a href="${params.acceptUrl}">Accept invitation</a></p>
-    <p>This link expires in 7 days. If you did not expect this, you can ignore this email.</p>
+    <p>${copy.hi}</p>
+    <p>${copy.bodyHtml(params.inviterName, params.churchName, inviteRoleName(params.language, params.role))}</p>
+    <p><a href="${params.acceptUrl}">${copy.accept}</a></p>
+    <p>${copy.expiry}</p>
   `.trim();
 
   if (!apiKey) {

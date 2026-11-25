@@ -9,4 +9,15 @@ export const CHURCH_TIMEZONE_OPTIONS: { value: string; label: string }[] = [
   { value: 'Pacific/Honolulu', label: 'Hawaii (Pacific/Honolulu)' },
 ];
 
+/** UI translation key for each zone's friendly name (the IANA id stays in the label). */
+export const CHURCH_TIMEZONE_NAME_KEYS = {
+  'America/New_York': 'tz.eastern',
+  'America/Chicago': 'tz.central',
+  'America/Denver': 'tz.mountain',
+  'America/Phoenix': 'tz.arizona',
+  'America/Los_Angeles': 'tz.pacific',
+  'America/Anchorage': 'tz.alaska',
+  'Pacific/Honolulu': 'tz.hawaii',
+} as const;
+
 export const DEFAULT_CHURCH_TIMEZONE = 'America/New_York';

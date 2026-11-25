@@ -1,10 +1,15 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { canManageSermons } from '@/lib/auth/profile';
 import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/server';
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import { NewSermonForm } from '@/components/admin/NewSermonForm';
 import Link from 'next/link';
 
-export const metadata: Metadata = { title: 'New sermon' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('ns.pageTitleNew') };
+}
 
 export default async function NewSermonPage() {
   const { profile } = await requireAdminSession();
@@ -13,12 +18,14 @@ export default async function NewSermonPage() {
   if (!profile.church_id) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="admin-heading">Add sermon</h1>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="ns.addSermon" />
+        </h1>
         <p className="admin-body">
-          Create or join a church from the dashboard before adding sermons.
+          <AdminChromeCopy k="ns.noChurch" />
         </p>
         <Link href="/dashboard" className="admin-link">
-          Go to dashboard
+          <AdminChromeCopy k="common.goDashboard" />
         </Link>
       </div>
     );
@@ -27,13 +34,14 @@ export default async function NewSermonPage() {
   if (!canPublish) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="admin-heading">Add sermon</h1>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="ns.addSermon" />
+        </h1>
         <p className="admin-body">
-          Your account needs the pastor or admin role to create sermons. See the dashboard for
-          instructions.
+          <AdminChromeCopy k="ns.noPermission" />
         </p>
         <Link href="/dashboard" className="admin-link">
-          Back to dashboard
+          <AdminChromeCopy k="common.backDashboard" />
         </Link>
       </div>
     );

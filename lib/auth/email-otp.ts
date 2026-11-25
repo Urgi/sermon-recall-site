@@ -5,6 +5,7 @@ import {
   isAppReviewSignIn,
 } from '@/lib/auth/app-review-sign-in';
 import { mapAuthError } from '@/lib/auth/mapAuthError';
+import { tr } from '@/lib/i18n/ui';
 
 export type SendEmailOtpOptions = {
   fullName?: string;
@@ -20,7 +21,7 @@ export async function sendEmailOtp(
   options?: SendEmailOtpOptions,
 ): Promise<{ error: string | null }> {
   const trimmed = email.trim().toLowerCase();
-  if (!trimmed) return { error: 'Enter your email address.' };
+  if (!trimmed) return { error: tr('auth.err.enterEmail') };
 
   if (isAppReviewEmail(trimmed)) {
     return { error: null };

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { authorizeApiWithChurch, getChurchForProfile } from '@/lib/auth/server';
+import { authorizeApiWithChurch, getChurchSettingsForProfile } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { qrPngDataUrl } from '@/lib/church/qr';
 import { sendMemberJoinEmail } from '@/lib/email/send-member-join';
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Too many emails sent today. Try again tomorrow.' }, { status: 429 });
   }
 
-  const church = await getChurchForProfile(churchId);
+  const church = await getChurchSettingsForProfile(churchId);
   if (!church?.church_code) {
     return NextResponse.json({ error: 'Church not found.' }, { status: 404 });
   }
@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       churchCode: church.church_code,
       joinUrl,
       qrDataUrl,
+      language: church.sermon_language,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Send failed';

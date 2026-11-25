@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
 import { DemoSimulateEarlyDaysPanel } from '@/components/admin/DemoSimulateEarlyDaysPanel';
 import { EditableDevotionalPreview } from '@/components/admin/EditableDevotionalPreview';
@@ -64,6 +65,7 @@ export function SermonPublishWizard({
   canSubmit,
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const hasExistingDevotionals = savedDays.length > 0;
   const [previewDays, setPreviewDays] = useState<DevotionalDay[] | null>(null);
   const onPreviewDaysChange = useCallback((days: DevotionalDay[] | null) => {
@@ -82,10 +84,10 @@ export function SermonPublishWizard({
     <div className="mx-auto max-w-xl space-y-8 sm:max-w-3xl">
       <SermonWizardProgress
         step="review"
-        title={published ? 'Live in the app' : copy.title}
+        title={published ? t('wiz.live') : copy.title}
         hint={
           published
-            ? 'Members can open this week’s devotionals. You can still edit days below.'
+            ? t('wiz.liveHint')
             : copy.hint
         }
         context={contextBits.join(' · ')}
@@ -139,7 +141,7 @@ export function SermonPublishWizard({
           onPreviewDaysChange={onPreviewDaysChange}
         />
       ) : (
-        <p className="admin-body">Read-only view.</p>
+        <p className="admin-body">{t('wiz.readOnly')}</p>
       )}
 
       {showSavedDays ? (
@@ -165,16 +167,16 @@ export function SermonPublishWizard({
         </ul>
       ) : null}
 
-      {canEdit && published && hasExistingDevotionals ? (
+      {/* Developer demo helper: opt-in only, never shown to pastors by default. */}
+      {canEdit && published && hasExistingDevotionals && process.env.NEXT_PUBLIC_DEMO_TOOLS === '1' ? (
         <DemoSimulateEarlyDaysPanel sermonId={sermonId} />
       ) : null}
 
       {canEdit ? (
         <section className="rounded-xl border border-red-500/25 bg-red-950/15 p-5">
-          <h2 className="text-[15px] font-semibold text-red-700 dark:text-red-200">Delete sermon</h2>
+          <h2 className="text-[15px] font-semibold text-red-700 dark:text-red-200">{t('wiz.deleteTitle')}</h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--admin-muted)]">
-            Removes this sermon, its devotionals, and related member progress. You will be asked to
-            confirm.
+            {t('wiz.deleteHint')}
           </p>
           <div className="mt-4">
             <DeleteSermonButton

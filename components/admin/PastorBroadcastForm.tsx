@@ -8,6 +8,7 @@ import { formatTargetStaffRoles } from '@/lib/push/broadcast-audience';
 import { BroadcastRoleAudience } from '@/components/admin/BroadcastRoleAudience';
 import { ModalShell } from '@/components/admin/ModalShell';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 
 const DEFAULT_ROLES: StaffRole[] = ['owner', 'admin_pastor', 'associate_pastor'];
 
@@ -22,12 +23,12 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
   const formId = useId();
   const [title, setTitle] = useState(
     encourageInactiveCount != null && encourageInactiveCount > 0
-      ? 'A note of encouragement'
+      ? t('notify.encourageTitle')
       : '',
   );
   const [body, setBody] = useState(
     encourageInactiveCount != null && encourageInactiveCount > 0
-      ? 'We’d love for you to finish this week’s devotional when you can. You’re not behind — just pick up today’s day.'
+      ? t('notify.encourageBody')
       : '',
   );
   const [targetStaffRoles, setTargetStaffRoles] = useState<StaffRole[]>(DEFAULT_ROLES);
@@ -45,16 +46,16 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
       e.preventDefault();
       setError(null);
       if (!title.trim() || !body.trim()) {
-        setError('Title and message are required.');
+        setError(t('notify.err.required'));
         return;
       }
       if (targetStaffRoles.length === 0 && !includeAllMembers) {
-        setError('Select at least one team role or all members.');
+        setError(t('notify.err.audience'));
         return;
       }
       setShowConfirm(true);
     },
-    [title, body, targetStaffRoles, includeAllMembers],
+    [title, body, targetStaffRoles, includeAllMembers, t],
   );
 
   async function confirmSend() {
@@ -91,15 +92,15 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
       };
       setPending(false);
       if (!res.ok) {
-        setError(data.error ?? 'Could not send.');
+        setError(data.error ? localizeApiError(data.error) : t('notify.err.send'));
         return;
       }
       const n = data.recipientCount ?? 0;
       setPushWarnings(data.pushTicketErrors?.length ? data.pushTicketErrors : null);
       setSuccess(
         data.duplicate
-          ? 'Already sent (duplicate prevented).'
-          : data.warning ?? `Sent to ${n} people. Track opens in notification history below.`,
+          ? t('notify.duplicate')
+          : data.warning ?? (n === 1 ? t('notify.sent1') : t('notify.sent', { n })),
       );
       if (!data.duplicate) {
         setTitle('');
@@ -108,13 +109,13 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
       router.refresh();
     } catch {
       setPending(false);
-      setError('Network error.');
+      setError(t('common.networkError'));
     }
   }
 
   const audienceSummary = [
     formatTargetStaffRoles(targetStaffRoles),
-    includeAllMembers ? 'all members' : null,
+    includeAllMembers ? t('notify.allMembersShort') : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -125,11 +126,9 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
         {encourageInactiveCount != null && encourageInactiveCount > 0 ? (
           <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 p-3 text-[13px] text-[var(--admin-fg-secondary)]">
             {encourageInactiveCount === 1
-              ? '1 member has not completed a devotional this week.'
-              : `${encourageInactiveCount} members have not completed a devotional this week.`}{' '}
-            This composer cannot yet send only to those people. Tick <strong>All church members</strong>{' '}
-            to reach them, or leave it off to notify staff only. Nothing sends until you review and
-            confirm.
+              ? t('notify.encourage1')
+              : t('notify.encourageN', { n: encourageInactiveCount })}{' '}
+            {t('notify.encourageNote')}
           </div>
         ) : null}
         <div>
@@ -210,8 +209,7 @@ export function PastorBroadcastForm({ encourageInactiveCount }: Props) {
               {t('notify.confirmTitle')}
             </h3>
             <p className="admin-body mt-2">
-              This will push to: <span className="font-medium">{audienceSummary}</span>. Recipients
-              tap to read the full message in the app; you can see who opened it in history.
+              {t('notify.confirmBody', { audience: audienceSummary })}
             </p>
             <div className="admin-card-nested mt-4 p-3">
               <p className="font-semibold text-admin-fg-strong">{title}</p>

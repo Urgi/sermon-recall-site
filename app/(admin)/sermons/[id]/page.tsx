@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { notFound } from 'next/navigation';
 
 import {
@@ -10,7 +12,9 @@ import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { SermonPublishWizard } from '@/components/admin/SermonPublishWizard';
 
-export const metadata: Metadata = { title: 'Review sermon' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('meta.reviewSermon') };
+}
 
 type Props = { params: { id: string } };
 

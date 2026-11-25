@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
+import { LanguageProvider } from '@/components/i18n/LanguageProvider';
+import { LANGUAGE_COOKIE } from '@/lib/i18n/languages';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { MemberAppStoreLinks } from '@/components/public/MemberAppStoreLinks';
 import { buildMemberJoinUrl, normalizeChurchCode } from '@/lib/church/member-join';
@@ -32,20 +36,25 @@ export default async function MemberJoinPage({ params }: Props) {
   const joinUrl = buildMemberJoinUrl(row.church_code);
   const appDeepLink = `sermon-recall://join-church?code=${encodeURIComponent(row.church_code)}`;
 
+  const remembered = cookies().get(LANGUAGE_COOKIE)?.value ?? null;
+
   return (
+    <LanguageProvider initialLanguage={remembered} detectBrowserLanguage>
     <div className="min-h-screen bg-[#05070a] px-4 py-10 text-[#e2e8f0]">
       <div className="mx-auto max-w-md text-center">
         <SermonRecallLogo variant="hero" className="mx-auto h-24 w-auto object-contain" />
-        <h1 className="mt-8 text-2xl font-bold text-white">Join {row.church_name}</h1>
+        <h1 className="mt-8 text-2xl font-bold text-white">
+          <AdminChromeCopy k="jp.title" vars={{ church: row.church_name }} />
+        </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[#94a3b8]">
-          Open the Sermon Recall app on your phone, sign in, and enter this church code:
+          <AdminChromeCopy k="jp.open" />
         </p>
         <p className="mt-4 font-mono text-3xl font-bold tracking-wider text-[#38bdf8]">
           {normalizeChurchCode(row.church_code)}
         </p>
         <div className="mt-8 space-y-3 text-left text-[14px] text-[#cbd5e1]">
           <p>
-            <span className="font-semibold text-white">1.</span> Install Sermon Recall from the{' '}
+            <span className="font-semibold text-white">1.</span> <AdminChromeCopy k="jp.step1a" />{' '}
             <a
               href={APP_STORE_URL}
               target="_blank"
@@ -54,7 +63,7 @@ export default async function MemberJoinPage({ params }: Props) {
             >
               App Store
             </a>{' '}
-            or{' '}
+            <AdminChromeCopy k="jp.or" />{' '}
             <a
               href={GOOGLE_PLAY_URL}
               target="_blank"
@@ -66,12 +75,10 @@ export default async function MemberJoinPage({ params }: Props) {
             .
           </p>
           <p>
-            <span className="font-semibold text-white">2.</span> Sign in with your email (we send a
-            one-time code).
+            <span className="font-semibold text-white">2.</span> <AdminChromeCopy k="jp.step2" />
           </p>
           <p>
-            <span className="font-semibold text-white">3.</span> On &ldquo;Join your church,&rdquo;
-            enter the code above.
+            <span className="font-semibold text-white">3.</span> <AdminChromeCopy k="jp.step3" />
           </p>
         </div>
         <MemberAppStoreLinks className="mt-8 justify-center" />
@@ -79,18 +86,21 @@ export default async function MemberJoinPage({ params }: Props) {
           href={appDeepLink}
           className="mt-4 inline-block rounded-lg bg-[#0379bd] px-5 py-3 text-[15px] font-semibold text-white no-underline hover:bg-[#0369a1]"
         >
-          Open in app
+          <AdminChromeCopy k="jp.openApp" />
         </a>
-        <p className="mt-2 text-[12px] text-[#94a3b8]">Works on a phone with Sermon Recall installed.</p>
+        <p className="mt-2 text-[12px] text-[#94a3b8]">
+          <AdminChromeCopy k="jp.worksOn" />
+        </p>
         <p className="mt-6 text-[12px] text-[#94a3b8]">
-          Pastors: share the QR from your{' '}
+          <AdminChromeCopy k="jp.pastors" />{' '}
           <Link href="/dashboard" className="text-[#38bdf8] hover:underline">
-            admin dashboard
+            <AdminChromeCopy k="jp.dashboard" />
           </Link>
           .
         </p>
         <p className="mt-2 break-all font-mono text-[11px] text-[#94a3b8]">{joinUrl}</p>
       </div>
     </div>
+    </LanguageProvider>
   );
 }

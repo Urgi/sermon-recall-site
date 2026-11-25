@@ -6,10 +6,8 @@ import { useEffect, useState } from 'react';
 
 import { queueAppToast } from '@/lib/app-toast';
 import { sendEmailOtp, verifyEmailOtp } from '@/lib/auth/email-otp';
-import {
-  EMAIL_CONFIRMED_MESSAGE,
-  USE_CODE_NOT_LINK_MESSAGE,
-} from '@/lib/auth/signup-email-messages';
+import { codeNotLinkMessage, emailConfirmedMessage } from '@/lib/auth/signup-email-messages';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { ensurePublicUserProfile } from '@/lib/auth/ensure-public-profile';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import {
@@ -26,6 +24,7 @@ type Props = {
 
 export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -49,11 +48,11 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedCode = code.trim();
     if (!trimmedEmail) {
-      setError('Enter the email you registered with.');
+      setError(t('auth.err.regEmail'));
       return;
     }
     if (trimmedCode.length < 6) {
-      setError('Enter the code from your email.');
+      setError(t('auth.err.code'));
       return;
     }
     setPending(true);
@@ -74,11 +73,11 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           return;
         }
       }
-      queueAppToast({ variant: 'success', message: EMAIL_CONFIRMED_MESSAGE });
+      queueAppToast({ variant: 'success', message: emailConfirmedMessage() });
       router.refresh();
       router.replace('/dashboard?welcome=1');
     } catch {
-      setError('Something went wrong. Try again.');
+      setError(t('auth.err.generic'));
     } finally {
       setPending(false);
     }
@@ -86,7 +85,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
 
   async function onResend() {
     if (!email.trim()) {
-      setResendNotice('Enter your email above first.');
+      setResendNotice(t('auth.err.emailAbove'));
       return;
     }
     setResendPending(true);
@@ -97,15 +96,15 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
       signupPortal: 'admin_web',
     });
     setResendPending(false);
-    setResendNotice(resendError ?? 'New code sent. Check your inbox and spam.');
+    setResendNotice(resendError ?? t('auth.newCodeSent'));
   }
 
   return (
     <form onSubmit={onVerify} className="mt-6 space-y-4">
       <p className="text-[14px] leading-relaxed text-[#94a3b8]">
-        Enter the one-time code we emailed when you registered. Already have an account?{' '}
+        {t('verify.intro')}{' '}
         <Link href="/login" className="text-[#38bdf8] hover:underline">
-          Sign in instead
+          {t('verify.signInInstead')}
         </Link>
         .
       </p>
@@ -115,13 +114,13 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           className="rounded-lg border border-red-500/35 bg-red-950/40 px-3 py-2 text-[13px] leading-relaxed text-red-100"
           role="alert"
         >
-          {USE_CODE_NOT_LINK_MESSAGE}
+          {codeNotLinkMessage()}
         </p>
       ) : null}
 
       <div>
         <label htmlFor="verify-email" className={authLabelClass}>
-          Email
+          {t('auth.email')}
         </label>
         <input
           id="verify-email"
@@ -137,9 +136,9 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
       </div>
       <div>
         <label htmlFor="verify-code" className={authLabelClass}>
-          Confirmation code
+          {t('verify.confirmCode')}
         </label>
-        <p className={authHintClass}>6-digit code from your email (check spam).</p>
+        <p className={authHintClass}>{t('verify.codeHint')}</p>
         <input
           id="verify-code"
           name="code"
@@ -172,7 +171,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         disabled={pending}
         className={authPrimaryButtonClass}
       >
-        {pending ? 'Verifying…' : 'Verify code'}
+        {pending ? t('auth.verifying') : t('auth.verifyCode')}
       </button>
 
       <button
@@ -181,12 +180,12 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
         onClick={() => void onResend()}
         className="block min-h-11 w-full py-2 text-center text-[13px] font-medium text-[#38bdf8] hover:underline disabled:opacity-60"
       >
-        {resendPending ? 'Sending…' : 'Resend code'}
+        {resendPending ? t('auth.sending') : t('auth.resendCode')}
       </button>
 
       <p className="text-center text-[13px] text-[#94a3b8]">
         <Link href="/login" className="text-[#38bdf8] hover:underline">
-          Back to sign in
+          {t('verify.backToSignIn')}
         </Link>
       </p>
     </form>

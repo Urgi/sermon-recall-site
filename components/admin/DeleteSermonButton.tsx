@@ -5,6 +5,7 @@ import { useId, useState } from 'react';
 
 import { ModalShell } from '@/components/admin/ModalShell';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 
 type Props = {
   sermonId: string;
@@ -27,7 +28,7 @@ export function DeleteSermonButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const label = sermonTitle.trim() || 'this sermon';
+  const label = sermonTitle.trim() || t('sermons.thisSermon');
   const shortLabel = label.length > 80 ? `${label.slice(0, 77)}…` : label;
 
   function close() {
@@ -50,7 +51,7 @@ export function DeleteSermonButton({
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setError(json.error ?? 'Could not delete sermon.');
+        setError(json.error ? localizeApiError(json.error) : t('sermons.err.delete'));
         setBusy(false);
         return;
       }
@@ -58,7 +59,7 @@ export function DeleteSermonButton({
       router.push('/sermons');
       router.refresh();
     } catch {
-      setError('Network error. Try again.');
+      setError(t('settings.networkError'));
       setBusy(false);
     }
   }

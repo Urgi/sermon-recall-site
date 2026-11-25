@@ -4,8 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
-import { CHURCH_TIMEZONE_OPTIONS } from '@/lib/church/timezones';
+import { CHURCH_TIMEZONE_NAME_KEYS, CHURCH_TIMEZONE_OPTIONS } from '@/lib/church/timezones';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import {
   APP_LANGUAGES,
   type AppLanguage,
@@ -65,9 +66,7 @@ export function ChurchSettingsForm({ initial }: Props) {
     setSuccess(null);
 
     if (codeChanged) {
-      const ok = window.confirm(
-        'Changing the church code updates your member join link and QR code. Old printed materials will stop working. Continue?',
-      );
+      const ok = window.confirm(t('cs.codeConfirm'));
       if (!ok) return;
     }
 
@@ -88,13 +87,13 @@ export function ChurchSettingsForm({ initial }: Props) {
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Could not save settings.');
+        setError(data.error ? localizeApiError(data.error) : t('cs.saveFailed'));
         return;
       }
-      setSuccess('Church settings saved.');
+      setSuccess(t('cs.saved'));
       router.refresh();
     } catch {
-      setError('Network error. Try again.');
+      setError(t('settings.networkError'));
     } finally {
       setPending(false);
     }
@@ -103,9 +102,9 @@ export function ChurchSettingsForm({ initial }: Props) {
   return (
     <form onSubmit={onSubmit} className="space-y-8">
       <div className="space-y-5">
-        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">Identity</p>
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">{t('cs.identity')}</p>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="church-settings-name" label="Church name">
+          <Field id="church-settings-name" label={t('cs.name')}>
             <input
               id="church-settings-name"
               type="text"
@@ -116,12 +115,12 @@ export function ChurchSettingsForm({ initial }: Props) {
               className="admin-input"
             />
           </Field>
-          <Field id="church-settings-pastor" label="Lead pastor" hint="Shown to members. Optional.">
+          <Field id="church-settings-pastor" label={t('cs.pastor')} hint={t('cs.pastorHint')}>
             <input
               id="church-settings-pastor"
               type="text"
               autoComplete="name"
-              placeholder="Optional"
+              placeholder={t('cs.optional')}
               value={pastorName}
               onChange={(e) => setPastorName(e.target.value)}
               className="admin-input"
@@ -131,11 +130,11 @@ export function ChurchSettingsForm({ initial }: Props) {
       </div>
 
       <div className="space-y-5">
-        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">How members join</p>
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">{t('cs.howJoin')}</p>
         <Field
           id="church-settings-code"
-          label="Church code"
-          hint="Members type this in the mobile app."
+          label={t('share.churchCode')}
+          hint={t('cs.codeHint')}
         >
           <div className="flex gap-2">
             <input
@@ -154,11 +153,11 @@ export function ChurchSettingsForm({ initial }: Props) {
               onClick={() => void copy('code', churchCode.trim().toUpperCase())}
               className="admin-btn-secondary shrink-0 px-3 text-[13px]"
             >
-              {copied === 'code' ? 'Copied' : 'Copy'}
+              {copied === 'code' ? t('cs.copied') : t('cs.copy')}
             </button>
           </div>
         </Field>
-        <Field id="church-settings-join" label="Join link">
+        <Field id="church-settings-join" label={t('cs.joinLink')}>
           <div className="flex gap-2">
             <input
               id="church-settings-join"
@@ -172,24 +171,24 @@ export function ChurchSettingsForm({ initial }: Props) {
               onClick={() => void copy('link', joinUrlPreview)}
               className="admin-btn-secondary shrink-0 px-3 text-[13px]"
             >
-              {copied === 'link' ? 'Copied' : 'Copy'}
+              {copied === 'link' ? t('cs.copied') : t('cs.copy')}
             </button>
           </div>
         </Field>
         {codeChanged ? (
           <p className="text-[13px] text-amber-700 dark:text-amber-200">
-            You changed the code — update printed QR codes and shared links after saving.
+            {t('cs.codeChanged')}
           </p>
         ) : null}
       </div>
 
       <div className="space-y-5">
-        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">Defaults</p>
+        <p className="text-[13px] font-semibold text-[var(--admin-fg-strong)]">{t('cs.defaults')}</p>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
             id="church-settings-timezone"
-            label="Timezone"
-            hint="Used for reminder times for your church."
+            label={t('cs.timezone')}
+            hint={t('cs.timezoneHint')}
           >
             <select
               id="church-settings-timezone"
@@ -199,7 +198,7 @@ export function ChurchSettingsForm({ initial }: Props) {
             >
               {CHURCH_TIMEZONE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
-                  {opt.label}
+                  {`${t(CHURCH_TIMEZONE_NAME_KEYS[opt.value as keyof typeof CHURCH_TIMEZONE_NAME_KEYS])} (${opt.value})`}
                 </option>
               ))}
               {!CHURCH_TIMEZONE_OPTIONS.some((o) => o.value === timezone) ? (
@@ -210,7 +209,7 @@ export function ChurchSettingsForm({ initial }: Props) {
           <Field
             id="church-settings-language"
             label={t('settings.churchLanguage')}
-            hint="Default for sermons and devotionals."
+            hint={t('cs.langHint')}
           >
             <select
               id="church-settings-language"
@@ -229,7 +228,7 @@ export function ChurchSettingsForm({ initial }: Props) {
       </div>
 
       <div>
-        <p className="mb-3 text-[13px] font-semibold text-[var(--admin-fg-strong)]">Publishing</p>
+        <p className="mb-3 text-[13px] font-semibold text-[var(--admin-fg-strong)]">{t('cs.publishing')}</p>
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-admin bg-[var(--admin-surface-bg)] px-4 py-4">
           <input
             type="checkbox"
@@ -239,10 +238,10 @@ export function ChurchSettingsForm({ initial }: Props) {
           />
           <span>
             <span className="block text-[14px] font-semibold text-[var(--admin-fg-strong)]">
-              Require approval before publish
+              {t('cs.requireApproval')}
             </span>
             <span className="mt-1 block text-[13px] leading-relaxed text-[var(--admin-muted)]">
-              Staff submit devotionals for review. Only owners and admin pastors can go live.
+              {t('cs.requireApprovalHint')}
             </span>
           </span>
         </label>
@@ -259,11 +258,11 @@ export function ChurchSettingsForm({ initial }: Props) {
               {success}
             </p>
           ) : (
-            <p className="text-[13px] text-[var(--admin-muted)]">Changes apply to the whole church.</p>
+            <p className="text-[13px] text-[var(--admin-muted)]">{t('cs.applies')}</p>
           )}
         </div>
         <button type="submit" disabled={pending} className="admin-btn-primary disabled:opacity-60">
-          {pending ? 'Saving…' : 'Save church settings'}
+          {pending ? t('settings.saving') : t('cs.save')}
         </button>
       </div>
     </form>

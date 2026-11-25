@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -12,7 +14,9 @@ import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { buildMemberJoinUrl } from '@/lib/church/member-join';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Members' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('nav.members') };
+}
 
 export default function MembersPage() {
   return (
@@ -31,10 +35,14 @@ async function MembersPageBody() {
   if (!profile.church_id || !church) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="admin-heading">Members</h1>
-        <p className="admin-body">Create or join a church from the dashboard first.</p>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="members.title" />
+        </h1>
+        <p className="admin-body">
+          <AdminChromeCopy k="members.createFirst" />
+        </p>
         <Link href="/dashboard" className="text-admin-link hover:underline">
-          Go to dashboard
+          <AdminChromeCopy k="common.goDashboard" />
         </Link>
       </div>
     );
@@ -56,14 +64,14 @@ async function MembersPageBody() {
             <AdminChromeCopy k="members.title" />
           </h1>
           <p className="admin-body mt-2">
-            People who joined this church in the app.
+            <AdminChromeCopy k="members.intro" />
             {memberCount > 0 ? (
               <>
                 {' '}
                 <span className="tabular-nums font-semibold text-[var(--admin-fg-strong)]">
                   {memberCount}
                 </span>{' '}
-                {memberCount === 1 ? 'member' : 'members'}.
+                <AdminChromeCopy k={memberCount === 1 ? 'members.count1' : 'members.countN'} />.
               </>
             ) : null}
           </p>
@@ -73,7 +81,7 @@ async function MembersPageBody() {
       {membersError ? (
         <div className="admin-card p-6">
           <p className="text-[14px] text-red-500" role="alert">
-            Could not load members. Refresh the page, or try again in a moment.
+            <AdminChromeCopy k="members.loadError" />
           </p>
         </div>
       ) : (
@@ -87,14 +95,18 @@ async function MembersPageBody() {
             churchCode={church.church_code}
             joinUrl={joinUrl}
             qrDataUrl={qrDataUrl}
-            heading="Invite members"
-            hint="They install the app, sign in, and enter this code or scan the QR."
+            headingKey="members.inviteHeading"
+            hintKey="members.inviteHint"
             size="lg"
           />
         ) : (
           <div className="admin-card p-6">
-            <h2 className="admin-section-title">Invite members</h2>
-            <p className="admin-body mt-2">This church does not have a church code yet.</p>
+            <h2 className="admin-section-title">
+              <AdminChromeCopy k="members.inviteHeading" />
+            </h2>
+            <p className="admin-body mt-2">
+              <AdminChromeCopy k="members.noCode" />
+            </p>
           </div>
         )}
       </section>

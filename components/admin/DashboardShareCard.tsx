@@ -3,15 +3,17 @@
 import { useMemo, useState } from 'react';
 
 import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import { normalizeChurchCode } from '@/lib/church/member-join';
+import type { UiKey } from '@/lib/i18n/ui';
 
 type Props = {
   churchName: string;
   churchCode: string;
   joinUrl: string;
   qrDataUrl: string;
-  heading?: string;
-  hint?: string;
+  headingKey?: UiKey;
+  hintKey?: UiKey;
   size?: 'sm' | 'lg';
   showEmail?: boolean;
 };
@@ -21,8 +23,8 @@ export function DashboardShareCard({
   churchCode,
   joinUrl,
   qrDataUrl,
-  heading = 'Share with members',
-  hint = 'Church code they enter in the app, or scan the QR. You can also email a join link.',
+  headingKey = 'dash.shareHeading',
+  hintKey = 'share.defaultHint',
   size = 'sm',
   showEmail = true,
 }: Props) {
@@ -73,12 +75,12 @@ export function DashboardShareCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to }),
       });
-      const json = (await res.json()) as { message?: string; error?: string };
+      const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        flash(json.error ?? t('share.emailFail'));
+        flash(json.error ? localizeApiError(json.error) : t('share.emailFail'));
         return;
       }
-      flash(json.message ?? t('share.sent'));
+      flash(t('share.sent'));
       setEmailTo('');
     } catch {
       flash(t('share.networkError'));
@@ -89,8 +91,8 @@ export function DashboardShareCard({
 
   return (
     <div className="admin-card flex h-full flex-col p-5">
-      <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">{heading}</h2>
-      <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{hint}</p>
+      <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">{t(headingKey)}</h2>
+      <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{t(hintKey)}</p>
       <div className="mt-4 flex flex-wrap gap-4">
         <div className="min-w-[12rem] flex-1 space-y-3">
           <div className="flex items-start justify-between gap-3 rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] px-3.5 py-3">
@@ -120,7 +122,7 @@ export function DashboardShareCard({
               className="admin-btn-secondary flex min-w-[7.5rem] flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-3 py-2 text-[13px]"
             >
               <LinkIcon />
-              Copy link
+              {t('share.copyLink')}
             </button>
             <button
               type="button"
@@ -128,7 +130,7 @@ export function DashboardShareCard({
               className="admin-btn-secondary flex min-w-[7.5rem] flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-3 py-2 text-[13px]"
             >
               <DownloadIcon />
-              Download QR
+              {t('share.downloadQr')}
             </button>
           </div>
           {notice ? (
@@ -161,7 +163,7 @@ export function DashboardShareCard({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={qrDataUrl}
-              alt={`QR code to join ${churchName}`}
+              alt={t('share.qrAlt', { church: churchName })}
               width={size === 'lg' ? 140 : 88}
               height={size === 'lg' ? 140 : 88}
               className={size === 'lg' ? 'block h-[140px] w-[140px]' : 'block h-[88px] w-[88px]'}

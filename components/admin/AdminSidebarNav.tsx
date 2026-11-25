@@ -186,7 +186,7 @@ export function AdminSidebarNav({
   }
 
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1 text-[14px]">
+    <nav aria-label={t('nav.main')} className="flex flex-col gap-1 text-[14px]">
       {items.map((item) => {
         const active = isActive(displayPath, item);
         return (
@@ -225,6 +225,7 @@ export function AdminSidebarNav({
  * current tab scrolled into view, so Billing / Notifications / Settings are discoverable.
  */
 function CompactNavScroller({ activeKey, children }: { activeKey: string; children: ReactNode }) {
+  const { t } = useLanguage();
   const ref = useRef<HTMLElement>(null);
   const [edges, setEdges] = useState({ left: false, right: false });
 
@@ -264,7 +265,7 @@ function CompactNavScroller({ activeKey, children }: { activeKey: string; childr
   return (
     <nav
       ref={ref}
-      aria-label="Main"
+      aria-label={t('nav.main')}
       onScroll={measure}
       style={mask ? { maskImage: mask, WebkitMaskImage: mask } : undefined}
       className="-mx-4 flex min-w-0 items-center gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

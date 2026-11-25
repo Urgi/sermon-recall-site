@@ -4,13 +4,15 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 
 import { ModalShell } from '@/components/admin/ModalShell';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import type { PaidPlanId } from '@/lib/billing/plans';
 import { supportEmail } from '@/lib/public-site/config';
 
 export type PlanOption = {
   id: PaidPlanId;
   label: string;
-  priceLabel: string;
+  priceUsd: number;
   memberLimit: number;
   available: boolean;
 };
@@ -22,7 +24,7 @@ async function post(path: string, body?: unknown): Promise<{ url?: string }> {
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-  if (!res.ok) throw new Error(json.error || 'Something went wrong.');
+  if (!res.ok) throw new Error(localizeApiError(json.error));
   return json;
 }
 
@@ -40,6 +42,11 @@ export function BillingPanel({
   memberCount: number | null;
 }) {
   const router = useRouter();
+  const { t, language } = useLanguage();
+  const price = (plan: PlanOption) =>
+    t('billing.pricePerMonth', {
+      price: new Intl.NumberFormat(language, { style: 'currency', currency: 'USD' }).format(plan.priceUsd),
+    });
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -55,10 +62,10 @@ export function BillingPanel({
     setSuccess(null);
     try {
       const { url } = await post(path, body);
-      if (!url) throw new Error('Something went wrong.');
+      if (!url) throw new Error(t('common.error'));
       window.location.href = url;
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : t('common.error'));
       setBusy(null);
     }
   }
@@ -70,11 +77,11 @@ export function BillingPanel({
     try {
       await post('/api/billing/change-plan', { plan: plan.id });
       setConfirmPlan(null);
-      setSuccess(`You're now on ${plan.label}. Your next invoice reflects the change.`);
+      setSuccess(t('billing.switched', { plan: plan.label }));
       router.refresh();
     } catch (e) {
       setConfirmPlan(null);
-      setError(e instanceof Error ? e.message : 'Something went wrong.');
+      setError(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setBusy(null);
     }
@@ -101,10 +108,10 @@ export function BillingPanel({
               <div>
                 <h2 className="admin-section-title">
                   {plan.label}
-                  {isCurrent && <span className="admin-badge ml-2 align-middle">Current</span>}
+                  {isCurrent && <span className="admin-badge ml-2 align-middle">{t('billing.current')}</span>}
                 </h2>
-                <p className="admin-body mt-1">{plan.priceLabel}</p>
-                <p className="admin-body mt-1 text-sm">Up to {plan.memberLimit} members</p>
+                <p className="admin-body mt-1">{price(plan)}</p>
+                <p className="admin-body mt-1 text-sm">{t('billing.upTo', { n: plan.memberLimit })}</p>
               </div>
               {!isCurrent && (
                 <button
@@ -118,19 +125,19 @@ export function BillingPanel({
                   }
                 >
                   {busy === `checkout-${plan.id}`
-                    ? 'Redirecting…'
+                    ? t('billing.redirecting')
                     : busy === `switch-${plan.id}`
-                      ? 'Switching…'
+                      ? t('billing.switching')
                       : !plan.available
-                        ? 'Not available yet'
+                        ? t('billing.unavailable')
                         : hasActiveSubscription
-                          ? `Switch to ${plan.label}`
-                          : 'Subscribe'}
+                          ? t('billing.switchTo', { plan: plan.label })
+                          : t('billing.subscribe')}
                 </button>
               )}
               {!isCurrent && hasActiveSubscription && tooSmall && (
                 <p className="admin-body text-xs">
-                  You have {memberCount} members. Remove members on the Members page to switch.
+                  {t('billing.tooSmall', { n: memberCount ?? 0 })}
                 </p>
               )}
             </div>
@@ -138,23 +145,22 @@ export function BillingPanel({
         })}
       </div>
       <p className="admin-body text-xs">
-        More than 500 members?{' '}
+        {t('billing.moreThan')}{' '}
         <a href={`mailto:${supportEmail()}?subject=Custom%20plan`} className="admin-link">
-          Contact us
-        </a>{' '}
-        for a custom plan.
+          {t('billing.custom')}
+        </a>
       </p>
 
       {hasCustomer && (
         <div className="admin-card flex flex-wrap items-center justify-between gap-3 p-5">
-          <p className="admin-body">Update your card, download invoices, or cancel.</p>
+          <p className="admin-body">{t('billing.manageHint')}</p>
           <button
             type="button"
             className="admin-btn-secondary"
             disabled={busy !== null}
             onClick={() => redirect('portal', '/api/billing/portal')}
           >
-            {busy === 'portal' ? 'Opening…' : 'Manage billing'}
+            {busy === 'portal' ? t('billing.opening') : t('billing.manage')}
           </button>
         </div>
       )}
@@ -168,12 +174,11 @@ export function BillingPanel({
       >
         <div className="p-6">
           <h3 id="billing-switch-title" className="admin-section-title">
-            Switch to {dialogPlan?.label}?
+            {t('billing.switchTitle', { plan: dialogPlan?.label ?? '' })}
           </h3>
           {dialogPlan && (
             <p className="admin-body mt-2">
-              {dialogPlan.priceLabel}, up to {dialogPlan.memberLimit} members. Your next invoice is
-              adjusted for the rest of this billing period.
+              {t('billing.switchBody', { price: price(dialogPlan), n: dialogPlan.memberLimit })}
             </p>
           )}
           <div className="mt-6 flex flex-wrap justify-end gap-3">
@@ -183,7 +188,7 @@ export function BillingPanel({
               disabled={busy !== null}
               className="admin-btn-secondary"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="button"
@@ -191,7 +196,11 @@ export function BillingPanel({
               disabled={busy !== null}
               className="admin-btn-primary"
             >
-              {busy?.startsWith('switch-') ? 'Switching…' : `Switch to ${dialogPlan?.label ?? 'plan'}`}
+              {busy?.startsWith('switch-')
+                ? t('billing.switching')
+                : dialogPlan
+                  ? t('billing.switchTo', { plan: dialogPlan.label })
+                  : t('billing.switchToPlan')}
             </button>
           </div>
         </div>

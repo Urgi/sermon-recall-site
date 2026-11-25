@@ -10,6 +10,9 @@ export type AppLanguage = (typeof APP_LANGUAGES)[number]['value'];
 
 export const DEFAULT_APP_LANGUAGE: AppLanguage = 'en';
 
+/** Cookie that remembers the chosen language so server rendering matches the client. */
+export const LANGUAGE_COOKIE = 'sr-language';
+
 export function isAppLanguage(value: unknown): value is AppLanguage {
   return value === 'en' || value === 'es' || value === 'fr';
 }
@@ -22,9 +25,8 @@ export function normalizeAppLanguage(value: unknown): AppLanguage {
 
 export function languageOptionLabel(code: AppLanguage): string {
   const opt = APP_LANGUAGES.find((o) => o.value === code);
-  if (!opt) return code;
-  if (opt.nativeLabel === opt.label) return opt.label;
-  return `${opt.label} (${opt.nativeLabel})`;
+  // Language names stay in their own language, so they read correctly whatever the UI language is.
+  return opt?.nativeLabel ?? code;
 }
 
 /** English display name for prompts (e.g. "Spanish"). */

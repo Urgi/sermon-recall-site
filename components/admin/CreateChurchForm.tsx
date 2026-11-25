@@ -9,10 +9,12 @@ import {
   type AppLanguage,
   languageOptionLabel,
 } from '@/lib/i18n/languages';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function CreateChurchForm() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [churchCode, setChurchCode] = useState('');
   const [pastorName, setPastorName] = useState('');
@@ -35,19 +37,17 @@ export function CreateChurchForm() {
     if (rpcError) {
       const msg = rpcError.message;
       if (msg.includes('already_in_church')) {
-        setError('You already belong to a church. Leave or use another account to create one.');
+        setError(t('cc.err.already'));
       } else if (msg.includes('invalid_church_code_format')) {
-        setError('Church code must be 4–32 characters after trimming.');
+        setError(t('cc.err.codeFormat'));
       } else if (msg.includes('invalid_name')) {
-        setError('Enter a church name.');
+        setError(t('cc.err.name'));
       } else if (msg.includes('invalid_sermon_language')) {
-        setError('Choose English, Spanish, or French for church language.');
+        setError(t('cc.err.lang'));
       } else if (msg.includes('duplicate') || msg.includes('unique') || msg.includes('23505')) {
-        setError('That church code is already taken. Pick another.');
+        setError(t('cc.err.taken'));
       } else if (msg.includes('cannot_change_role') || msg.includes('cannot_change_church_id')) {
-        setError(
-          'Could not finish setup. Sign out, sign in again, and try once more. If it persists, contact support.',
-        );
+        setError(t('cc.err.setup'));
       } else {
         setError(msg);
       }
@@ -60,7 +60,7 @@ export function CreateChurchForm() {
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <label htmlFor="church-name" className="block text-[13px] font-medium text-[#94a3b8]">
-          Church name
+          {t('cc.name')}
         </label>
         <input
           id="church-name"
@@ -76,11 +76,10 @@ export function CreateChurchForm() {
       </div>
       <div>
         <label htmlFor="new-church-code" className="block text-[13px] font-medium text-[#94a3b8]">
-          Church code
+          {t('share.churchCode')}
         </label>
         <p className="mt-0.5 text-[12px] leading-snug text-[#64748b]">
-          Members use this code in the app to join. Letters and numbers; stored uppercase (e.g.{' '}
-          <span className="font-mono text-[#94a3b8]">GRACE001</span>).
+          {t('cc.codeHint')}
         </p>
         <input
           id="new-church-code"
@@ -98,14 +97,14 @@ export function CreateChurchForm() {
       </div>
       <div>
         <label htmlFor="pastor-display-name" className="block text-[13px] font-medium text-[#94a3b8]">
-          Lead pastor (optional)
+          {t('cc.pastor')}
         </label>
         <input
           id="pastor-display-name"
           name="pastorName"
           type="text"
           autoComplete="name"
-          placeholder="Shown on church profile"
+          placeholder={t('cc.pastorPlaceholder')}
           value={pastorName}
           onChange={(e) => setPastorName(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[rgba(56,189,248,0.2)] bg-[#05070a] px-3 py-2 text-[15px] text-white outline-none ring-sky-400/40 transition-[border-color,box-shadow] duration-fast placeholder:text-[#64748b] focus:border-[#38bdf8] focus:ring-2"
@@ -113,11 +112,10 @@ export function CreateChurchForm() {
       </div>
       <div>
         <label htmlFor="sermon-language" className="block text-[13px] font-medium text-[#94a3b8]">
-          Church language
+          {t('settings.churchLanguage')}
         </label>
         <p className="mt-0.5 text-[12px] leading-snug text-[#64748b]">
-          Language for sermons and devotionals shared with your congregation. Change later in
-          settings.
+          {t('cc.langHint')}
         </p>
         <select
           id="sermon-language"
@@ -143,7 +141,7 @@ export function CreateChurchForm() {
         disabled={pending}
         className="rounded-lg bg-[#0379bd] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0369a1] disabled:opacity-60"
       >
-        {pending ? 'Creating…' : 'Create church'}
+        {pending ? t('cc.creating') : t('cc.submit')}
       </button>
     </form>
   );

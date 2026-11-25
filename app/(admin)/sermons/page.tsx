@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -12,7 +14,9 @@ import { canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Sermons' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('nav.sermons') };
+}
 
 type Props = { searchParams: { filter?: string } };
 

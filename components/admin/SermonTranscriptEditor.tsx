@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 import { UnsavedWorkBanner } from '@/components/admin/UnsavedWorkBanner';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 type Props = {
@@ -24,6 +25,7 @@ export function SermonTranscriptEditor({
   canEdit,
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [draft, setDraft] = useState(transcript);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -42,7 +44,7 @@ export function SermonTranscriptEditor({
   async function saveTranscript() {
     const trimmed = draft.trim();
     if (!trimmed) {
-      setError('Transcript cannot be empty.');
+      setError(t('tx.empty'));
       return;
     }
     setError(null);
@@ -55,11 +57,11 @@ export function SermonTranscriptEditor({
       .eq('id', sermonId);
     setSaving(false);
     if (upErr) {
-      setError(upErr.message);
+      setError(t('settings.saveFailed'));
       return;
     }
     setEditing(false);
-    setSavedMessage(`Saved (${trimmed.length.toLocaleString()} characters).`);
+    setSavedMessage(t('tx.saved', { n: trimmed.length.toLocaleString() }));
     router.refresh();
   }
 
@@ -67,10 +69,10 @@ export function SermonTranscriptEditor({
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
         <Link href={`/sermons/${sermonId}`} className="admin-hint font-medium hover:text-admin-accent">
-          ← Back to sermon
+          {t('tx.back')}
         </Link>
         <div className="mt-4">
-          <h1 className="admin-heading">Source transcript</h1>
+          <h1 className="admin-heading">{t('tx.title')}</h1>
           <p className="admin-body mt-2">{sermonTitle}</p>
           {pastorLine ? <p className="admin-hint mt-1">{pastorLine}</p> : null}
         </div>
@@ -79,7 +81,7 @@ export function SermonTranscriptEditor({
       <div className="admin-card p-5 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[13px] text-admin-muted">
-            {transcript.length.toLocaleString()} characters · used for AI devotional generation
+            {t('tx.chars', { n: transcript.length.toLocaleString() })}
           </p>
           {canEdit && !editing ? (
             <button
@@ -92,7 +94,7 @@ export function SermonTranscriptEditor({
               }}
               className="text-[13px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300"
             >
-              Edit transcript
+              {t('tx.edit')}
             </button>
           ) : null}
           {canEdit && editing ? (
@@ -103,7 +105,7 @@ export function SermonTranscriptEditor({
                 onClick={() => void saveTranscript()}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-emerald-500 disabled:opacity-50"
               >
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? t('common.saving') : t('dev.saveChanges')}
               </button>
               <button
                 type="button"
@@ -115,7 +117,7 @@ export function SermonTranscriptEditor({
                 }}
                 className="rounded-lg border border-admin-strong px-4 py-2 text-[13px] text-admin-muted hover:bg-admin-surface disabled:opacity-50"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           ) : null}
@@ -123,7 +125,7 @@ export function SermonTranscriptEditor({
 
         {dirty ? (
           <UnsavedWorkBanner>
-            You have unsaved transcript edits. Save before leaving this page.
+            {t('tx.unsaved')}
           </UnsavedWorkBanner>
         ) : null}
 
@@ -156,11 +158,10 @@ export function SermonTranscriptEditor({
       {canEdit ? (
         <details className="admin-card p-4">
           <summary className="cursor-pointer text-[13px] font-medium text-admin-fg-strong">
-            Replace sermon source
+            {t('tx.replaceTitle')}
           </summary>
           <p className="admin-hint mt-2 text-[13px]">
-            Upload a new file only if you need to re-transcribe. This will queue another transcription
-            job and replace the current transcript when finished.
+            {t('tx.replaceHint')}
           </p>
           <SermonTranscriptUpload sermonId={sermonId} />
         </details>

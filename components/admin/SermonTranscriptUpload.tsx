@@ -5,7 +5,8 @@ import { useState } from 'react';
 
 import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
-import { TRANSCRIPTION_LENGTH_HINT } from '@/lib/transcription/constants';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import type { TranscribePhase } from '@/lib/transcribe-progress-estimate';
 
@@ -19,6 +20,7 @@ type Props = {
 
 export function SermonTranscriptUpload({ sermonId }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setError('Not signed in.');
+      setError(t('ns.err.signedOut'));
       setBusy(false);
       return;
     }
@@ -56,7 +58,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
         const text = await file.text();
         const trimmed = text.trim();
         if (!trimmed) {
-          setError('Text file was empty.');
+          setError(t('tx.err.fileEmpty'));
           return;
         }
         const { error: upErr } = await supabase
@@ -67,7 +69,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
           setError(upErr.message);
           return;
         }
-        setDone(`Saved text (${trimmed.length.toLocaleString()} characters).`);
+        setDone(t('tx.savedText', { n: trimmed.length.toLocaleString() }));
         router.refresh();
         return;
       }
@@ -102,14 +104,14 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       });
       const json = (await res.json()) as { error?: string; jobId?: string };
       if (!res.ok || !json.jobId) {
-        setError(json.error ?? 'Could not queue transcription.');
+        setError(json.error ? localizeApiError(json.error) : t('ns.err.queue'));
         return;
       }
 
       setQueuedJobId(json.jobId);
-      setDone('Transcription queued — processing in the background.');
+      setDone(t('tx.queued'));
     } catch {
-      setError('Something went wrong.');
+      setError(t('common.error'));
     } finally {
       setMediaProgress(null);
       setBusy(false);
@@ -119,7 +121,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
   async function savePastedText() {
     const trimmed = pasteText.trim();
     if (!trimmed) {
-      setError('Paste sermon text, or upload a file.');
+      setError(t('tx.err.pasteOrUpload'));
       return;
     }
     setError(null);
@@ -136,7 +138,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       return;
     }
     setPasteText('');
-    setDone(`Saved text (${trimmed.length.toLocaleString()} characters).`);
+    setDone(t('tx.savedText', { n: trimmed.length.toLocaleString() }));
     router.refresh();
   }
 
@@ -145,12 +147,10 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-[14px] font-semibold text-[var(--admin-fg-strong)]">
-            Upload or paste text
+            {t('tx.uploadTitle')}
           </p>
           <p className="admin-hint mt-1 text-[13px] leading-relaxed max-w-xl">
-            Upload a <strong className="font-medium text-[var(--admin-fg-secondary)]">.txt</strong>,{' '}
-            <strong className="font-medium text-[var(--admin-fg-secondary)]">audio / video</strong>, or
-            paste the manuscript below. {TRANSCRIPTION_LENGTH_HINT}
+            {t('tx.uploadHint')} {t('tx.lengthHint')}
           </p>
         </div>
         <label className="shrink-0 inline-block">
@@ -162,19 +162,19 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
             onChange={(ev) => void onPick(ev)}
           />
           <span className="cursor-pointer inline-flex items-center rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-card-bg)] px-4 py-2 text-[13px] font-medium text-[var(--admin-fg)] shadow-sm hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)] disabled:opacity-50 transition-colors">
-            {busy ? 'Working…' : 'Choose file'}
+            {busy ? t('tx.working') : t('ns.fileChoose')}
           </span>
         </label>
       </div>
       <div className="mt-4">
         <label htmlFor="fallback-paste" className="admin-label">
-          Paste text
+          {t('tx.pasteTitle')}
         </label>
         <textarea
           id="fallback-paste"
           rows={6}
           disabled={busy}
-          placeholder="Paste manuscript, outline, or bullets…"
+          placeholder={t('ns.textPlaceholder')}
           value={pasteText}
           onChange={(e) => setPasteText(e.target.value)}
           className="admin-input mt-1 resize-y leading-relaxed"
@@ -185,7 +185,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
           onClick={() => void savePastedText()}
           className="admin-btn-secondary mt-2 text-[13px]"
         >
-          Save pasted text
+          {t('tx.savePasted')}
         </button>
       </div>
       {mediaProgress && busy ? (
@@ -202,7 +202,7 @@ export function SermonTranscriptUpload({ sermonId }: Props) {
           <TranscriptionJobPoller
             jobId={queuedJobId}
             onComplete={() => {
-              setDone('Transcript saved.');
+              setDone(t('tx.savedDone'));
               router.refresh();
             }}
           />

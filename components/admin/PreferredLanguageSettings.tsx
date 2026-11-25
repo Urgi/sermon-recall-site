@@ -18,7 +18,7 @@ export function PreferredLanguageSettings() {
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +50,7 @@ export function PreferredLanguageSettings() {
   async function onSave(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setSaved(false);
     setPending(true);
     try {
       const supabase = createBrowserSupabaseClient();
@@ -66,11 +66,13 @@ export function PreferredLanguageSettings() {
         .update({ preferred_language: language })
         .eq('id', user.id);
       if (updateError) {
-        setError(updateError.message);
+        setError(t('settings.saveFailed'));
         return;
       }
+      // Auth emails (sign-in code etc.) pick their language from the auth user's metadata.
+      void supabase.auth.updateUser({ data: { preferred_language: language } });
       setUiLanguage(language);
-      setSuccess(t('settings.languageSaved'));
+      setSaved(true);
     } catch {
       setError(t('settings.networkError'));
     } finally {
@@ -109,9 +111,9 @@ export function PreferredLanguageSettings() {
           {error}
         </p>
       ) : null}
-      {success ? (
+      {saved ? (
         <p className="text-[13px] text-emerald-600 dark:text-emerald-400" role="status">
-          {success}
+          {t('settings.languageSaved')}
         </p>
       ) : null}
       <button type="submit" disabled={pending} className="admin-btn-primary disabled:opacity-60">

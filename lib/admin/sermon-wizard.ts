@@ -1,3 +1,5 @@
+import { getActiveUiLanguage, tr } from '@/lib/i18n/ui';
+
 export const SERMON_WIZARD_STEPS = ['details', 'source', 'review'] as const;
 
 export type SermonWizardStep = (typeof SERMON_WIZARD_STEPS)[number];
@@ -10,7 +12,7 @@ export function sermonWizardStepIndex(step: SermonWizardStep): number {
 
 export function pastorDisplayName(name: string | null | undefined): string {
   const t = name?.trim();
-  return t || 'your pastor';
+  return t || tr('wiz.yourPastor');
 }
 
 function localYmd(now: Date): string {
@@ -35,7 +37,7 @@ export function firstDevotionalAvailableYmd(
 export function formatShortDate(ymd: string): string {
   const [y, m, d] = ymd.split('-').map(Number);
   if (!y || !m || !d) return ymd;
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+  return new Date(y, m - 1, d).toLocaleDateString(getActiveUiLanguage(), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -56,24 +58,12 @@ export function sermonWizardCopy(
   const pastor = pastorDisplayName(opts?.pastorName);
   switch (step) {
     case 'details':
-      return {
-        title: 'Sermon details',
-        hint: 'Name this sermon so your church can find it this week.',
-      };
+      return { title: tr('wiz.detailsTitle'), hint: tr('wiz.detailsHint') };
     case 'source':
-      return {
-        title: 'Add the sermon',
-        hint: 'We’ll draft six-day devotionals from this. Nothing is live yet.',
-      };
+      return { title: tr('wiz.sourceTitle'), hint: tr('wiz.sourceHint') };
     case 'review':
       return opts?.canApprove
-        ? {
-            title: 'Review devotionals',
-            hint: 'Edit anything that needs a pastor’s voice, then approve when you’re ready.',
-          }
-        : {
-            title: 'Review devotionals',
-            hint: `When this looks right, send it to ${pastor} for approval. Members won’t see it until then.`,
-          };
+        ? { title: tr('wiz.reviewTitle'), hint: tr('wiz.reviewHintApprove') }
+        : { title: tr('wiz.reviewTitle'), hint: tr('wiz.reviewHintSend', { pastor }) };
   }
 }

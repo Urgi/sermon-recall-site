@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -8,7 +10,9 @@ import { canAccessTeamNav } from '@/lib/auth/profile';
 import { getChurchForProfile, requireApprovedStaffSession } from '@/lib/auth/server';
 import { TeamDashboard } from '@/components/admin/TeamDashboard';
 
-export const metadata: Metadata = { title: 'Team' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('nav.team') };
+}
 
 export default function TeamPage() {
   return (
@@ -30,8 +34,12 @@ async function TeamPageBody() {
   if (!ctx.profile.church_id) {
     return (
       <div className="mx-auto max-w-3xl">
-        <h1 className="admin-heading">Team</h1>
-        <p className="admin-body mt-4">Create or join a church to manage your team.</p>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="team.title" />
+        </h1>
+        <p className="admin-body mt-4">
+          <AdminChromeCopy k="team.noChurch" />
+        </p>
       </div>
     );
   }
@@ -39,10 +47,11 @@ async function TeamPageBody() {
   if (!canView) {
     return (
       <div className="mx-auto max-w-3xl">
-        <h1 className="admin-heading">Team</h1>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="team.title" />
+        </h1>
         <p className="admin-body mt-4">
-          Your role does not include access to team management. Contact your church owner or admin
-          pastor if you need access changes.
+          <AdminChromeCopy k="team.noAccess" />
         </p>
       </div>
     );

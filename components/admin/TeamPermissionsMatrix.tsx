@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import type { StaffRole } from '@/lib/auth/permissions';
 import { ROLE_LABELS } from '@/lib/team/role-guide';
 import {
@@ -45,20 +46,20 @@ function DeniedCell() {
 }
 
 export function TeamPermissionsMatrix({ highlightRole }: Props) {
+  const { t } = useLanguage();
   const { rows, cells } = useMemo(() => buildPermissionMatrix(), []);
   const highlight = highlightRole as StaffRole | null;
 
   return (
     <section className="admin-card overflow-hidden">
       <div className="border-b border-admin px-4 py-4 sm:px-6">
-        <h2 className="admin-section-title">Role permissions matrix</h2>
+        <h2 className="admin-section-title">{t('pmx.title')}</h2>
         <p className="admin-hint mt-1 max-w-2xl">
-          Checkmarks reflect the same rules enforced by the server on every action. Hover a
-          permission name for details.
+          {t('pmx.hint')}
         </p>
         {highlight && MATRIX_ROLES.includes(highlight) ? (
           <p className="mt-2 text-[12px] font-medium text-admin-accent">
-            Your role: {ROLE_LABELS[highlight]}
+            {t('pmx.yourRole', { role: ROLE_LABELS[highlight] })}
           </p>
         ) : null}
       </div>
@@ -71,7 +72,7 @@ export function TeamPermissionsMatrix({ highlightRole }: Props) {
                 scope="col"
                 className="permissions-matrix-sticky-col permissions-matrix-sticky-head z-20 min-w-[10.5rem] border-b border-r border-admin bg-admin-card px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-admin-dim"
               >
-                Permission
+                {t('pmx.permission')}
               </th>
               {MATRIX_ROLES.map((role) => {
                 const isYou = highlight === role;
@@ -88,7 +89,7 @@ export function TeamPermissionsMatrix({ highlightRole }: Props) {
                     <span className="block px-1">{ROLE_LABELS[role]}</span>
                     {isYou ? (
                       <span className="mt-1 block text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
-                        You
+                        {t('pmx.you')}
                       </span>
                     ) : null}
                   </th>
@@ -112,10 +113,10 @@ export function TeamPermissionsMatrix({ highlightRole }: Props) {
 
       <div className="flex flex-wrap gap-4 border-t border-admin px-4 py-3 text-[11px] text-admin-dim sm:px-6">
         <span className="inline-flex items-center gap-1.5">
-          <CheckIcon /> Allowed
+          <CheckIcon /> {t('pmx.allowed')}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <DeniedCell /> Not allowed
+          <DeniedCell /> {t('pmx.notAllowed')}
         </span>
       </div>
     </section>
@@ -133,6 +134,7 @@ function MatrixRowCells({
   allowed: boolean[];
   highlightRole: StaffRole | null;
 }) {
+  const { t } = useLanguage();
   const zebra = rowIdx % 2 === 1;
 
   return (
@@ -157,7 +159,7 @@ function MatrixRowCells({
             }`}
           >
             <span className="sr-only">
-              {ROLE_LABELS[role]}: {row.label} — {yes ? 'allowed' : 'not allowed'}
+              {ROLE_LABELS[role]}: {row.label} — {yes ? t('pmx.allowed') : t('pmx.notAllowed')}
             </span>
             {yes ? <CheckIcon /> : <DeniedCell />}
           </td>

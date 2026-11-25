@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { notFound } from 'next/navigation';
 
 import { SermonTranscriptEditor } from '@/components/admin/SermonTranscriptEditor';
@@ -6,7 +8,9 @@ import { canManageSermonsWithStaff } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Transcript' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('tx.title') };
+}
 
 type Props = { params: { id: string } };
 

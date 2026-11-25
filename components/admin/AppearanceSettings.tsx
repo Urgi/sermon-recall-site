@@ -1,42 +1,34 @@
 'use client';
 
 import { useAdminTheme } from '@/components/admin/ThemeProvider';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import type { UiKey } from '@/lib/i18n/ui';
 import type { AdminThemePreference } from '@/lib/theme/admin-theme';
 
 const OPTIONS: {
   value: AdminThemePreference;
-  label: string;
-  description: string;
+  label: UiKey;
+  description: UiKey;
   swatch: string;
 }[] = [
-  {
-    value: 'dark',
-    label: 'Dark',
-    description: 'Deep slate background.',
-    swatch: 'bg-[#05070a]',
-  },
-  {
-    value: 'light',
-    label: 'Bright',
-    description: 'Higher contrast for daytime.',
-    swatch: 'bg-[#f8fafc]',
-  },
+  { value: 'dark', label: 'theme.dark', description: 'theme.darkDesc', swatch: 'bg-[#05070a]' },
+  { value: 'light', label: 'theme.light', description: 'theme.lightDesc', swatch: 'bg-[#f8fafc]' },
   {
     value: 'system',
-    label: 'System',
-    description: 'Match this device.',
+    label: 'theme.system',
+    description: 'theme.systemDesc',
     swatch: 'bg-[linear-gradient(90deg,#05070a_50%,#f8fafc_50%)]',
   },
 ];
 
 export function AppearanceSettings() {
   const { preference, resolved, setPreference } = useAdminTheme();
+  const { t } = useLanguage();
 
   return (
     <div className="space-y-4">
       <p className="text-[13px] text-[var(--admin-muted)]">
-        Currently using <span className="font-semibold text-[var(--admin-fg-strong)]">{resolved}</span>{' '}
-        mode.
+        {t('theme.current', { mode: t(resolved === 'dark' ? 'theme.darkLower' : 'theme.lightLower') })}
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {OPTIONS.map((opt) => {
@@ -61,10 +53,10 @@ export function AppearanceSettings() {
                 />
                 <span>
                   <span className="block text-[14px] font-semibold text-[var(--admin-fg-strong)]">
-                    {opt.label}
+                    {t(opt.label)}
                   </span>
                   <span className="mt-0.5 block text-[12px] leading-snug text-[var(--admin-muted)]">
-                    {opt.description}
+                    {t(opt.description)}
                   </span>
                 </span>
               </span>

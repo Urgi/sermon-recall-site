@@ -1,3 +1,5 @@
+import { tr } from '@/lib/i18n/ui';
+
 /**
  * Groq / worker pipeline has no fine-grained progress API. Heuristic for upload vs transcribe phases.
  */
@@ -37,11 +39,11 @@ export function buildTranscribeProgressView(
     const p = Math.min(18, 3 + Math.floor(phaseElapsedSec * 5));
     return {
       percent: p,
-      title: 'Uploading file',
+      title: tr('prog.upload'),
       detail:
         phaseElapsedSec < 1
-          ? 'Sending to storage…'
-          : 'Upload in progress — usually a few seconds.',
+          ? tr('prog.sending')
+          : tr('prog.uploadWait'),
     };
   }
 
@@ -53,20 +55,20 @@ export function buildTranscribeProgressView(
 
     let detail: string;
     if (phaseElapsedSec < 3) {
-      detail = 'Drafting all six days from your sermon…';
+      detail = tr('prog.drafting');
     } else if (remaining > 20) {
-      detail = `Often about ${fmtSec(remaining * 0.6)}–${fmtSec(remaining * 1.1)} left (estimate).`;
+      detail = tr('prog.leftRange', { a: fmtSec(remaining * 0.6), b: fmtSec(remaining * 1.1) });
     } else if (remaining > 5) {
-      detail = `Often about ${fmtSec(remaining)} left (estimate).`;
+      detail = tr('prog.left', { a: fmtSec(remaining) });
     } else if (remaining > 0) {
-      detail = 'Almost done — polishing the six-day preview…';
+      detail = tr('prog.almostDraft');
     } else {
-      detail = 'Still generating — complex sermons can take a little longer.';
+      detail = tr('prog.stillDraft');
     }
 
     return {
       percent: Math.min(percent, 99),
-      title: 'Building six-day preview',
+      title: tr('prog.draftTitle'),
       detail,
     };
   }
@@ -78,20 +80,20 @@ export function buildTranscribeProgressView(
 
   let detail: string;
   if (phaseElapsedSec < 3) {
-    detail = 'Worker is preparing and transcribing with Groq…';
+    detail = tr('prog.transPreparing');
   } else if (remaining > 60) {
-    detail = `Often ${fmtSec(remaining * 0.5)}–${fmtSec(remaining * 1.2)} left (YouTube downloads take longer).`;
+    detail = tr('prog.transRange', { a: fmtSec(remaining * 0.5), b: fmtSec(remaining * 1.2) });
   } else if (remaining > 10) {
-    detail = `Often about ${fmtSec(remaining)} left (estimate).`;
+    detail = tr('prog.left', { a: fmtSec(remaining) });
   } else if (remaining > 0) {
-    detail = 'Almost done — wrapping up…';
+    detail = tr('prog.almostTrans');
   } else {
-    detail = 'Still processing — large files or YouTube can exceed the estimate.';
+    detail = tr('prog.stillTrans');
   }
 
   return {
     percent: Math.min(percent, 61),
-    title: 'Transcribing sermon',
+    title: tr('prog.transTitle'),
     detail,
   };
 }

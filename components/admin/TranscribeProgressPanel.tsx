@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { useProgressTick } from '@/lib/hooks/useProgressTick';
 import {
   buildTranscribeProgressView,
@@ -26,6 +27,7 @@ export function TranscribeProgressPanel({
   fileBytes,
   children,
 }: TranscribeProgressPanelProps) {
+  const { t } = useLanguage();
   useProgressTick(true);
   const phaseSec = (Date.now() - phaseStartedAt) / 1000;
   const { percent, title, detail } = buildTranscribeProgressView(phase, phaseSec, fileBytes);
@@ -33,7 +35,7 @@ export function TranscribeProgressPanel({
   return (
     <div className="admin-card p-5" role="status" aria-live="polite">
       <div className="flex items-center justify-between gap-3">
-        <span className="admin-stat-label">Progress (estimate)</span>
+        <span className="admin-stat-label">{t('prog.estimate')}</span>
         <span className="admin-hint tabular-nums font-medium">{percent}%</span>
       </div>
       <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
@@ -45,7 +47,7 @@ export function TranscribeProgressPanel({
       <p className="mt-3.5 text-[15px] font-semibold text-[var(--admin-accent)]">{title}</p>
       <p className="admin-hint mt-1 leading-relaxed">{detail}</p>
       <p className="admin-hint mt-2 text-[12px]">
-        Time on this step: {formatStepElapsed(phaseStartedAt)}
+        {t('prog.elapsed', { t: formatStepElapsed(phaseStartedAt) })}
       </p>
       {children ? (
         <div className="mt-3.5 border-t border-[var(--admin-border)] pt-3">

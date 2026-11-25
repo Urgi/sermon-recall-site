@@ -7,7 +7,9 @@ import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerati
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import { savePreviewDays } from '@/lib/devotionals/preview-session';
-import { YOUTUBE_TEMPORARILY_DOWN_MESSAGE } from '@/lib/transcription/youtube-failure';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError, withApiHint } from '@/lib/i18n/api-errors';
+import { tr } from '@/lib/i18n/ui';
 import { useProgressTick } from '@/lib/hooks/useProgressTick';
 
 type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
@@ -51,6 +53,7 @@ export function TranscriptionJobPoller({
   onFailed,
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pipelinePhase, setPipelinePhase] = useState<PipelinePhase>('transcribe');
@@ -75,7 +78,7 @@ export function TranscriptionJobPoller({
         const json = (await res.json()) as { job?: Job; error?: string };
         if (cancelled) return;
         if (!res.ok || !json.job) {
-          setError(json.error ?? 'Could not load job status.');
+          setError(json.error ? localizeApiError(json.error) : tr('job.err.status'));
           return;
         }
         setJob(json.job);
@@ -90,14 +93,14 @@ export function TranscriptionJobPoller({
           return;
         }
         if (json.job.status === 'failed') {
-          setError(json.job.error_message ?? 'Transcription failed.');
+          setError(tr('job.err.failed'));
           onFailed?.();
           return;
         }
         timer = setTimeout(() => void poll(), 2000);
       } catch {
         if (!cancelled) {
-          setError('Network error while checking transcription status.');
+          setError(tr('job.err.network'));
         }
       }
     }
@@ -137,8 +140,8 @@ export function TranscriptionJobPoller({
           return;
         }
         if (!res.ok || !data.days?.length) {
-          const msg = data.error ?? 'Devotional preview generation failed.';
-          setError(data.hint ? `${msg} ${data.hint}` : msg);
+          const msg = data.error ? localizeApiError(data.error) : tr('job.err.genFailed');
+          setError(withApiHint(msg, data.hint));
           return;
         }
         savePreviewDays(sermonId, data.days);
@@ -148,7 +151,7 @@ export function TranscriptionJobPoller({
         router.refresh();
       } catch {
         if (!cancelled) {
-          setError('Network error while generating devotionals.');
+          setError(tr('job.err.genNetwork'));
         }
       }
     })();
@@ -166,13 +169,11 @@ export function TranscriptionJobPoller({
       return (
         <div className="admin-card space-y-2 p-4" role="alert">
           <p className="text-[14px] font-medium text-[var(--admin-fg-strong)]">
-            YouTube is temporarily down
+            {t('job.ytDown')}
           </p>
-          <p className="admin-hint leading-relaxed">{YOUTUBE_TEMPORARILY_DOWN_MESSAGE}</p>
+          <p className="admin-hint leading-relaxed">{t('job.ytDownMsg')}</p>
           <p className="admin-hint leading-relaxed">
-            Use <span className="font-medium text-[var(--admin-fg-strong)]">Upload</span> or{' '}
-            <span className="font-medium text-[var(--admin-fg-strong)]">Paste text</span> on this
-            page to continue.
+            {t('job.ytUse')}
           </p>
         </div>
       );
@@ -200,7 +201,7 @@ export function TranscriptionJobPoller({
   if (!job) {
     return (
       <div className="admin-card p-4" role="status">
-        <p className="text-[14px] font-medium text-[var(--admin-accent)]">Queuing transcription…</p>
+        <p className="text-[14px] font-medium text-[var(--admin-accent)]">{t('job.queuing')}</p>
       </div>
     );
   }
@@ -208,7 +209,7 @@ export function TranscriptionJobPoller({
   if (job.status === 'completed' || pipelinePhase === 'done') {
     return (
       <p className="text-[13px] text-emerald-600 dark:text-emerald-400" role="status">
-        Preview ready — refresh if it does not appear below.
+        {t('job.ready')}
       </p>
     );
   }
@@ -216,20 +217,19 @@ export function TranscriptionJobPoller({
   if (job.status === 'pending') {
     return (
       <div className="admin-card p-4 space-y-2" role="status">
-        <p className="text-[14px] font-medium text-[var(--admin-accent)]">Queued for transcription</p>
+        <p className="text-[14px] font-medium text-[var(--admin-accent)]">{t('job.queued')}</p>
         <p className="admin-hint text-[13px] leading-relaxed">
-          Your sermon is in line for the background worker. Transcription and your six-day preview
-          share one progress bar below.
+          {t('job.queuedHint')}
         </p>
         <p className="admin-hint text-[13px]">
-          Time waiting: {formatElapsed(transcribeStartedAt)}
+          {t('job.waiting', { t: formatElapsed(transcribeStartedAt) })}
         </p>
       </div>
     );
   }
 
   const chunkHint =
-    job.chunks_total > 1 ? `Chunk ${job.chunks_done}/${job.chunks_total}. ` : '';
+    job.chunks_total > 1 ? t('job.chunk', { a: job.chunks_done, b: job.chunks_total }) : '';
 
   return (
     <div className="space-y-2">
@@ -240,7 +240,7 @@ export function TranscriptionJobPoller({
       />
       <p className="admin-hint text-[13px]">
         {chunkHint}
-        Worker is transcribing with Groq — devotional preview follows on the same bar.
+        {t('job.transcribing')}
       </p>
     </div>
   );

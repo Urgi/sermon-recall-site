@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 
 import { ModalShell } from '@/components/admin/ModalShell';
 import { DevotionalGenerationHints } from '@/components/admin/DevotionalGenerationHints';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError, withApiHint } from '@/lib/i18n/api-errors';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import {
   countBodyParagraphs,
@@ -36,6 +38,7 @@ function DevotionalDayReviewModal({
   onDayChange,
   disabled = false,
 }: ModalProps) {
+  const { t } = useLanguage();
   const [title, setTitle] = useState(day.title);
   const [prePrompt, setPrePrompt] = useState(day.pre_prompt);
   const [mainContent, setMainContent] = useState(day.main_content);
@@ -72,7 +75,7 @@ function DevotionalDayReviewModal({
   function saveTitle() {
     const trimmed = title.trim();
     if (!trimmed) {
-      setError('Title cannot be empty.');
+      setError(t('dev.err.title'));
       return;
     }
     onDayChange({ ...day, title: trimmed });
@@ -83,7 +86,7 @@ function DevotionalDayReviewModal({
   function savePrePrompt() {
     const trimmed = prePrompt.trim();
     if (!trimmed) {
-      setError('“Before you read” cannot be empty.');
+      setError(t('dev.err.before'));
       return;
     }
     onDayChange({ ...day, pre_prompt: trimmed });
@@ -94,7 +97,7 @@ function DevotionalDayReviewModal({
   function saveMainContent() {
     const trimmed = mainContent.trim();
     if (!trimmed) {
-      setError('Body cannot be empty.');
+      setError(t('dev.err.body'));
       return;
     }
     const paragraphError = validateBodyParagraphs(trimmed);
@@ -110,7 +113,7 @@ function DevotionalDayReviewModal({
   function saveReflection() {
     const trimmed = reflectionQuestion.trim();
     if (!trimmed) {
-      setError('Reflection question cannot be empty.');
+      setError(t('dev.err.reflection'));
       return;
     }
     onDayChange({ ...day, reflection_question: trimmed });
@@ -121,7 +124,7 @@ function DevotionalDayReviewModal({
   async function regenerateBody() {
     const instruction = regenInstruction.trim();
     if (!instruction) {
-      setError('Describe what you want changed before regenerating.');
+      setError(t('dev.err.describe'));
       return;
     }
     setError(null);
@@ -148,13 +151,12 @@ function DevotionalDayReviewModal({
         day?: DevotionalDay;
       };
       if (!res.ok) {
-        setError(
-          data.hint ? `${data.error ?? 'Regenerate failed.'} ${data.hint}` : (data.error ?? 'Regenerate failed.'),
-        );
+        const msg = data.error ? localizeApiError(data.error) : t('dev.err.regen');
+        setError(withApiHint(msg, data.hint));
         return;
       }
       if (!data.day) {
-        setError('Unexpected response from server.');
+        setError(t('gw.err.unexpected'));
         return;
       }
       onDayChange(data.day);
@@ -178,7 +180,7 @@ function DevotionalDayReviewModal({
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-admin bg-admin-card shadow-2xl">
         <div className="flex items-center justify-between gap-3 border-b border-admin px-5 py-4">
           <p className="text-[11px] font-bold uppercase tracking-wider text-[#38bdf8]">
-            Day {day.day_number}
+            {t('dev.day', { n: day.day_number })}
           </p>
           <button
             type="button"
@@ -186,7 +188,7 @@ function DevotionalDayReviewModal({
             disabled={regenBusy}
             className="rounded-lg px-2 py-1 text-[13px] text-admin-muted hover:bg-admin-surface hover:text-admin-fg-strong"
           >
-            Close
+            {t('dev.close')}
           </button>
         </div>
 
@@ -225,7 +227,7 @@ function DevotionalDayReviewModal({
                   disabled={disabled || regenBusy}
                   className="shrink-0 text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                 >
-                  Edit title
+                  {t('dev.editTitle')}
                 </button>
               ) : (
                 <div className="flex shrink-0 gap-2">
@@ -234,7 +236,7 @@ function DevotionalDayReviewModal({
                     onClick={saveTitle}
                     className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                   >
-                    Save
+                    {t('dev.save')}
                   </button>
                   <button
                     type="button"
@@ -244,7 +246,7 @@ function DevotionalDayReviewModal({
                     }}
                     className="text-[12px] font-medium text-admin-muted hover:text-admin-fg-strong"
                   >
-                    Cancel
+                    {t('dev.cancel')}
                   </button>
                 </div>
               )}
@@ -255,7 +257,7 @@ function DevotionalDayReviewModal({
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400/90">
-                Member preview
+                {t('dev.memberPreview')}
               </p>
               {!showRegenPrompt ? (
                 <button
@@ -264,14 +266,14 @@ function DevotionalDayReviewModal({
                   disabled={disabled || regenBusy}
                   className="text-[12px] font-medium text-violet-600 hover:text-violet-500 disabled:opacity-50 dark:text-violet-300 dark:hover:text-violet-200"
                 >
-                  Regenerate with AI
+                  {t('dev.regenAi')}
                 </button>
               ) : null}
             </div>
 
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <p className="text-[11px] font-medium text-admin-muted">Before you read</p>
+                <p className="text-[11px] font-medium text-admin-muted">{t('dev.beforeRead')}</p>
                 {!editingPrePrompt ? (
                   <button
                     type="button"
@@ -279,7 +281,7 @@ function DevotionalDayReviewModal({
                     disabled={disabled || regenBusy}
                     className="text-[12px] font-medium text-sky-600 hover:text-sky-500 disabled:opacity-50 dark:text-sky-400 dark:hover:text-sky-300"
                   >
-                    Edit
+                    {t('dev.edit')}
                   </button>
                 ) : (
                   <div className="flex gap-2">
@@ -288,7 +290,7 @@ function DevotionalDayReviewModal({
                       onClick={savePrePrompt}
                       className="text-[12px] font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
-                      Save
+                      {t('dev.save')}
                     </button>
                     <button
                       type="button"
@@ -298,7 +300,7 @@ function DevotionalDayReviewModal({
                       }}
                       className="text-[12px] font-medium text-admin-muted hover:text-admin-fg-strong"
                     >
-                      Cancel
+                      {t('dev.cancel')}
                     </button>
                   </div>
                 )}
@@ -329,7 +331,7 @@ function DevotionalDayReviewModal({
 
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <p className="text-[11px] font-medium text-admin-muted">Body</p>
+                <p className="text-[11px] font-medium text-admin-muted">{t('dev.body')}</p>
                 {!editingMainContent ? (
                   <button
                     type="button"
@@ -337,7 +339,7 @@ function DevotionalDayReviewModal({
                     disabled={disabled || regenBusy}
                     className="text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                   >
-                    Edit
+                    {t('dev.edit')}
                   </button>
                 ) : (
                   <div className="flex gap-2">
@@ -346,7 +348,7 @@ function DevotionalDayReviewModal({
                       onClick={saveMainContent}
                       className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
-                      Save
+                      {t('dev.save')}
                     </button>
                     <button
                       type="button"
@@ -356,7 +358,7 @@ function DevotionalDayReviewModal({
                       }}
                       className="text-[12px] font-medium text-admin-muted hover:text-admin-fg-strong"
                     >
-                      Cancel
+                      {t('dev.cancel')}
                     </button>
                   </div>
                 )}
@@ -378,9 +380,9 @@ function DevotionalDayReviewModal({
                         : 'text-amber-700 dark:text-amber-400/90'
                     }`}
                   >
-                    {editingBodyParagraphCount} paragraph
-                    {editingBodyParagraphCount === 1 ? '' : 's'} — at least {MIN_BODY_PARAGRAPHS}{' '}
-                    required (separate with a blank line)
+                    {editingBodyParagraphCount === 1
+                      ? t('dev.paragraph1', { min: MIN_BODY_PARAGRAPHS })
+                      : t('dev.paragraphs', { n: editingBodyParagraphCount, min: MIN_BODY_PARAGRAPHS })}
                   </p>
                 </div>
               ) : (
@@ -392,7 +394,7 @@ function DevotionalDayReviewModal({
 
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <p className="text-[11px] font-medium text-admin-muted">Reflection question</p>
+                <p className="text-[11px] font-medium text-admin-muted">{t('dev.reflection')}</p>
                 {!editingReflection ? (
                   <button
                     type="button"
@@ -400,7 +402,7 @@ function DevotionalDayReviewModal({
                     disabled={disabled || regenBusy}
                     className="text-[12px] font-medium text-sky-700 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 disabled:opacity-50"
                   >
-                    Edit
+                    {t('dev.edit')}
                   </button>
                 ) : (
                   <div className="flex gap-2">
@@ -409,7 +411,7 @@ function DevotionalDayReviewModal({
                       onClick={saveReflection}
                       className="text-[12px] font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
                     >
-                      Save
+                      {t('dev.save')}
                     </button>
                     <button
                       type="button"
@@ -419,7 +421,7 @@ function DevotionalDayReviewModal({
                       }}
                       className="text-[12px] font-medium text-admin-muted hover:text-admin-fg-strong"
                     >
-                      Cancel
+                      {t('dev.cancel')}
                     </button>
                   </div>
                 )}
@@ -438,13 +440,13 @@ function DevotionalDayReviewModal({
               )}
             </div>
 
-            <p className="text-[11px] text-admin-dim">About {day.estimated_minutes} min read</p>
+            <p className="text-[11px] text-admin-dim">{t('dev.readMinutes', { n: day.estimated_minutes })}</p>
           </div>
 
           {showRegenPrompt ? (
             <div className="rounded-lg border border-violet-500/30 bg-violet-50 dark:bg-violet-950/20 p-4 space-y-3">
               <p className="text-[13px] font-medium text-violet-800 dark:text-violet-200">
-                What should change about this day?
+                {t('dev.whatChange')}
               </p>
               <textarea
                 value={regenInstruction}
@@ -452,7 +454,7 @@ function DevotionalDayReviewModal({
                 rows={3}
                 maxLength={1200}
                 disabled={regenBusy}
-                placeholder="e.g. Shorter paragraphs, more on prayer, gentler tone…"
+                placeholder={t('dev.changePlaceholder')}
                 className="w-full resize-y rounded-lg border border-admin-strong bg-admin-surface px-3 py-2 text-[14px] leading-relaxed text-admin-fg outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30 disabled:opacity-60"
                 autoFocus
               />
@@ -463,7 +465,7 @@ function DevotionalDayReviewModal({
                   onClick={() => void regenerateBody()}
                   className="rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white hover:bg-violet-500 disabled:opacity-50"
                 >
-                  {regenBusy ? 'Regenerating…' : 'Regenerate with AI'}
+                  {regenBusy ? t('dev.regenerating') : t('dev.regenAi')}
                 </button>
                 <button
                   type="button"
@@ -475,7 +477,7 @@ function DevotionalDayReviewModal({
                   }}
                   className="rounded-lg border border-admin-strong px-4 py-2 text-[13px] text-admin-muted hover:bg-admin-surface disabled:opacity-50"
                 >
-                  Cancel
+                  {t('dev.cancel')}
                 </button>
               </div>
             </div>
@@ -515,6 +517,7 @@ export function DevotionalPreviewReviewList({
   onDaysChange,
   disabled = false,
 }: ListProps) {
+  const { t } = useLanguage();
   const [selectedDayNumber, setSelectedDayNumber] = useState<number | null>(null);
 
   const selectedDay = days.find((d) => d.day_number === selectedDayNumber) ?? null;
@@ -535,12 +538,12 @@ export function DevotionalPreviewReviewList({
               className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-admin-surface disabled:opacity-50"
             >
               <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-[#38bdf8]">
-                Day {d.day_number}
+                {t('dev.day', { n: d.day_number })}
               </span>
               <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-admin-fg-strong">
-                {d.title?.trim() || 'Untitled'}
+                {d.title?.trim() || t('dev.untitled')}
               </span>
-              <span className="shrink-0 text-[12px] text-admin-dim">View</span>
+              <span className="shrink-0 text-[12px] text-admin-dim">{t('dev.view')}</span>
             </button>
           </li>
         ))}

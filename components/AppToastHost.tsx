@@ -10,71 +10,64 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 type VisibleToast = PendingAppToast & { id: number };
 
 import {
-  SIGNUP_CODE_SENT_MESSAGE,
-  USE_CODE_NOT_LINK_MESSAGE,
-  USE_RESET_CODE_NOT_LINK_MESSAGE,
+  signupCodeSentMessage,
+  codeNotLinkMessage,
+  resetCodeNotLinkMessage,
 } from '@/lib/auth/signup-email-messages';
+import { tr } from '@/lib/i18n/ui';
 
 const AUTO_DISMISS_MS = 9000;
 
-const CONFIRMED_MESSAGE =
-  'Your email is confirmed! Sign in below, or we will take you to your dashboard if you are already signed in.';
-
-const WELCOME_MESSAGE =
-  'Welcome! Create your church on the dashboard to get started.';
-
 function toastFromAuthQuery(searchParams: URLSearchParams): PendingAppToast | null {
   if (searchParams.get('email_sent') === '1') {
-    return { message: SIGNUP_CODE_SENT_MESSAGE, variant: 'success' };
+    return { message: signupCodeSentMessage(), variant: 'success' };
   }
   if (searchParams.get('welcome') === '1') {
-    return { message: WELCOME_MESSAGE, variant: 'success' };
+    return { message: tr('toast.welcome'), variant: 'success' };
   }
   if (searchParams.get('confirmed') === '1') {
     if (searchParams.get('already_used') === '1') {
       return {
-        message:
-          'This confirmation link was already used. You are confirmed — sign in below or continue to your dashboard.',
+        message: tr('toast.alreadyUsed'),
         variant: 'success',
       };
     }
-    return { message: CONFIRMED_MESSAGE, variant: 'success' };
+    return { message: tr('toast.confirmed'), variant: 'success' };
   }
   const error = searchParams.get('error');
   if (error === 'missing_auth_code') {
     return {
-      message: 'Open the verify email screen and enter the confirmation code from your email.',
+      message: tr('toast.openVerify'),
       variant: 'error',
       href: '/verify-email',
-      hrefLabel: 'Enter confirmation code',
+      hrefLabel: tr('toast.enterConfirmCode'),
     };
   }
   if (error === 'confirmation_failed' || error === 'use_code') {
     return {
-      message: USE_CODE_NOT_LINK_MESSAGE,
+      message: codeNotLinkMessage(),
       variant: 'error',
       href: '/verify-email',
-      hrefLabel: 'Enter confirmation code',
+      hrefLabel: tr('toast.enterConfirmCode'),
     };
   }
   if (error === 'reset_use_code') {
     return {
-      message: USE_RESET_CODE_NOT_LINK_MESSAGE,
+      message: resetCodeNotLinkMessage(),
       variant: 'error',
       href: '/login',
-      hrefLabel: 'Sign in with a code',
+      hrefLabel: tr('reg.signInWithCode'),
     };
   }
   if (searchParams.get('setup') === 'failed') {
     return {
-      message:
-        'Your account could not be set up. Sign out, try again, or contact support if this continues.',
+      message: tr('toast.setupFailed'),
       variant: 'error',
     };
   }
   if (error === 'server_config') {
     return {
-      message: 'Sign-in is temporarily unavailable. Please try again later.',
+      message: tr('toast.serverConfig'),
       variant: 'error',
     };
   }
@@ -93,18 +86,22 @@ export function AppToastHost() {
 
   useEffect(() => {
     if (queryHandled.current) return;
-    const params = new URLSearchParams(searchParams.toString());
-    const queryToast = toastFromAuthQuery(params);
-    if (queryToast) {
-      queryHandled.current = true;
-      pushToast(queryToast);
-      return;
-    }
-    const pending = consumePendingAppToast();
-    if (pending) {
-      queryHandled.current = true;
-      pushToast(pending);
-    }
+    // Wait one tick so the language provider has applied the remembered language first.
+    const id = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const queryToast = toastFromAuthQuery(params);
+      if (queryToast) {
+        queryHandled.current = true;
+        pushToast(queryToast);
+        return;
+      }
+      const pending = consumePendingAppToast();
+      if (pending) {
+        queryHandled.current = true;
+        pushToast(pending);
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [searchParams, pushToast]);
 
   useEffect(() => {

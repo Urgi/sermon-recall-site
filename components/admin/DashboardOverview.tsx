@@ -61,7 +61,10 @@ const DATE_LOCALES = { en: enUS, es, fr } as const;
 
 function weekLabel(ymd: string, language: AppLanguage): string {
   try {
-    return format(parseISO(ymd), 'MMM d', { locale: DATE_LOCALES[language] });
+    // Day-first in Spanish and French (e.g. "26 oct"), month-first in English.
+    return format(parseISO(ymd), language === 'en' ? 'MMM d' : 'd MMM', {
+      locale: DATE_LOCALES[language],
+    });
   } catch {
     return ymd;
   }
@@ -176,7 +179,9 @@ export function DashboardOverview({
       <div className="admin-hero flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-accent)]">
-            {format(new Date(), 'EEEE, d MMMM', { locale: DATE_LOCALES[language] })}
+            {format(new Date(), language === 'es' ? "EEEE, d 'de' MMMM" : 'EEEE, d MMMM', {
+              locale: DATE_LOCALES[language],
+            })}
             {churchName ? ` · ${churchName}` : ''}
           </p>
           <h1 className="mt-1.5 text-[2rem] font-bold tracking-tight text-[var(--admin-fg-strong)]">
@@ -459,8 +464,8 @@ export function DashboardOverview({
             churchCode={churchCode}
             joinUrl={joinUrl}
             qrDataUrl={qrDataUrl}
-            heading={t('dash.shareHeading')}
-            hint={t('dash.shareHint')}
+            headingKey="dash.shareHeading"
+            hintKey="dash.shareHint"
             size="lg"
             showEmail={false}
           />

@@ -1,14 +1,23 @@
 import type { StaffRole } from '@/lib/auth/permissions';
+import { tr, type UiKey } from '@/lib/i18n/ui';
 
 /** Roles pastors can target for team notifications (matches church_memberships.role). */
-export const BROADCAST_TEAM_ROLES: { role: StaffRole; label: string }[] = [
-  { role: 'owner', label: 'Owner' },
-  { role: 'admin_pastor', label: 'Admin pastor' },
-  { role: 'associate_pastor', label: 'Associate pastor' },
-  { role: 'elder', label: 'Elder' },
-  { role: 'contributor', label: 'Contributor' },
-  { role: 'viewer', label: 'Viewer' },
+const BROADCAST_ROLES: StaffRole[] = [
+  'owner',
+  'admin_pastor',
+  'associate_pastor',
+  'elder',
+  'contributor',
+  'viewer',
 ];
+
+/** Labels are translated when read, in the language of the signed-in user. */
+export const BROADCAST_TEAM_ROLES: { role: StaffRole; label: string }[] = BROADCAST_ROLES.map((role) => ({
+  role,
+  get label() {
+    return tr(`role.${role}` as UiKey);
+  },
+}));
 
 const VALID_STAFF_ROLES = new Set<string>(BROADCAST_TEAM_ROLES.map((r) => r.role));
 

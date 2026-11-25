@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 /**
@@ -11,6 +12,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
  */
 export function AuthCallbackClient() {
   const router = useRouter();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   // If the redirect stalls (slow network, blocked storage), offer a way out instead of a spinner forever.
   const [slow, setSlow] = useState(false);
@@ -66,11 +68,11 @@ export function AuthCallbackClient() {
         aria-hidden
       />
       <p className="text-center text-[15px] text-[#94a3b8]" role="status">
-        Redirecting…
+        {t('callback.redirecting')}
       </p>
       {slow ? (
         <Link href="/login" className="inline-flex min-h-10 items-center text-[14px] font-semibold text-[#38bdf8] hover:underline">
-          Taking too long? Go to sign in
+          {t('callback.slow')}
         </Link>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { memberJoinCopy } from '@/lib/email/email-copy';
 import {
   buildMemberJoinEmailHtml,
   buildMemberJoinEmailText,
@@ -9,23 +10,27 @@ type SendMemberJoinEmailParams = {
   churchCode: string;
   joinUrl: string;
   qrDataUrl: string;
+  /** Church language (en, es, fr). */
+  language?: string | null;
 };
 
 export async function sendMemberJoinEmail(params: SendMemberJoinEmailParams): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.INVITE_EMAIL_FROM?.trim() ?? 'Sermon Recall <onboarding@resend.dev>';
 
-  const subject = `Join ${params.churchName} on Sermon Recall`;
+  const subject = memberJoinCopy(params.language).subject(params.churchName);
   const html = buildMemberJoinEmailHtml({
     churchName: params.churchName,
     churchCode: params.churchCode,
     joinUrl: params.joinUrl,
     qrDataUrl: params.qrDataUrl,
+    language: params.language,
   });
   const text = buildMemberJoinEmailText({
     churchName: params.churchName,
     churchCode: params.churchCode,
     joinUrl: params.joinUrl,
+    language: params.language,
   });
 
   if (!apiKey) {

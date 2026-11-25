@@ -1,10 +1,15 @@
+'use client';
+
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+
 export function AdminPageFallback() {
+  const { t } = useLanguage();
   return (
     <div
       className="mx-auto max-w-6xl space-y-6 motion-safe:animate-pulse"
       role="status"
       aria-busy="true"
-      aria-label="Loading"
+      aria-label={t('common.loading')}
     >
       <div className="space-y-2">
         <div className="h-7 w-48 rounded-md bg-[var(--admin-border)]" />

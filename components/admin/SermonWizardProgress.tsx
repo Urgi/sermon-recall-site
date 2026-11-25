@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import {
   SERMON_WIZARD_STEP_COUNT,
   sermonWizardStepIndex,
@@ -18,19 +19,20 @@ type Props = {
 };
 
 export function SermonWizardProgress({ step, title, hint, context, action, onBack }: Props) {
+  const { t } = useLanguage();
   const index = sermonWizardStepIndex(step);
   const pct = Math.round(((index + 1) / SERMON_WIZARD_STEP_COUNT) * 100);
 
   return (
     <div>
       <p className="text-[13px] font-semibold tracking-tight text-[var(--admin-fg-strong)]">
-        New sermon
+        {t('wiz.newSermon')}
       </p>
       <div className="mt-3 flex items-center gap-3">
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back"
+          aria-label={t('wiz.back')}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] text-[var(--admin-fg-strong)] hover:border-[var(--admin-accent)] hover:text-[var(--admin-accent)]"
         >
           <span aria-hidden className="text-base leading-none">
@@ -43,7 +45,7 @@ export function SermonWizardProgress({ step, title, hint, context, action, onBac
           aria-valuemin={1}
           aria-valuemax={SERMON_WIZARD_STEP_COUNT}
           aria-valuenow={index + 1}
-          aria-label={`Step ${index + 1} of ${SERMON_WIZARD_STEP_COUNT}`}
+          aria-label={t('wiz.stepOf', { n: index + 1, total: SERMON_WIZARD_STEP_COUNT })}
         >
           <div
             className="h-full rounded-full bg-[#0ea5e9] transition-[width] duration-300 ease-out"
@@ -53,7 +55,7 @@ export function SermonWizardProgress({ step, title, hint, context, action, onBac
       </div>
       <div className="mt-6">
         <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-[var(--admin-dim)]">
-          Step {index + 1} of {SERMON_WIZARD_STEP_COUNT}
+          {t('wiz.stepOf', { n: index + 1, total: SERMON_WIZARD_STEP_COUNT })}
         </p>
         <div className="mt-1.5 flex items-start justify-between gap-4">
           <h1 className="min-w-0 text-[1.375rem] font-bold leading-tight tracking-tight text-[var(--admin-fg-strong)]">

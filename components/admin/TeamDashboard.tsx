@@ -7,6 +7,8 @@ import { ModalShell } from '@/components/admin/ModalShell';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { TeamPermissionsMatrix } from '@/components/admin/TeamPermissionsMatrix';
 import type { StaffRole } from '@/lib/auth/permissions';
+import { localizeApiError } from '@/lib/i18n/api-errors';
+import { tr } from '@/lib/i18n/ui';
 import {
   assignableRolesFor,
   formatTeamDate,
@@ -17,19 +19,19 @@ import {
 import type { TeamInviteRow, TeamMemberRow, TeamSnapshot } from '@/lib/team/types';
 
 function displayName(row: { full_name: string | null; email: string | null }): string {
-  return row.full_name?.trim() || row.email || 'Unknown';
+  return row.full_name?.trim() || row.email || tr('team.unknown');
 }
 
 function StatusPill({ status }: { status: string }) {
   const base = 'inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide';
   if (status === 'active') {
-    return <span className={`${base} bg-emerald-500/15 text-emerald-700 dark:text-emerald-300`}>Active</span>;
+    return <span className={`${base} bg-emerald-500/15 text-emerald-700 dark:text-emerald-300`}>{statusLabel('active')}</span>;
   }
   if (status === 'pending' || status === 'accepted_pending_approval') {
     return <span className={`${base} bg-amber-500/15 text-amber-800 dark:text-amber-200`}>{statusLabel(status)}</span>;
   }
   if (status === 'pending_invite' || status === 'pending') {
-    return <span className={`${base} bg-sky-500/15 text-sky-800 dark:text-sky-300`}>Invite sent</span>;
+    return <span className={`${base} bg-sky-500/15 text-sky-800 dark:text-sky-300`}>{statusLabel('pending_invite')}</span>;
   }
   return <span className={`${base} bg-admin-surface text-admin-muted`}>{statusLabel(status)}</span>;
 }
@@ -55,7 +57,7 @@ export function TeamDashboard() {
     const data = (await res.json()) as { error?: string; team?: TeamSnapshot };
     setLoading(false);
     if (!res.ok) {
-      setError(data.error ?? 'Could not load team.');
+      setError(data.error ? localizeApiError(data.error) : tr('team.loadFailed'));
       setTeam(null);
       return;
     }
@@ -93,7 +95,7 @@ export function TeamDashboard() {
       await load();
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Action failed.');
+      setError(e instanceof Error ? e.message : t('common.error'));
     } finally {
       setActionPending(null);
     }
@@ -109,8 +111,8 @@ export function TeamDashboard() {
         body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
       });
       const data = (await res.json()) as { error?: string; warning?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Invite failed.');
-      setSuccess(data.warning ?? `Invitation sent to ${inviteEmail.trim()}.`);
+      if (!res.ok) throw new Error(localizeApiError(data.error));
+      setSuccess(data.warning ? t('team.inviteEmailFailed') : t('team.inviteSent', { email: inviteEmail.trim() }));
       setInviteEmail('');
       setShowInvite(false);
     });
@@ -127,7 +129,7 @@ export function TeamDashboard() {
   if (!team) {
     return (
       <div className="admin-card p-8 text-center">
-        <p className="text-red-600 dark:text-red-400" role="alert">{error ?? t('team.loadFailed')}</p>
+        <p className="text-red-600 dark:text-red-400" role="alert">{error ?? tr('team.loadFailed')}</p>
         <button type="button" onClick={() => void load()} className="admin-btn-secondary mt-4">
           {t('common.tryAgain')}
         </button>
@@ -191,7 +193,7 @@ export function TeamDashboard() {
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="admin-input mt-1"
-                placeholder="name@church.org"
+                placeholder={t('team.emailPlaceholder')}
               />
             </div>
             <div>
@@ -249,12 +251,12 @@ export function TeamDashboard() {
             <table className="w-full min-w-[640px] text-left text-[13px]">
               <thead className="border-b border-admin bg-admin-surface text-[11px] font-semibold uppercase tracking-wide text-admin-dim">
                 <tr>
-                  <th className="px-6 py-3">Person</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="hidden px-4 py-3 lg:table-cell">Permissions</th>
-                  <th className="px-4 py-3">Joined</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
+                  <th className="px-6 py-3">{t('team.colPerson')}</th>
+                  <th className="px-4 py-3">{t('team.colRole')}</th>
+                  <th className="px-4 py-3">{t('team.colStatus')}</th>
+                  <th className="hidden px-4 py-3 lg:table-cell">{t('team.colPerms')}</th>
+                  <th className="px-4 py-3">{t('team.colJoined')}</th>
+                  <th className="px-6 py-3 text-right">{t('team.colActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-admin">
@@ -276,8 +278,8 @@ export function TeamDashboard() {
                           body: JSON.stringify({ membershipId: m.membership_id, role }),
                         });
                         const data = (await res.json()) as { error?: string };
-                        if (!res.ok) throw new Error(data.error ?? 'Could not update role.');
-                        setSuccess('Role updated.');
+                        if (!res.ok) throw new Error(localizeApiError(data.error));
+                        setSuccess(t('team.roleUpdated'));
                       })
                     }
                     onRemove={() => setRemoveTarget(m)}
@@ -315,8 +317,8 @@ export function TeamDashboard() {
                       body: JSON.stringify({ membershipId: m.membership_id }),
                     });
                     const data = (await res.json()) as { error?: string };
-                    if (!res.ok) throw new Error(data.error ?? 'Approve failed.');
-                    setSuccess(`${displayName(m)} approved.`);
+                    if (!res.ok) throw new Error(localizeApiError(data.error));
+                    setSuccess(t('team.approved', { name: displayName(m) }));
                   })
                 }
                 onReject={() =>
@@ -328,8 +330,8 @@ export function TeamDashboard() {
                       body: JSON.stringify({ membershipId: m.membership_id }),
                     });
                     const data = (await res.json()) as { error?: string };
-                    if (!res.ok) throw new Error(data.error ?? 'Reject failed.');
-                    setSuccess('Request rejected.');
+                    if (!res.ok) throw new Error(localizeApiError(data.error));
+                    setSuccess(t('team.rejected'));
                   })
                 }
               />
@@ -361,9 +363,9 @@ export function TeamDashboard() {
                     });
                     if (!res.ok) {
                       const data = (await res.json()) as { error?: string };
-                      throw new Error(data.error ?? 'Resend failed.');
+                      throw new Error(localizeApiError(data.error));
                     }
-                    setSuccess('Invitation resent.');
+                    setSuccess(t('team.resent'));
                   })
                 }
                 onCancel={() =>
@@ -376,9 +378,9 @@ export function TeamDashboard() {
                     });
                     if (!res.ok) {
                       const data = (await res.json()) as { error?: string };
-                      throw new Error(data.error ?? 'Cancel failed.');
+                      throw new Error(localizeApiError(data.error));
                     }
-                    setSuccess('Invitation cancelled.');
+                    setSuccess(t('team.cancelled'));
                   })
                 }
               />
@@ -416,8 +418,8 @@ export function TeamDashboard() {
                     body: JSON.stringify({ membershipId: target.membership_id }),
                   });
                   const data = (await res.json()) as { error?: string };
-                  if (!res.ok) throw new Error(data.error ?? 'Could not remove member.');
-                  setSuccess('Team member removed.');
+                  if (!res.ok) throw new Error(localizeApiError(data.error));
+                  setSuccess(t('team.removed'));
                 });
               }}
               className="rounded-lg bg-red-600 px-4 py-2.5 text-[14px] font-semibold text-white transition-colors duration-fast hover:bg-red-700"
@@ -475,6 +477,7 @@ function MemberTableRow({
   onRemove: () => void;
   isOwner?: boolean;
 }) {
+  const { t } = useLanguage();
   const role = member.role as StaffRole;
   const perms = permissionSummary(role).slice(0, 3);
   const mid = member.membership_id ?? '';
@@ -501,7 +504,7 @@ function MemberTableRow({
         <p className="font-medium text-admin-fg-strong">
           {displayName(member)}
           {member.is_self ? (
-            <span className="admin-hint ml-2 font-normal">(you)</span>
+            <span className="admin-hint ml-2 font-normal">{t('team.you')}</span>
           ) : null}
         </p>
         <p className="admin-hint">{member.email}</p>
@@ -546,7 +549,7 @@ function MemberTableRow({
             onClick={onRemove}
             className="text-[12px] font-medium text-red-600 hover:underline disabled:opacity-50"
           >
-            {actionPending === `remove-${mid}` ? 'Removing…' : 'Remove'}
+            {actionPending === `remove-${mid}` ? t('team.removing') : t('team.remove')}
           </button>
         ) : (
           <span className="admin-hint">—</span>
@@ -569,6 +572,7 @@ function PendingRow({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  const { t } = useLanguage();
   const mid = member.membership_id ?? '';
   return (
     <li className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
@@ -576,7 +580,10 @@ function PendingRow({
         <p className="font-medium text-admin-fg-strong">{displayName(member)}</p>
         <p className="admin-hint">{member.email}</p>
         <p className="mt-1 text-[12px] text-admin-fg-secondary">
-          {ROLE_LABELS[member.role as StaffRole] ?? member.role} · Invited {formatTeamDate(member.created_at)}
+          {t('team.invitedOn', {
+            role: ROLE_LABELS[member.role as StaffRole] ?? member.role,
+            date: formatTeamDate(member.created_at),
+          })}
         </p>
       </div>
       {caller.can_approve ? (
@@ -587,7 +594,7 @@ function PendingRow({
             onClick={onApprove}
             className="admin-btn-primary text-[13px]"
           >
-            {actionPending === `approve-${mid}` ? '…' : 'Approve'}
+            {actionPending === `approve-${mid}` ? '…' : t('team.approve')}
           </button>
           <button
             type="button"
@@ -595,7 +602,7 @@ function PendingRow({
             onClick={onReject}
             className="admin-btn-secondary text-[13px]"
           >
-            Reject
+            {t('team.reject')}
           </button>
         </div>
       ) : null}
@@ -616,6 +623,8 @@ function InviteRow({
   onResend: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useLanguage();
+  const role = ROLE_LABELS[invite.invited_role as StaffRole] ?? invite.invited_role;
   const exp = new Date(invite.expires_at);
   const expired = exp.getTime() < Date.now();
   return (
@@ -623,9 +632,13 @@ function InviteRow({
       <div>
         <p className="font-medium text-admin-fg-strong">{invite.invited_email}</p>
         <p className="admin-hint">
-          {ROLE_LABELS[invite.invited_role as StaffRole] ?? invite.invited_role} · Sent{' '}
-          {formatTeamDate(invite.created_at)}
-          {expired ? ' · Expired' : ` · Expires ${formatTeamDate(invite.expires_at)}`}
+          {expired
+            ? t('team.sentExpired', { role, sent: formatTeamDate(invite.created_at) })
+            : t('team.sentExpires', {
+                role,
+                sent: formatTeamDate(invite.created_at),
+                expires: formatTeamDate(invite.expires_at),
+              })}
         </p>
       </div>
       {caller.can_invite ? (
@@ -636,7 +649,7 @@ function InviteRow({
             onClick={onResend}
             className="admin-btn-secondary text-[13px]"
           >
-            Resend
+            {t('team.resend')}
           </button>
           <button
             type="button"
@@ -644,7 +657,7 @@ function InviteRow({
             onClick={onCancel}
             className="admin-btn-secondary text-[13px]"
           >
-            Cancel
+            {t('team.cancelInvite')}
           </button>
         </div>
       ) : null}

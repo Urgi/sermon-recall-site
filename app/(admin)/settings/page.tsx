@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { Suspense } from 'react';
 
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
@@ -12,7 +14,9 @@ import { getChurchSettingsForProfile, requireAdminSession } from '@/lib/auth/ser
 import { DEFAULT_CHURCH_TIMEZONE } from '@/lib/church/timezones';
 import { normalizeAppLanguage } from '@/lib/i18n/languages';
 
-export const metadata: Metadata = { title: 'Settings' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('nav.settings') };
+}
 
 export default function AdminSettingsPage() {
   return (

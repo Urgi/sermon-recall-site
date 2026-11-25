@@ -6,7 +6,7 @@ import { generateInviteToken, hashInviteToken } from '@/lib/invites/token';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { INVITABLE_STAFF_ROLES, type StaffRole } from '@/lib/auth/permissions';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getChurchForProfile } from '@/lib/auth/server';
+import { getChurchSettingsForProfile } from '@/lib/auth/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
-  const church = await getChurchForProfile(churchId);
+  const church = await getChurchSettingsForProfile(churchId);
   const acceptUrl = buildInviteAcceptUrl(rawToken);
 
   try {
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
       inviterName: ctx.profile.full_name ?? ctx.user.email ?? 'A pastor',
       role,
       acceptUrl,
+      language: church?.sermon_language,
     });
   } catch (e) {
     console.warn('[invites/create] email', e);

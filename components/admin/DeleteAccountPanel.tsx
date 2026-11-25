@@ -8,10 +8,14 @@ import {
   type AccountDeletionPreview,
   parseDeletionPreview,
 } from '@/lib/account/deletion';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError } from '@/lib/i18n/api-errors';
+import { tr } from '@/lib/i18n/ui';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function DeleteAccountPanel() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [preview, setPreview] = useState<AccountDeletionPreview | null>(null);
   const [accountEmail, setAccountEmail] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(true);
@@ -28,13 +32,13 @@ export function DeleteAccountPanel() {
       const res = await fetch('/api/account/deletion-preview');
       const json = (await res.json()) as { preview?: unknown; email?: string; error?: string };
       if (!res.ok) {
-        setError(json.error ?? 'Could not load account details.');
+        setError(json.error ? localizeApiError(json.error) : tr('del.err.load'));
         return;
       }
       setPreview(parseDeletionPreview(json.preview));
       setAccountEmail(typeof json.email === 'string' ? json.email : '');
     } catch {
-      setError('Network error loading account details.');
+      setError(tr('del.err.network'));
     } finally {
       setLoadingPreview(false);
     }
@@ -47,11 +51,11 @@ export function DeleteAccountPanel() {
   async function onDelete() {
     setError(null);
     if (!accountEmail || !emailsMatchForDeletion(confirmEmail, accountEmail)) {
-      setError('Enter your account email to confirm deletion.');
+      setError(t('del.err.email'));
       return;
     }
     if (preview?.will_delete_church && !churchAck) {
-      setError('Confirm that you understand your church will be removed from Sermon Recall.');
+      setError(t('del.err.ack'));
       return;
     }
 
@@ -67,7 +71,7 @@ export function DeleteAccountPanel() {
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        setError(json.error ?? 'Could not delete account.');
+        setError(json.error ? localizeApiError(json.error) : t('del.err.delete'));
         return;
       }
       const supabase = createBrowserSupabaseClient();
@@ -75,7 +79,7 @@ export function DeleteAccountPanel() {
       router.push('/login');
       router.refresh();
     } catch {
-      setError('Network error. Try again.');
+      setError(t('settings.networkError'));
     } finally {
       setPending(false);
     }
@@ -83,9 +87,9 @@ export function DeleteAccountPanel() {
 
   return (
     <section className="admin-delete-zone">
-      <h2 className="admin-delete-zone__title">Delete account</h2>
+      <h2 className="admin-delete-zone__title">{t('del.title')}</h2>
       <p className="admin-delete-zone__hint">
-        Permanently remove your sign-in and profile from Sermon Recall. This cannot be undone.
+        {t('del.hint')}
       </p>
 
       {!open ? (
@@ -95,37 +99,34 @@ export function DeleteAccountPanel() {
           disabled={loadingPreview}
           className="admin-delete-zone__outline-btn"
         >
-          {loadingPreview ? 'Loading…' : 'Delete my account'}
+          {loadingPreview ? t('settings.loading') : t('del.open')}
         </button>
       ) : (
         <div className="mt-4 space-y-4">
           {preview?.will_delete_church ? (
             <div className="admin-delete-zone__warn">
-              <p className="admin-delete-zone__warn-title">You are the only pastor for this church</p>
+              <p className="admin-delete-zone__warn-title">{t('del.onlyPastorTitle')}</p>
               <p className="mt-2">
-                Deleting your account will remove{' '}
-                <strong>{preview.church_name ?? 'your church'}</strong> from Sermon Recall,
-                including sermons and devotionals.
+                {t('del.willRemove', { church: preview.church_name ?? t('del.yourChurch') })}
               </p>
               {preview.other_member_count > 0 ? (
                 <p className="mt-2">
-                  {preview.other_member_count} member
-                  {preview.other_member_count === 1 ? '' : 's'} will be signed out of this church and
-                  asked to join another congregation. They will see a message that{' '}
-                  {preview.church_name ?? 'their church'} has ended its use of Sermon Recall on this
-                  platform.
+                  {preview.other_member_count === 1
+                    ? t('del.member1', { church: preview.church_name ?? t('del.theirChurch') })
+                    : t('del.members', {
+                        n: preview.other_member_count,
+                        church: preview.church_name ?? t('del.theirChurch'),
+                      })}
                 </p>
               ) : null}
             </div>
           ) : preview?.church_id && preview.role !== 'member' ? (
             <p className="admin-delete-zone__body-text">
-              You will leave <strong>{preview.church_name}</strong> as an admin user. The church and
-              other members are not deleted.
+              {t('del.leaveAdmin', { church: preview.church_name ?? t('del.yourChurch') })}
             </p>
           ) : (
             <p className="admin-delete-zone__body-text">
-              Your personal data and sign-in will be removed. Church content you only viewed as a
-              member is not affected.
+              {t('del.personal')}
             </p>
           )}
 
@@ -138,15 +139,14 @@ export function DeleteAccountPanel() {
                 className="mt-1"
               />
               <span>
-                I understand that my church will be removed from Sermon Recall and members will need
-                to join another church to continue.
+                {t('del.ack')}
               </span>
             </label>
           ) : null}
 
           <div>
             <label htmlFor="delete-confirm-email" className="admin-delete-zone__label block">
-              Re-enter your email to confirm
+              {t('del.reenter')}
             </label>
             <input
               id="delete-confirm-email"
@@ -172,7 +172,7 @@ export function DeleteAccountPanel() {
               onClick={() => void onDelete()}
               className="rounded-lg bg-red-600 px-4 py-2 text-[14px] font-semibold text-white hover:bg-red-700 disabled:opacity-60"
             >
-              {pending ? 'Deleting…' : 'Permanently delete account'}
+              {pending ? t('del.deleting') : t('del.confirm')}
             </button>
             <button
               type="button"
@@ -185,7 +185,7 @@ export function DeleteAccountPanel() {
               }}
               className="admin-delete-zone__cancel"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>

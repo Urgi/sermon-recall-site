@@ -5,6 +5,9 @@ import { DevotionalPreviewReviewList } from '@/components/admin/DevotionalPrevie
 import { SermonTranscriptUpload } from '@/components/admin/SermonTranscriptUpload';
 import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPanel';
 import { TranscriptionJobPoller } from '@/components/admin/TranscriptionJobPoller';
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+import { localizeApiError, withApiHint } from '@/lib/i18n/api-errors';
+import { tr } from '@/lib/i18n/ui';
 import type { DevotionalDay } from '@/lib/devotionals/devotional-days';
 import {
   clearPreviewDays,
@@ -22,23 +25,24 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 function MemberGoLiveSummary({ sermonDate }: { sermonDate: string }) {
+  const { t } = useLanguage();
   return (
     <div className="rounded-xl border border-[var(--admin-border)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-card-bg))] px-4 py-3">
       <dl className="grid gap-3 sm:grid-cols-2">
         <div>
           <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--admin-dim)]">
-            Goes to
+            {t('gw.goesTo')}
           </dt>
           <dd className="mt-0.5 text-[13px] font-medium leading-snug text-[var(--admin-fg-strong)]">
-            All members registered in the church
+            {t('gw.allMembers')}
           </dd>
         </div>
         <div>
           <dt className="text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--admin-dim)]">
-            First devotional
+            {t('gw.firstDevotional')}
           </dt>
           <dd className="mt-0.5 text-[13px] font-medium leading-snug text-[var(--admin-fg-strong)]">
-            Available {firstDevotionalAvailableLabel(sermonDate)}
+            {t('gw.available', { date: firstDevotionalAvailableLabel(sermonDate) })}
           </dd>
         </div>
       </dl>
@@ -82,6 +86,7 @@ export function GeminiDevotionalWorkflow({
   onPreviewDaysChange,
 }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [previewDays, setPreviewDays] = useState<DevotionalDay[] | null>(null);
   const [generating, setGenerating] = useState(false);
   const [generatingStartedAt, setGeneratingStartedAt] = useState<number | null>(null);
@@ -150,12 +155,12 @@ export function GeminiDevotionalWorkflow({
       };
       if (!res.ok) {
         if (res.status === 409) return;
-        const msg = data.error ?? 'Generation failed.';
-        setError(data.hint ? `${msg} ${data.hint}` : msg);
+        const msg = data.error ? localizeApiError(data.error) : tr('gw.err.generate');
+        setError(withApiHint(msg, data.hint));
         return;
       }
       if (!data.days?.length) {
-        setError('Unexpected response from server.');
+        setError(tr('gw.err.unexpected'));
         return;
       }
       savePreviewDays(sermonId, data.days);
@@ -177,7 +182,7 @@ export function GeminiDevotionalWorkflow({
     if (!previewDays?.length && workflowStatus !== 'approved') return;
     if (hasExistingDevotionals && workflowStatus !== 'approved') {
       const ok = window.confirm(
-        'Replace existing devotionals with this preview? Members will see new content after publish.',
+        t('gw.replaceConfirm'),
       );
       if (!ok) return;
     }
@@ -196,7 +201,7 @@ export function GeminiDevotionalWorkflow({
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Publish failed.');
+        setError(data.error ? localizeApiError(data.error) : t('gw.err.publish'));
         return;
       }
       setPreviewDays(null);
@@ -220,7 +225,7 @@ export function GeminiDevotionalWorkflow({
     });
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {
-      setError(data.error ?? 'Submit failed.');
+      setError(data.error ? localizeApiError(data.error) : t('gw.err.submit'));
       return false;
     }
     return true;
@@ -258,7 +263,7 @@ export function GeminiDevotionalWorkflow({
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Approve failed.');
+        setError(data.error ? localizeApiError(data.error) : t('gw.err.approve'));
         return;
       }
       setPreviewDays(null);
@@ -280,7 +285,7 @@ export function GeminiDevotionalWorkflow({
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Publish failed.');
+        setError(data.error ? localizeApiError(data.error) : t('gw.err.publish'));
         return;
       }
       router.refresh();
@@ -320,7 +325,7 @@ export function GeminiDevotionalWorkflow({
             disabled={publishing}
             className="admin-btn-primary rounded-full px-6"
           >
-            {publishing ? 'Publishing…' : 'Publish to app'}
+            {publishing ? t('gw.publishing') : t('gw.publish')}
           </button>
         </div>
       ) : null}
@@ -338,7 +343,7 @@ export function GeminiDevotionalWorkflow({
             disabled={publishing}
             className="admin-btn-primary rounded-full px-6"
           >
-            {publishing ? 'Publishing…' : 'Publish to app'}
+            {publishing ? t('gw.publishing') : t('gw.publish')}
           </button>
         </div>
       ) : null}
@@ -346,10 +351,10 @@ export function GeminiDevotionalWorkflow({
       {workflowStatus === 'submitted_for_approval' && !canApprove ? (
         <div className="admin-card p-4" role="status">
           <p className="text-[14px] font-medium text-[var(--admin-fg-strong)]">
-            Sent to {approver}
+            {t('gw.sentTo', { name: approver })}
           </p>
           <p className="admin-hint mt-2 leading-relaxed">
-            {approver} needs to approve these devotionals before members see them in the app.
+            {t('gw.sentToHint', { name: approver })}
           </p>
         </div>
       ) : null}
@@ -363,7 +368,7 @@ export function GeminiDevotionalWorkflow({
             disabled={submitting}
             className="admin-btn-primary rounded-full px-6"
           >
-            {submitting ? 'Approving…' : 'Approve'}
+            {submitting ? t('gw.approving') : t('gw.approve')}
           </button>
         </div>
       ) : null}
@@ -401,10 +406,10 @@ export function GeminiDevotionalWorkflow({
             onClick={() => void generatePreview()}
             className="rounded-lg bg-violet-600 px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-violet-500"
           >
-            Generate preview with AI
+            {t('gw.generate')}
           </button>
           <p className="admin-hint text-[13px]">
-            Preview generation did not start automatically. Click to try again.
+            {t('gw.generateHint')}
           </p>
         </div>
       ) : null}
@@ -425,12 +430,12 @@ export function GeminiDevotionalWorkflow({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-[13px] font-semibold text-violet-600 dark:text-violet-200">
-                Preview (not live yet)
+                {t('gw.previewTitle')}
               </p>
               <p className="admin-hint mt-1">
                 {canApprove
-                  ? 'Edit anything that needs a pastor’s voice, then approve on this screen.'
-                  : `Edit if needed, then send to ${approver} for approval.`}
+                  ? t('gw.previewHintApprove')
+                  : t('gw.previewHintSend', { name: approver })}
               </p>
             </div>
             {canRegen ? (
@@ -440,7 +445,7 @@ export function GeminiDevotionalWorkflow({
                 disabled={generating}
                 className="text-[13px] font-medium text-violet-600 hover:text-violet-500 disabled:opacity-50 dark:text-violet-300"
               >
-                {generating ? 'Regenerating…' : 'Regenerate preview'}
+                {generating ? t('gw.regenerating') : t('gw.regenerate')}
               </button>
             ) : null}
           </div>
@@ -458,8 +463,7 @@ export function GeminiDevotionalWorkflow({
 
           {canSendForApproval ? (
             <p className="rounded-xl border border-[var(--admin-border)] bg-[color-mix(in_srgb,var(--admin-accent)_8%,var(--admin-card-bg))] p-4 text-[13px] leading-relaxed text-[var(--admin-fg)]">
-              Send this to {approver} for approval. Members won’t see these devotionals until{' '}
-              {approver} approves them.
+              {t('gw.sendNote', { name: approver })}
             </p>
           ) : null}
 
@@ -473,7 +477,7 @@ export function GeminiDevotionalWorkflow({
                 disabled={submitting || generating}
                 className="admin-btn-primary rounded-full px-6"
               >
-                {submitting ? 'Approving…' : 'Approve'}
+                {submitting ? t('gw.approving') : t('gw.approve')}
               </button>
             ) : null}
             {canSendForApproval ? (
@@ -483,7 +487,7 @@ export function GeminiDevotionalWorkflow({
                 disabled={submitting || generating}
                 className="admin-btn-primary rounded-full px-6"
               >
-                {submitting ? 'Sending…' : 'Send for approval'}
+                {submitting ? t('gw.sending') : t('gw.send')}
               </button>
             ) : null}
             {!approvalRequired && canPublish ? (
@@ -493,7 +497,7 @@ export function GeminiDevotionalWorkflow({
                 disabled={publishing || generating}
                 className="admin-btn-primary rounded-full px-6"
               >
-                {publishing ? 'Publishing…' : 'Publish to app'}
+                {publishing ? t('gw.publishing') : t('gw.publish')}
               </button>
             ) : null}
             <button
@@ -502,7 +506,7 @@ export function GeminiDevotionalWorkflow({
               disabled={publishing || submitting}
               className="admin-btn-secondary"
             >
-              Discard preview
+              {t('gw.discard')}
             </button>
           </div>
         </div>

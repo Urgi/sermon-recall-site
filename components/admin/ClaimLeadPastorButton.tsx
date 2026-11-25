@@ -3,10 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function ClaimLeadPastorButton() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,13 +20,11 @@ export function ClaimLeadPastorButton() {
     setPending(false);
     if (rpcError) {
       if (rpcError.message.includes('pastor_already_exists')) {
-        setError(
-          'This church already has a lead pastor or admin. Ask them to promote your account in Supabase, or use another workspace.',
-        );
+        setError(t('dash.claimErrExists'));
       } else if (rpcError.message.includes('no_church')) {
-        setError('Join or create a church first.');
+        setError(t('dash.claimErrJoin'));
       } else {
-        setError(rpcError.message);
+        setError(t('common.error'));
       }
       return;
     }
@@ -39,11 +39,10 @@ export function ClaimLeadPastorButton() {
         disabled={pending}
         className="admin-btn-primary"
       >
-        {pending ? 'Updating…' : 'Become lead pastor for this church'}
+        {pending ? t('dash.claimUpdating') : t('dash.claimButton')}
       </button>
       <p className="text-[12px] leading-relaxed text-sky-900/80 dark:text-sky-100/75">
-        Only use this if you are the primary pastor and no one else has claimed admin yet (typical
-        for a new church or demo).
+        {t('dash.claimWarn')}
       </p>
       {error ? (
         <p className="text-[13px] text-red-600 dark:text-red-300" role="alert">

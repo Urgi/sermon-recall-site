@@ -1,8 +1,11 @@
 'use client';
 
 import { format, parse } from 'date-fns';
+import { enUS, es, fr } from 'date-fns/locale';
 import { useEffect, useId, useRef, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
+
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 
 import 'react-day-picker/style.css';
 
@@ -14,6 +17,8 @@ type Props = {
 };
 
 export function SermonDatePicker({ id, value, onChange }: Props) {
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'es' ? es : language === 'fr' ? fr : enUS;
   const autoId = useId();
   const buttonId = id ?? `sermon-date-${autoId}`;
   const [open, setOpen] = useState(false);
@@ -21,8 +26,8 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
 
   const selected = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
   const displayLabel = value
-    ? format(parse(value, 'yyyy-MM-dd', new Date()), 'MMM d, yyyy')
-    : 'Choose date';
+    ? format(parse(value, 'yyyy-MM-dd', new Date()), 'PP', { locale: dateLocale })
+    : t('ns.chooseDate');
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -69,6 +74,7 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
         >
           <DayPicker
             mode="single"
+            locale={dateLocale}
             selected={selected}
             onSelect={(d) => {
               onChange(d ? format(d, 'yyyy-MM-dd') : '');
@@ -90,7 +96,7 @@ export function SermonDatePicker({ id, value, onChange }: Props) {
                   setOpen(false);
                 }}
               >
-                Clear date
+                {t('ns.clearDate')}
               </button>
             </div>
           ) : null}

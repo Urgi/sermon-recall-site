@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+
+import { localizedTitle } from '@/lib/i18n/server';
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -9,7 +11,9 @@ import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
 import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistory';
 
-export const metadata: Metadata = { title: 'Notifications' };
+export function generateMetadata(): Metadata {
+  return { title: localizedTitle('nav.notifications') };
+}
 
 type Props = { searchParams: { encourage?: string; n?: string } };
 
@@ -29,10 +33,14 @@ async function NotificationsPageBody({ searchParams }: Props) {
   if (!profile.church_id) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="admin-heading">Notifications</h1>
-        <p className="admin-body">Create or join a church from the dashboard first.</p>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="notify.title" />
+        </h1>
+        <p className="admin-body">
+          <AdminChromeCopy k="notify.noChurch" />
+        </p>
         <Link href="/dashboard" className="admin-link">
-          Go to dashboard
+          <AdminChromeCopy k="common.goDashboard" />
         </Link>
       </div>
     );
@@ -47,13 +55,14 @@ async function NotificationsPageBody({ searchParams }: Props) {
   if (!canSend) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
-        <h1 className="admin-heading">Notifications</h1>
+        <h1 className="admin-heading">
+          <AdminChromeCopy k="notify.title" />
+        </h1>
         <p className="admin-body">
-          Your church role does not include sending notifications. Ask a lead pastor to adjust your
-          permissions on the Team page.
+          <AdminChromeCopy k="notify.noPermission" />
         </p>
         <Link href="/dashboard" className="admin-link">
-          Back to dashboard
+          <AdminChromeCopy k="common.backDashboard" />
         </Link>
       </div>
     );
@@ -66,8 +75,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
           <AdminChromeCopy k="notify.title" />
         </h1>
         <p className="admin-body mt-2">
-          Send a one-time push to your church. Members also get automatic daily reminders, plus a
-          mid-week catch-up nudge if they are more than a day behind.
+          <AdminChromeCopy k="notify.intro" />
         </p>
       </div>
 
@@ -85,7 +93,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
           <AdminChromeCopy k="notify.history" />
         </h2>
         <p className="admin-body mt-2">
-          Custom push messages you and other pastors have sent to your church.
+          <AdminChromeCopy k="notify.historyHint" />
         </p>
         <div className="mt-4">
           <PastorBroadcastHistory />

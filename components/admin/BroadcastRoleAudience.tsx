@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import type { StaffRole } from '@/lib/auth/permissions';
 import { BROADCAST_TEAM_ROLES } from '@/lib/push/broadcast-audience';
 
@@ -18,6 +19,8 @@ export function BroadcastRoleAudience({
   onIncludeAllMembersChange,
   disabled,
 }: Props) {
+  const { t } = useLanguage();
+
   function toggle(role: StaffRole) {
     if (disabled) return;
     if (selected.includes(role)) {
@@ -29,10 +32,9 @@ export function BroadcastRoleAudience({
 
   return (
     <div className="space-y-3">
-      <p className="admin-label">Team roles</p>
+      <p className="admin-label">{t('notify.rolesTitle')}</p>
       <p className="admin-hint text-[13px]">
-        Tick who should receive this notification. They must open it in the app to see the full
-        message; you can track who opened it below.
+        {t('notify.rolesHint')}
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-2">
         {BROADCAST_TEAM_ROLES.map(({ role, label }) => (
@@ -59,7 +61,7 @@ export function BroadcastRoleAudience({
           disabled={disabled}
           className="h-4 w-4 rounded border-admin accent-[#0ea5e9]"
         />
-        All church members (app users with push)
+        {t('notify.allMembers')}
       </label>
     </div>
   );

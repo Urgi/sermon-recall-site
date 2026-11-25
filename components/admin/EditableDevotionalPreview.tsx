@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export type DevotionalForAdmin = {
@@ -27,6 +28,7 @@ type Props = {
 
 export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: Props) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [title, setTitle] = useState(devotional.title ?? '');
   const [scriptureRef, setScriptureRef] = useState(devotional.scripture_reference ?? '');
   const [expanded, setExpanded] = useState(false);
@@ -46,7 +48,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
   );
 
   const headline =
-    title.trim() || devotional.title?.trim() || 'Daily devotional';
+    title.trim() || devotional.title?.trim() || t('dev.dailyDevotional');
   const scrPreview =
     (scriptureRef.trim() || devotional.scripture_reference || '').trim();
   const body = devotional.main_content?.trim() ?? '';
@@ -66,7 +68,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
       .eq('id', devotional.id);
     setSaving(false);
     if (uErr) {
-      setError(uErr.message);
+      setError(t('settings.saveFailed'));
       return;
     }
     router.refresh();
@@ -77,15 +79,15 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
       <div className="grid gap-8 wide:grid-cols-2 wide:items-start">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
-            Member preview
+            {t('dev.memberPreviewTitle')}
           </p>
           <p className="mt-1 text-[12px] text-[#64748b]">
-            Approximate layout on the app (your edits apply here too).
+            {t('dev.approxLayout')}
           </p>
 
           <div className="mx-auto mt-4 max-w-[360px] rounded-2xl border border-[rgba(56,189,248,0.2)] bg-[#05070a] p-5 shadow-inner">
             <p className="text-[11px] font-bold uppercase tracking-wider text-[#38bdf8]">
-              Day {devotional.day_number}
+              {t('dev.day', { n: devotional.day_number })}
             </p>
             <p className="mt-1 text-[13px] text-[#64748b]">{sermonTitle}</p>
             <h3 className="mt-3 text-[19px] font-bold leading-snug text-white">{headline}</h3>
@@ -93,13 +95,13 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
             {devotional.pre_prompt?.trim() ? (
               <div className="mt-4 rounded-lg border border-violet-500/25 bg-violet-950/30 px-3 py-3">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-200">
-                  Pre-session retrieval
+                  {t('dev.preSession')}
                 </p>
                 <p className="mt-1 text-[13px] leading-relaxed text-[#e2e8f0]">{devotional.pre_prompt}</p>
               </div>
             ) : null}
 
-            <p className="mt-2 text-[12px] text-[#64748b]">~{devotional.estimated_minutes} min</p>
+            <p className="mt-2 text-[12px] text-[#64748b]">{t('dev.minShort', { n: devotional.estimated_minutes })}</p>
 
             {scrPreview ? (
               <p className="mt-4 text-[14px] font-semibold text-sky-300">{scrPreview}</p>
@@ -116,7 +118,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                 {excerpt}
               </p>
             ) : (
-              <p className="mt-4 text-[14px] italic text-[#64748b]">No body text yet.</p>
+              <p className="mt-4 text-[14px] italic text-[#64748b]">{t('dev.noBody')}</p>
             )}
 
             {body.length > EXCERPT_LEN ? (
@@ -125,14 +127,14 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                 onClick={() => setExpanded((e) => !e)}
                 className="mt-2 text-[13px] font-medium text-[#38bdf8] hover:underline"
               >
-                {expanded ? 'Show less' : 'Show full text'}
+                {expanded ? t('dev.showLess') : t('dev.showFull')}
               </button>
             ) : null}
 
             {devotional.reflection_question ? (
               <div className="mt-5 border-t border-[rgba(56,189,248,0.12)] pt-4">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
-                  Reflection
+                  {t('dev.reflectionLabel')}
                 </p>
                 <p className="mt-1 text-[14px] leading-relaxed text-[#e2e8f0]">
                   {devotional.reflection_question}
@@ -144,7 +146,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
 
         <div className="space-y-4">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
-            {canEdit ? 'Edit labels' : 'Labels (read-only)'}
+            {canEdit ? t('dev.editLabels') : t('dev.labelsReadOnly')}
           </p>
           {canEdit ? (
             <>
@@ -153,10 +155,10 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   htmlFor={`dv-title-${devotional.id}`}
                   className="block text-[13px] font-medium text-[#94a3b8]"
                 >
-                  Day title
+                  {t('dev.dayTitle')}
                 </label>
                 <p className="mt-0.5 text-[12px] text-[#64748b]">
-                  Shown on cards and at the top of the devotional.
+                  {t('dev.dayTitleHint')}
                 </p>
                 <input
                   id={`dv-title-${devotional.id}`}
@@ -164,7 +166,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="admin-input mt-2"
-                  placeholder="e.g. Day 1 — Begin here"
+                  placeholder={t('dev.dayTitlePlaceholder')}
                   autoComplete="off"
                 />
               </div>
@@ -173,10 +175,10 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   htmlFor={`dv-scr-${devotional.id}`}
                   className="admin-label"
                 >
-                  Scripture / subtitle line
+                  {t('dev.scriptureLine')}
                 </label>
                 <p className="admin-hint mt-0.5 text-[12px]">
-                  Reference or short line under the title (optional).
+                  {t('dev.scriptureLineHint')}
                 </p>
                 <input
                   id={`dv-scr-${devotional.id}`}
@@ -184,7 +186,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   value={scriptureRef}
                   onChange={(e) => setScriptureRef(e.target.value)}
                   className="admin-input mt-2"
-                  placeholder="e.g. Psalm 46:10"
+                  placeholder={t('dev.scripturePlaceholder')}
                   autoComplete="off"
                 />
               </div>
@@ -195,7 +197,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   onClick={() => void save()}
                   className="admin-btn-primary"
                 >
-                  {saving ? 'Saving…' : 'Save changes'}
+                  {saving ? t('common.saving') : t('dev.saveChanges')}
                 </button>
                 <button
                   type="button"
@@ -206,7 +208,7 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
                   }}
                   className="admin-btn-secondary"
                 >
-                  Reset
+                  {t('dev.reset')}
                 </button>
               </div>
               {error ? (
@@ -218,11 +220,11 @@ export function EditableDevotionalPreview({ sermonTitle, devotional, canEdit }: 
           ) : (
             <div className="admin-card-nested p-4 text-[14px] text-admin-muted">
               <p>
-                <span className="text-[#64748b]">Title: </span>
+                <span className="text-[#64748b]">{t('dev.titleLabel')}</span>
                 {devotional.title?.trim() || '—'}
               </p>
               <p className="mt-2">
-                <span className="text-[#64748b]">Scripture line: </span>
+                <span className="text-[#64748b]">{t('dev.scriptureLabel')}</span>
                 {devotional.scripture_reference?.trim() || '—'}
               </p>
             </div>

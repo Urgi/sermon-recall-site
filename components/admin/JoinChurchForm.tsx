@@ -3,10 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 export function JoinChurchForm() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -22,9 +24,9 @@ export function JoinChurchForm() {
     setPending(false);
     if (rpcError) {
       if (rpcError.message.includes('invalid_church_code')) {
-        setError('That church code was not found. Check spelling and try again.');
+        setError(t('join.notFound'));
       } else if (rpcError.message.includes('church_member_limit_reached')) {
-        setError('This church is full on its current plan. Ask your pastor to upgrade.');
+        setError(t('join.full'));
       } else {
         setError(rpcError.message);
       }
@@ -37,14 +39,14 @@ export function JoinChurchForm() {
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
         <label htmlFor="church-code" className="block text-[13px] font-medium text-[#94a3b8]">
-          Church code
+          {t('share.churchCode')}
         </label>
         <input
           id="church-code"
           name="code"
           type="text"
           autoComplete="off"
-          placeholder="e.g. GRACE001"
+          placeholder={t('join.placeholder')}
           required
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -61,7 +63,7 @@ export function JoinChurchForm() {
         disabled={pending}
         className="rounded-lg bg-[#0379bd] px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#0369a1] disabled:opacity-60"
       >
-        {pending ? 'Joining…' : 'Join church'}
+        {pending ? t('join.joining') : t('join.submit')}
       </button>
     </form>
   );

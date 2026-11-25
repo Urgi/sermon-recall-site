@@ -1,3 +1,5 @@
+import { tr, type UiKey } from '@/lib/i18n/ui';
+
 export type SermonWorkflowStatus =
   | 'draft'
   | 'generated'
@@ -56,22 +58,7 @@ export function pastorLifecycle(opts: {
 }
 
 export function pastorLifecycleLabel(life: PastorLifecycle): string {
-  switch (life) {
-    case 'processing':
-      return 'Processing';
-    case 'failed':
-      return 'Failed';
-    case 'review_needed':
-      return 'Review needed';
-    case 'ready_to_publish':
-      return 'Ready to publish';
-    case 'published':
-      return 'Published';
-    case 'archived':
-      return 'Archived';
-    default:
-      return 'Draft';
-  }
+  return tr(`life.${life}` as UiKey);
 }
 
 export function pastorLifecycleBadgeClass(life: PastorLifecycle): string {
@@ -123,15 +110,15 @@ export function canRegenerateWorkflow(status: SermonWorkflowStatus): boolean {
 export function devotionalPreviewLockedHint(status: SermonWorkflowStatus): string {
   switch (status) {
     case 'submitted_for_approval':
-      return 'This sermon is in review. The six-day preview is locked until approval finishes or changes are requested.';
+      return tr('wf.lockedInReview');
     case 'approved':
-      return 'This sermon is approved and ready to publish. The preview is locked until you publish or return it to draft.';
+      return tr('wf.lockedApproved');
     case 'published':
-      return 'This sermon is live in the app. The preview is locked while published.';
+      return tr('wf.lockedPublished');
     case 'archived':
-      return 'This sermon is archived. Restore it to draft to generate a new preview.';
+      return tr('wf.lockedArchived');
     default:
-      return 'The six-day preview is locked in the current workflow state.';
+      return tr('wf.lockedDefault');
   }
 }
 

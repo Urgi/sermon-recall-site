@@ -8,6 +8,8 @@ export type PaidPlanId = Exclude<PlanId, 'none'>;
 type PlanConfig = {
   label: string;
   priceLabel: string;
+  /** USD per month, for locale-aware display. */
+  priceUsd: number;
   memberLimit: number;
   priceEnv: string;
 };
@@ -16,12 +18,14 @@ export const PAID_PLANS: Record<PaidPlanId, PlanConfig> = {
   standard: {
     label: 'Standard',
     priceLabel: '$49.99/month',
+    priceUsd: 49.99,
     memberLimit: 100,
     priceEnv: 'STRIPE_PRICE_STANDARD_MONTHLY',
   },
   plus: {
     label: 'Plus',
     priceLabel: '$74.99/month',
+    priceUsd: 74.99,
     memberLimit: 500,
     priceEnv: 'STRIPE_PRICE_PLUS_MONTHLY',
   },

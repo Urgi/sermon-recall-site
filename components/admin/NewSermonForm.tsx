@@ -8,8 +8,15 @@ import { TranscribeProgressPanel } from '@/components/admin/TranscribeProgressPa
 import { SermonDatePicker } from '@/components/admin/SermonDatePicker';
 import { SermonWizardProgress } from '@/components/admin/SermonWizardProgress';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
+import {
+  CAPTION_ACCEPT,
+  CAPTION_MAX_MB,
+  isCaptionFile,
+  readCaptionFile,
+} from '@/lib/transcription/captions';
 import { PDF_MAX_CHARS, PDF_MAX_MB } from '@/lib/transcription/pdf-limits';
-import { languagePromptName, normalizeAppLanguage } from '@/lib/i18n/languages';
+import { languageOptionLabel, normalizeAppLanguage } from '@/lib/i18n/languages';
+import { localizeApiError } from '@/lib/i18n/api-errors';
 import { sermonWizardCopy } from '@/lib/admin/sermon-wizard';
 import {
   extractYouTubeUrl,
@@ -41,7 +48,7 @@ function safeFileName(name: string): string {
 export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: Props) {
   const router = useRouter();
   const { t: tr } = useLanguage();
-  const languageLabel = languagePromptName(normalizeAppLanguage(sermonLanguage));
+  const languageLabel = languageOptionLabel(normalizeAppLanguage(sermonLanguage));
   const [wizardStep, setWizardStep] = useState<NewSermonStep>('details');
   const [inputKind, setInputKind] = useState<InputKind>('text');
   const [title, setTitle] = useState('');
@@ -54,6 +61,10 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
   const [pdfText, setPdfText] = useState('');
   const [pdfNote, setPdfNote] = useState<string | null>(null);
   const [pdfReading, setPdfReading] = useState(false);
+  /** Caption files (.srt/.vtt/.sbv) in Upload mode become editable text, like PDFs. */
+  const [captionText, setCaptionText] = useState('');
+  const [captionNote, setCaptionNote] = useState<string | null>(null);
+  const [captionReading, setCaptionReading] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [ownsRecording, setOwnsRecording] = useState(false);
   const [videoMeta, setVideoMeta] = useState<VideoMeta | null>(null);
@@ -120,6 +131,8 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     setPdfFile(null);
     setPdfText('');
     setPdfNote(null);
+    setCaptionText('');
+    setCaptionNote(null);
     if (next === 'text') {
       setMediaFile(null);
       setYoutubeUrl('');
@@ -136,6 +149,31 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     if (next === 'youtube') {
       setScriptOrNotes('');
       setMediaFile(null);
+    }
+  }
+
+  /** Upload mode: caption files are read here in the browser; other files wait for submit. */
+  async function onMediaPicked(f: File | null) {
+    setMediaFile(f);
+    setError(null);
+    setCaptionText('');
+    setCaptionNote(null);
+    if (!f || !isCaptionFile(f)) return;
+    setCaptionReading(true);
+    try {
+      const result = await readCaptionFile(f);
+      if (!result.ok) {
+        setError(tr(`cap.err.${result.code}` as UiKey, { mb: CAPTION_MAX_MB }));
+        return;
+      }
+      setCaptionText(result.text);
+      setCaptionNote(
+        result.truncated ? tr('cap.truncated', { chars: PDF_MAX_CHARS.toLocaleString() }) : null,
+      );
+    } catch {
+      setError(tr('cap.err.read'));
+    } finally {
+      setCaptionReading(false);
     }
   }
 
@@ -202,19 +240,19 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     try {
       const text = await navigator.clipboard.readText();
       if (!text.trim()) {
-        setError('Clipboard was empty.');
+        setError(tr('ns.err.clipEmpty'));
         return;
       }
       applyYoutubePaste(text);
     } catch {
-      setError('Could not read the clipboard. Paste with ⌘V instead.');
+      setError(tr('ns.err.clipRead'));
     }
   }
 
   function goToSource() {
     setError(null);
     if (!title.trim()) {
-      setError('Title is required.');
+      setError(tr('ns.err.title'));
       return;
     }
     setWizardStep('source');
@@ -241,7 +279,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     });
     const json = (await res.json()) as { error?: string; jobId?: string };
     if (!res.ok) {
-      setError(json.error ?? 'Could not queue transcription.');
+      setError(json.error ? localizeApiError(json.error) : tr('ns.err.queue'));
       return null;
     }
     return json.jobId ?? null;
@@ -255,7 +293,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
 
     const t = title.trim();
     if (!t) {
-      setError('Title is required.');
+      setError(tr('ns.err.title'));
       setWizardStep('details');
       return;
     }
@@ -264,13 +302,19 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     setPending(true);
 
     try {
-      if (inputKind === 'text' || inputKind === 'pdf') {
-        const notes = (inputKind === 'pdf' ? pdfText : scriptOrNotes).trim();
+      const captionUpload = inputKind === 'file' && mediaFile !== null && isCaptionFile(mediaFile);
+      if (inputKind === 'text' || inputKind === 'pdf' || captionUpload) {
+        // Pasted text, PDF text and caption text all go straight in: no transcription job.
+        const notes = (
+          inputKind === 'pdf' ? pdfText : captionUpload ? captionText : scriptOrNotes
+        ).trim();
         if (!notes) {
           setError(
             inputKind === 'pdf'
               ? tr('pdf.err.generic')
-              : 'Paste sermon text, or choose another source.',
+              : captionUpload
+                ? tr('cap.err.no_text')
+                : tr('ns.err.paste'),
           );
           return;
         }
@@ -290,7 +334,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
           .single();
 
         if (insertError) {
-          setError(insertError.message);
+          setError(tr('ns.err.create'));
           return;
         }
         if (data?.id) {
@@ -303,11 +347,11 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       if (inputKind === 'youtube') {
         const normalized = parseYouTubeUrl(youtubeUrl);
         if (!normalized) {
-          setError('Enter a valid YouTube URL.');
+          setError(tr('ns.err.youtube'));
           return;
         }
         if (!ownsRecording) {
-          setError('Confirm this is a recording your church has the right to use.');
+          setError(tr('ns.err.rights'));
           return;
         }
 
@@ -327,7 +371,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
           .single();
 
         if (insertError || !created?.id) {
-          setError(insertError?.message ?? 'Could not create sermon.');
+          setError(tr('ns.err.create'));
           return;
         }
 
@@ -345,7 +389,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       }
 
       if (!mediaFile) {
-        setError('Choose a .txt, audio, or video file.');
+        setError(tr('ns.err.fileType'));
         return;
       }
 
@@ -353,7 +397,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        setError('Not signed in.');
+        setError(tr('ns.err.signedOut'));
         return;
       }
 
@@ -363,7 +407,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       if (isPlainText) {
         const text = (await mediaFile.text()).trim();
         if (!text) {
-          setError('That text file was empty.');
+          setError(tr('ns.err.emptyText'));
           return;
         }
 
@@ -382,7 +426,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
           .single();
 
         if (insertError) {
-          setError(insertError.message);
+          setError(tr('ns.err.create'));
           return;
         }
         if (data?.id) {
@@ -407,7 +451,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
         .single();
 
       if (insertError || !created?.id) {
-        setError(insertError?.message ?? 'Could not create sermon.');
+        setError(tr('ns.err.create'));
         return;
       }
       const sermonId = created.id;
@@ -424,7 +468,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
         contentType: mediaFile.type || undefined,
       });
       if (upStorage) {
-        setError(upStorage.message);
+        setError(tr('ns.err.queue'));
         return;
       }
 
@@ -442,7 +486,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
       setQueuedJobId(jobId);
       router.push(`/sermons/${sermonId}`);
     } catch {
-      setError('Something went wrong.');
+      setError(tr('common.error'));
     } finally {
       setMediaProgress(null);
       setPending(false);
@@ -450,6 +494,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
   }
 
   function fileNeedsTranscribe(f: File) {
+    if (isCaptionFile(f)) return false;
     if (f.name.toLowerCase().endsWith('.txt')) return false;
     if (f.type.startsWith('text/')) return false;
     return true;
@@ -457,16 +502,16 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
 
   const submitLabel =
     pending && inputKind === 'file' && mediaFile && fileNeedsTranscribe(mediaFile)
-      ? 'Uploading…'
+      ? tr('ns.uploading')
       : pending && inputKind === 'youtube'
-        ? 'Queuing…'
+        ? tr('ns.queuing')
         : pending
-          ? 'Saving…'
-          : 'Create devotionals';
+          ? tr('common.saving')
+          : tr('ns.submit');
 
   const sourceModes: { id: InputKind; label: string }[] = [
-    { id: 'text', label: 'Paste text' },
-    { id: 'file', label: 'Upload' },
+    { id: 'text', label: tr('ns.modePaste') },
+    { id: 'file', label: tr('ns.modeUpload') },
     { id: 'pdf', label: tr('pdf.mode') },
   ];
 
@@ -474,7 +519,9 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
     inputKind === 'youtube'
       ? Boolean(ownsRecording && parseYouTubeUrl(youtubeUrl))
       : inputKind === 'file'
-        ? Boolean(mediaFile)
+        ? mediaFile !== null && isCaptionFile(mediaFile)
+          ? Boolean(captionText.trim()) && !captionReading
+          : Boolean(mediaFile)
         : inputKind === 'pdf'
           ? Boolean(pdfText.trim()) && !pdfReading
           : Boolean(scriptOrNotes.trim());
@@ -492,7 +539,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
         <div className="space-y-4">
           <div>
             <label htmlFor="sermon-title" className="admin-label">
-              Title <span className="text-red-500">*</span>
+              {tr('ns.title')} <span className="text-red-500">*</span>
             </label>
             <input
               id="sermon-title"
@@ -512,7 +559,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
           </div>
           <div>
             <label htmlFor="sermon-pastor" className="admin-label">
-              Pastor name
+              {tr('ns.pastor')}
             </label>
             <input
               id="sermon-pastor"
@@ -524,8 +571,8 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             />
           </div>
           <div>
-            <span className="admin-label">Sermon date</span>
-            <p className="admin-hint mt-1">Optional — pick from the calendar or leave unset.</p>
+            <span className="admin-label">{tr('ns.date')}</span>
+            <p className="admin-hint mt-1">{tr('ns.dateHint')}</p>
             <SermonDatePicker id="sermon-date" value={sermonDate} onChange={setSermonDate} />
           </div>
           {error ? (
@@ -539,7 +586,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             disabled={!title.trim()}
             className="admin-btn-primary mt-2 h-12 w-full rounded-full text-[15px]"
           >
-            Continue
+            {tr('ns.continue')}
           </button>
         </div>
       ) : (
@@ -547,7 +594,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
           <div className="space-y-3">
             <div
               role="radiogroup"
-              aria-label="Sermon source"
+              aria-label={tr('ns.sourceAria')}
               className="grid grid-cols-3 rounded-full border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] p-1"
             >
               {sourceModes.map((mode) => {
@@ -571,11 +618,27 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
               })}
             </div>
 
+            {inputKind === 'text' || inputKind === 'file' ? (
+              <details className="group rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-bg)] px-4 py-3 text-[13px] leading-relaxed text-[var(--admin-muted)]">
+                <summary className="flex min-h-8 cursor-pointer list-none items-center justify-between gap-3 font-semibold text-[var(--admin-fg-strong)]">
+                  {tr('cap.guideTitle')}
+                  <span aria-hidden className="transition-transform duration-fast group-open:rotate-180">
+                    ▾
+                  </span>
+                </summary>
+                <p className="mt-2">{tr('cap.guideNoLinks')}</p>
+                <p className="mt-3 font-semibold text-[var(--admin-fg)]">{tr('cap.guidePasteTitle')}</p>
+                <p className="mt-1">{tr('cap.guidePasteSteps', { paste: tr('ns.modePaste') })}</p>
+                <p className="mt-3 font-semibold text-[var(--admin-fg)]">{tr('cap.guideFileTitle')}</p>
+                <p className="mt-1">{tr('cap.guideFileSteps', { upload: tr('ns.modeUpload') })}</p>
+              </details>
+            ) : null}
+
             {inputKind === 'youtube' ? (
               <div className="admin-page-enter space-y-4">
                 <div>
                   <label htmlFor="sermon-youtube" className="admin-label">
-                    YouTube URL <span className="text-red-500">*</span>
+                    {tr('ns.youtubeUrl')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative mt-1">
                     <input
@@ -584,7 +647,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                       type="text"
                       inputMode="url"
                       autoComplete="url"
-                      placeholder="Paste a YouTube link to this week’s sermon"
+                      placeholder={tr('ns.youtubePlaceholder')}
                       value={youtubeUrl}
                       onChange={(e) => applyYoutubePaste(e.target.value)}
                       className="admin-input pr-12"
@@ -593,8 +656,8 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                       type="button"
                       onClick={() => void pasteFromClipboard()}
                       className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2.5 text-[var(--admin-muted)] transition-colors duration-fast hover:bg-[var(--admin-nav-hover-bg)] hover:text-[var(--admin-accent)]"
-                      aria-label="Paste from clipboard"
-                      title="Paste from clipboard"
+                      aria-label={tr('ns.pasteClipboard')}
+                      title={tr('ns.pasteClipboard')}
                     >
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
                         <path
@@ -639,7 +702,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                           className="mt-1 text-[12px] font-medium text-[var(--admin-link)] hover:underline"
                           onClick={() => setTitle(videoMeta.title)}
                         >
-                          Use this title
+                          {tr('ns.useTitle')}
                         </button>
                       ) : null}
                     </div>
@@ -647,7 +710,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                 ) : null}
 
                 <p className="admin-hint">
-                  Transcription language:{' '}
+                  {tr('ns.transLang')}{' '}
                   <a href="/settings" className="text-[var(--admin-link)] hover:underline">
                     {languageLabel}
                   </a>
@@ -662,8 +725,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                     className="mt-0.5"
                   />
                   <span>
-                    I confirm this is a recording our church has the right to use (our sermon, or we
-                    have permission).
+                    {tr('ns.rights')}
                   </span>
                 </label>
               </div>
@@ -672,14 +734,14 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             {inputKind === 'text' ? (
               <div className="admin-page-enter">
                 <label htmlFor="sermon-script" className="sr-only">
-                  Sermon text
+                  {tr('ns.sermonText')}
                 </label>
                 <textarea
                   id="sermon-script"
                   name="scriptOrNotes"
                   rows={10}
                   required
-                  placeholder="Paste manuscript, outline, or bullets…"
+                  placeholder={tr('ns.textPlaceholder')}
                   value={scriptOrNotes}
                   onChange={(e) => setScriptOrNotes(e.target.value)}
                   className="admin-input min-h-[10rem] resize-y leading-relaxed placeholder:text-[var(--admin-dim)]"
@@ -768,7 +830,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
             {inputKind === 'file' ? (
               <div className="admin-page-enter">
                 <label htmlFor="sermon-file" className="admin-label">
-                  File <span className="text-red-500">*</span>
+                  {tr('ns.file')} <span className="text-red-500">*</span>
                 </label>
                 <label
                   htmlFor="sermon-file"
@@ -781,10 +843,7 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                     e.preventDefault();
                     setFileOver(false);
                     const f = e.dataTransfer.files?.[0] ?? null;
-                    if (f) {
-                      setMediaFile(f);
-                      setError(null);
-                    }
+                    if (f) void onMediaPicked(f);
                   }}
                   className={`mt-1.5 flex min-h-[9.5rem] w-full cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-4 text-center transition-colors duration-fast focus-within:border-[var(--admin-accent)] focus-within:shadow-[0_0_0_2px_rgba(14,165,233,0.25)] ${
                     fileOver || mediaFile
@@ -795,34 +854,55 @@ export function NewSermonForm({ churchId, sermonLanguage, defaultPastorName }: P
                   <input
                     id="sermon-file"
                     type="file"
-                    accept="audio/*,video/*,.txt,text/plain"
+                    accept={`audio/*,video/*,.txt,text/plain,${CAPTION_ACCEPT}`}
                     className="sr-only"
-                    disabled={pending}
+                    disabled={pending || captionReading}
                     onChange={(ev) => {
                       const f = ev.target.files?.[0] ?? null;
-                      setMediaFile(f);
-                      setError(null);
                       ev.target.value = '';
+                      void onMediaPicked(f);
                     }}
                   />
-                  {mediaFile ? (
+                  {captionReading ? (
+                    <span className="text-[14px] font-medium text-[var(--admin-fg-strong)]" role="status">
+                      {tr('cap.reading')}
+                    </span>
+                  ) : mediaFile ? (
                     <>
                       <span className="max-w-full truncate text-[14px] font-medium text-[var(--admin-fg-strong)]">
                         {mediaFile.name}
                       </span>
-                      <span className="admin-hint mt-1">Click or drop a file to replace it</span>
+                      <span className="admin-hint mt-1">{tr('ns.fileReplace')}</span>
                     </>
                   ) : (
                     <>
                       <span className="text-[14px] font-semibold text-[var(--admin-fg-strong)]">
-                        Choose file
+                        {tr('ns.fileChoose')}
                       </span>
                       <span className="admin-hint mt-1">
-                        Drop a file here or click to browse — audio, video, or text.
+                        {tr('ns.fileDrop')}
                       </span>
                     </>
                   )}
                 </label>
+                {captionText ? (
+                  <div className="mt-4">
+                    <label htmlFor="sermon-caption-text" className="admin-label">
+                      {tr('cap.review')}
+                    </label>
+                    <p className="admin-hint mt-1">
+                      {tr('cap.reviewHint')}
+                      {captionNote ? ` ${captionNote}` : ''}
+                    </p>
+                    <textarea
+                      id="sermon-caption-text"
+                      rows={12}
+                      value={captionText}
+                      onChange={(e) => setCaptionText(e.target.value)}
+                      className="admin-input mt-1 min-h-[12rem] resize-y leading-relaxed"
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>

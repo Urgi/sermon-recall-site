@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
+import { enUS, es, fr } from 'date-fns/locale';
 import { useMemo, useState } from 'react';
 
 import { DeleteSermonButton } from '@/components/admin/DeleteSermonButton';
+import type { AppLanguage } from '@/lib/i18n/languages';
 import { useLanguage } from '@/components/i18n/LanguageProvider';
 import type { UiKey } from '@/lib/i18n/ui';
 import type { SermonsFilterId } from '@/lib/admin/sermons-filter';
@@ -40,10 +42,12 @@ function defaultFilter(rows: SermonsInboxRow[]): SermonsFilterId {
   return 'all';
 }
 
-function formatSermonDate(ymd: string | null): string {
+const DATE_LOCALES = { en: enUS, es, fr } as const;
+
+function formatSermonDate(ymd: string | null, language: AppLanguage): string {
   if (!ymd) return '—';
   try {
-    return format(parseISO(ymd), 'MMM d, yyyy');
+    return format(parseISO(ymd), 'PP', { locale: DATE_LOCALES[language] });
   } catch {
     return ymd;
   }
@@ -163,7 +167,7 @@ export function SermonsInbox({
   initialFilter?: SermonsFilterId | null;
   canDelete?: boolean;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [filter, setFilter] = useState<SermonsFilterId>(() => initialFilter ?? defaultFilter(rows));
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
@@ -274,7 +278,7 @@ export function SermonsInbox({
                       {sub ? <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{sub}</p> : null}
                     </td>
                     <td className="hidden whitespace-nowrap px-5 py-4 text-[14px] text-[var(--admin-fg-strong)] sm:table-cell">
-                      {formatSermonDate(s.sermon_date)}
+                      {formatSermonDate(s.sermon_date, language)}
                     </td>
                     <td className="px-4 py-4 sm:px-5">
                       <span

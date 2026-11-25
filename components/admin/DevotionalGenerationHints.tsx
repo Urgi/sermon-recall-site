@@ -2,24 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
+import { useLanguage } from '@/components/i18n/LanguageProvider';
+
 /** Shown while AI builds or rebuilds the six-day set. */
-export const DEVOTIONAL_GENERATION_HINTS = [
-  'Grounding each day in your sermon…',
-  'Tuning tone for a clear, encouraging read…',
-  'Weaving Scripture where it fits the six-day arc…',
-  'Shaping distinct memory prompts for each day…',
-  'Aligning titles and pacing for busy readers…',
-  'Crafting reflection questions for journaling…',
-  'Structuring the week from welcome to send-off…',
-] as const;
+export const DEVOTIONAL_GENERATION_HINTS = ['hint.g1', 'hint.g2', 'hint.g3', 'hint.g4', 'hint.g5', 'hint.g6', 'hint.g7'] as const;
 
 /** Shown while a single day is being regenerated. */
-export const DEVOTIONAL_DAY_REGEN_HINTS = [
-  'Re-reading your sermon for this day’s angle…',
-  'Adjusting tone and length for members…',
-  'Checking Scripture and prompts stay distinct…',
-  'Polishing the reflection question…',
-] as const;
+export const DEVOTIONAL_DAY_REGEN_HINTS = ['hint.s1', 'hint.s2', 'hint.s3', 'hint.s4'] as const;
 
 type Props = {
   active: boolean;
@@ -39,9 +28,9 @@ export function DevotionalGenerationHints({
   className = '',
   intervalMs = 2800,
 }: Props) {
-  const lines =
-    linesOverride ??
-    (variant === 'single-day' ? DEVOTIONAL_DAY_REGEN_HINTS : DEVOTIONAL_GENERATION_HINTS);
+  const { t } = useLanguage();
+  const keys = variant === 'single-day' ? DEVOTIONAL_DAY_REGEN_HINTS : DEVOTIONAL_GENERATION_HINTS;
+  const lines = linesOverride ?? keys.map((k) => t(k));
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
