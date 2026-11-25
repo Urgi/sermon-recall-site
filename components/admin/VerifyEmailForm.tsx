@@ -146,7 +146,7 @@ export function VerifyEmailForm({ initialEmail = '', linkRejected = false }: Pro
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          maxLength={8}
+          maxLength={6}
           required
           disabled={pending}
           value={code}

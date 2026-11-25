@@ -238,7 +238,7 @@ export function LoginForm({ nextPath, initialEmail = '', linkRejected = false }:
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={8}
+            maxLength={6}
             required
             disabled={pending}
             autoFocus
