@@ -9,7 +9,7 @@ import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
 import { staffHasPermission } from '@/lib/auth/profile';
 import { requireAdminSession } from '@/lib/auth/server';
 import { PastorBroadcastForm } from '@/components/admin/PastorBroadcastForm';
-import { PastorBroadcastHistory } from '@/components/admin/PastorBroadcastHistory';
+import { BroadcastHistoryAccordion } from '@/components/admin/BroadcastHistoryAccordion';
 
 export function generateMetadata(): Metadata {
   return { title: localizedTitle('nav.notifications') };
@@ -69,7 +69,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="admin-heading">
           <AdminChromeCopy k="notify.title" />
@@ -79,7 +79,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
         </p>
       </div>
 
-      <section id="notify-church" className="admin-card p-6">
+      <section id="notify-church" className="admin-card scroll-mt-24 p-6">
         <h2 className="admin-section-title">
           <AdminChromeCopy k="notify.composeTitle" />
         </h2>
@@ -88,17 +88,7 @@ async function NotificationsPageBody({ searchParams }: Props) {
         </div>
       </section>
 
-      <section className="admin-card p-6">
-        <h2 className="admin-section-title">
-          <AdminChromeCopy k="notify.history" />
-        </h2>
-        <p className="admin-body mt-2">
-          <AdminChromeCopy k="notify.historyHint" />
-        </p>
-        <div className="mt-4">
-          <PastorBroadcastHistory />
-        </div>
-      </section>
+      <BroadcastHistoryAccordion />
     </div>
   );
 }

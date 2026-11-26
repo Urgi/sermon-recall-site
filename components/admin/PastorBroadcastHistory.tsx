@@ -29,9 +29,11 @@ function formatRole(role: string | null): string {
 
 type Props = {
   refreshKey?: number;
+  /** Reports how many broadcasts loaded (null while loading), e.g. for an accordion summary. */
+  onCountChange?: (count: number | null) => void;
 };
 
-export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
+export function PastorBroadcastHistory({ refreshKey = 0, onCountChange }: Props) {
   const { t, language } = useLanguage();
   const [items, setItems] = useState<BroadcastHistoryItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,10 @@ export function PastorBroadcastHistory({ refreshKey = 0 }: Props) {
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
+
+  useEffect(() => {
+    onCountChange?.(loading ? null : (items?.length ?? 0));
+  }, [items, loading, onCountChange]);
 
   async function loadRecipients(broadcastId: string) {
     setRecipientsById((prev) => ({

@@ -181,7 +181,7 @@ export function SermonsInbox({
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative block min-w-0 max-w-md flex-1">
+        <label className="relative block min-w-0 max-w-xs flex-1">
           <span className="sr-only">{t('sermons.search')}</span>
           <SearchIcon />
           <input
@@ -189,7 +189,7 @@ export function SermonsInbox({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t('sermons.search')}
-            className="w-full rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] py-2.5 pl-10 pr-3 text-[14px] text-[var(--admin-fg-strong)] outline-none transition-[border-color,box-shadow] duration-fast placeholder:text-[var(--admin-muted)] focus:border-[var(--admin-accent)] focus:shadow-[0_0_0_2px_rgba(14,165,233,0.25)]"
+            className="h-9 w-full rounded-full border border-[var(--admin-border)] bg-[var(--glass-inner-bg)] py-1.5 pl-9 pr-3 text-[13px] text-[var(--admin-fg-strong)] outline-none transition-[border-color,box-shadow] duration-fast placeholder:text-[var(--admin-muted)] focus:border-[var(--admin-accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--admin-accent)_28%,transparent)]"
           />
         </label>
         <div className="flex flex-wrap gap-2" role="group" aria-label={t('sermons.filterLabel')}>

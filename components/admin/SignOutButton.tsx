@@ -1,12 +1,19 @@
 'use client';
 
+import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useLanguage } from '@/components/i18n/LanguageProvider';
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
-export function SignOutButton({ className }: { className?: string }) {
+export function SignOutButton({
+  className,
+  variant = 'text',
+}: {
+  className?: string;
+  variant?: 'text' | 'icon';
+}) {
   const router = useRouter();
   const { t } = useLanguage();
   const [pending, setPending] = useState(false);
@@ -18,6 +25,22 @@ export function SignOutButton({ className }: { className?: string }) {
     setPending(false);
     router.refresh();
     router.push('/login');
+  }
+
+  if (variant === 'icon') {
+    const label = pending ? t('common.signingOut') : t('common.signOut');
+    return (
+      <button
+        type="button"
+        onClick={() => void signOut()}
+        disabled={pending}
+        aria-label={label}
+        title={label}
+        className={className ?? 'admin-icon-btn shrink-0 disabled:opacity-50'}
+      >
+        <LogOut aria-hidden className="h-4 w-4" />
+      </button>
+    );
   }
 
   return (

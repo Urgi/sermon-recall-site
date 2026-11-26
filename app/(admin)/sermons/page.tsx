@@ -5,7 +5,10 @@ import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
+import { Upload } from 'lucide-react';
+
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
+import { PrimaryCta } from '@/components/admin/ui/PrimaryCta';
 import { SermonsInbox, type SermonsInboxRow } from '@/components/admin/SermonsInbox';
 import { parseSermonsFilter } from '@/lib/admin/sermons-filter';
 import { pastorLifecycle } from '@/lib/admin/workflow-status';
@@ -78,10 +81,12 @@ async function SermonsListBody({ searchParams }: Props) {
           </p>
         </div>
         {canPublish && profile.church_id ? (
-          <Link href="/sermons/new" className="admin-btn-primary inline-flex items-center gap-2">
-            <UploadIcon />
-            <AdminChromeCopy k="sermons.upload" />
-          </Link>
+          <PrimaryCta
+            href="/sermons/new"
+            label={<AdminChromeCopy k="sermons.upload" />}
+            outcome={<AdminChromeCopy k="dash.uploadOutcome" />}
+            icon={Upload}
+          />
         ) : null}
       </div>
 
@@ -101,25 +106,5 @@ async function SermonsListBody({ searchParams }: Props) {
         />
       )}
     </div>
-  );
-}
-
-function UploadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-      <path
-        d="M12 16V5M8 8l4-4 4 4"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }

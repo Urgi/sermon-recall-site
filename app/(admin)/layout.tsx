@@ -4,13 +4,8 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { AdminChromeCopy } from '@/components/admin/AdminChromeCopy';
-import {
-  AdminMobileChurchName,
-  AdminMobileHeaderSlot,
-  AdminSidebarSlot,
-} from '@/components/admin/AdminSidebarSlot';
+import { AdminSidebarSlot, AdminTopBarSlot } from '@/components/admin/AdminSidebarSlot';
 import { AdminShellProviders } from '@/components/admin/AdminShellProviders';
-import { SignOutButton } from '@/components/admin/SignOutButton';
 import { SermonRecallLogo } from '@/components/branding/SermonRecallLogo';
 import { LanguageProvider } from '@/components/i18n/LanguageProvider';
 import { LANGUAGE_COOKIE } from '@/lib/i18n/languages';
@@ -21,48 +16,45 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const remembered = cookies().get(LANGUAGE_COOKIE)?.value ?? null;
+  const compactBrand = (
+    <Link href="/dashboard" className="flex items-center">
+      <SermonRecallLogo variant="header" className="h-8 w-8 shrink-0 rounded-lg object-contain" priority />
+      <span className="sr-only">
+        <AdminChromeCopy k="nav.dashboardHome" />
+      </span>
+    </Link>
+  );
   return (
     <LanguageProvider initialLanguage={remembered}>
       <AdminShellProviders>
-        <div className="admin-shell flex min-h-screen bg-admin-page text-admin-fg">
+        <div className="admin-shell flex min-h-screen text-admin-fg">
+          <div className="admin-backdrop" aria-hidden />
           <a
             href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[80] focus:rounded-md focus:bg-admin-card focus:px-3 focus:py-2 focus:text-sm focus:text-admin-fg-strong focus:shadow-lg"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[95] focus:rounded-md focus:bg-admin-card focus:px-3 focus:py-2 focus:text-sm focus:text-admin-fg-strong focus:shadow-lg"
           >
             <AdminChromeCopy k="common.skipToContent" />
           </a>
-          <aside className="admin-sidebar hidden w-60 shrink-0 flex-col border-r border-admin bg-admin-sidebar p-4 wide:flex">
-            <Link href="/dashboard" className="mb-6 inline-block">
-              <SermonRecallLogo variant="header" className="h-10 w-auto max-w-[10rem] object-contain" priority />
-              <span className="sr-only">
-                <AdminChromeCopy k="nav.dashboardHome" />
-              </span>
-            </Link>
-            <Suspense fallback={<SidebarNavFallback />}>
-              <AdminSidebarSlot />
-            </Suspense>
+          <aside className="admin-sidebar sticky top-0 hidden h-screen w-64 shrink-0 wide:flex">
+            <div className="admin-sidebar-panel flex min-h-0 w-full flex-1 flex-col overflow-y-auto p-4">
+              <Link href="/dashboard" className="mb-7 inline-block px-1">
+                <SermonRecallLogo variant="header" className="h-10 w-auto max-w-[10rem] object-contain" priority />
+                <span className="sr-only">
+                  <AdminChromeCopy k="nav.dashboardHome" />
+                </span>
+              </Link>
+              <Suspense fallback={<SidebarNavFallback />}>
+                <AdminSidebarSlot />
+              </Suspense>
+            </div>
           </aside>
           <div className="admin-main-wrap flex min-h-screen min-w-0 flex-1 flex-col">
-            <header className="admin-mobile-header flex flex-col items-stretch gap-2 border-b border-admin px-4 py-3 wide:hidden">
-              <div className="flex items-center justify-between gap-3">
-                <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-                  <SermonRecallLogo variant="header" className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
-                  <span className="sr-only">
-                    <AdminChromeCopy k="nav.dashboardHome" />
-                  </span>
-                  <span className="truncate text-sm font-semibold text-admin-fg-strong">
-                    <Suspense fallback={<AdminChromeCopy k="nav.churchAdmin" />}>
-                      <AdminMobileChurchName fallback={<AdminChromeCopy k="nav.churchAdmin" />} />
-                    </Suspense>
-                  </span>
-                </Link>
-                <SignOutButton className="min-h-10 shrink-0 whitespace-nowrap rounded-md px-3 text-[13px] text-admin-muted transition-colors duration-fast hover:bg-admin-nav-hover hover:text-admin-accent" />
-              </div>
-              <Suspense fallback={<MobileNavFallback />}>
-                <AdminMobileHeaderSlot />
-              </Suspense>
-            </header>
-            <main id="main" className="flex-1 px-[clamp(1rem,4vw,2rem)] py-6 wide:py-8">{children}</main>
+            <Suspense fallback={<TopBarFallback brand={compactBrand} />}>
+              <AdminTopBarSlot brand={compactBrand} />
+            </Suspense>
+            <main id="main" className="flex-1 px-[clamp(1rem,3vw,2rem)] py-6 wide:py-8">
+              {children}
+            </main>
           </div>
         </div>
       </AdminShellProviders>
@@ -73,22 +65,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 function SidebarNavFallback() {
   return (
     <>
-      <div className="flex flex-col gap-1">
-        {['Overview', 'Sermons', 'Members', 'Settings'].map((label) => (
-          <div
-            key={label}
-            className="h-9 rounded-lg bg-[var(--admin-nav-hover-bg)]"
-            aria-hidden
-          />
+      <div className="flex flex-col gap-1.5 pl-3" aria-hidden>
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-9 rounded-xl bg-[var(--admin-nav-hover-bg)]" />
         ))}
       </div>
-      <div className="mt-auto border-t border-admin pt-4">
-        <div className="mx-2 h-3 w-24 rounded bg-[var(--admin-border)]" />
+      <div className="mt-auto pt-4">
+        <div className="glass-inner h-14" aria-hidden />
       </div>
     </>
   );
 }
 
-function MobileNavFallback() {
-  return <div className="h-9 w-full rounded-full bg-[var(--admin-border)]" aria-hidden />;
+function TopBarFallback({ brand }: { brand: React.ReactNode }) {
+  return (
+    <header className="admin-topbar sticky top-0 z-40">
+      <div className="flex h-14 items-center gap-2 px-[clamp(1rem,3vw,2rem)] wide:h-16">
+        <div className="wide:hidden">{brand}</div>
+        <div className="ml-auto h-9 w-28 rounded-full bg-[var(--admin-nav-hover-bg)]" aria-hidden />
+      </div>
+    </header>
+  );
 }

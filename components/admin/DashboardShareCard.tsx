@@ -16,6 +16,8 @@ type Props = {
   hintKey?: UiKey;
   size?: 'sm' | 'lg';
   showEmail?: boolean;
+  /** Render without its own panel and heading (when placed inside an AccordionRow). */
+  bare?: boolean;
 };
 
 export function DashboardShareCard({
@@ -27,6 +29,7 @@ export function DashboardShareCard({
   hintKey = 'share.defaultHint',
   size = 'sm',
   showEmail = true,
+  bare = false,
 }: Props) {
   const { t } = useLanguage();
   const code = normalizeChurchCode(churchCode);
@@ -90,9 +93,11 @@ export function DashboardShareCard({
   }
 
   return (
-    <div className="admin-card flex h-full flex-col p-5">
-      <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">{t(headingKey)}</h2>
-      <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{t(hintKey)}</p>
+    <div className={bare ? 'flex h-full flex-col p-5' : 'admin-card flex h-full flex-col p-5'}>
+      {bare ? null : (
+        <h2 className="text-lg font-semibold text-[var(--admin-fg-strong)]">{t(headingKey)}</h2>
+      )}
+      <p className={`${bare ? '' : 'mt-1 '}text-[13px] text-[var(--admin-muted)]`}>{t(hintKey)}</p>
       <div className="mt-4 flex flex-wrap gap-4">
         <div className="min-w-[12rem] flex-1 space-y-3">
           <div className="flex items-start justify-between gap-3 rounded-lg border border-[var(--admin-border-strong)] bg-[var(--admin-surface-bg)] px-3.5 py-3">

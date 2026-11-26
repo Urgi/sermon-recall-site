@@ -1,12 +1,18 @@
 import { cache } from 'react';
 
 import { AdminSidebarNav } from '@/components/admin/AdminSidebarNav';
+import { AdminTopBar } from '@/components/admin/AdminTopBar';
 import { SignOutButton } from '@/components/admin/SignOutButton';
-import { canAccessTeamNav, staffHasPermission } from '@/lib/auth/profile';
+import {
+  canAccessTeamNav,
+  canManageSermonsWithStaff,
+  staffHasPermission,
+} from '@/lib/auth/profile';
 import { getChurchForProfile, requireAdminSession } from '@/lib/auth/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export async function AdminSidebarSlot() {
+/** Permissions, counts and labels shared by the sidebar, the top bar and the phone drawer. */
+const loadAdminChrome = cache(async () => {
   const { user, profile, staffRole, isApprovedStaff } = await requireAdminSession();
   const church = await getChurchForProfile(profile.church_id);
   const canViewTeam = canAccessTeamNav(profile, staffRole, {
@@ -15,65 +21,84 @@ export async function AdminSidebarSlot() {
   });
   const canViewNotifications =
     isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
+  const canPublish =
+    isApprovedStaff && Boolean(profile.church_id) && canManageSermonsWithStaff(profile, staffRole);
   const label = profile.full_name?.trim() || user.email?.split('@')[0] || 'Admin';
   const [memberCount, teamCount] = await Promise.all([
     loadMemberCount(Boolean(church) && isApprovedStaff),
     loadTeamCount(Boolean(church) && canViewTeam),
   ]);
+  return {
+    perms: { canViewTeam, canViewNotifications, canPublish },
+    counts: { memberCount, teamCount },
+    label,
+    email: user.email ?? undefined,
+    churchName: church?.name ?? null,
+  };
+});
 
+export async function AdminSidebarSlot() {
+  const { perms, counts, label, email, churchName } = await loadAdminChrome();
   return (
     <>
-      <AdminSidebarNav
-        canViewTeam={canViewTeam}
-        canViewNotifications={canViewNotifications}
-        memberCount={memberCount}
-        teamCount={teamCount}
-      />
-      <div className="mt-auto border-t border-admin pt-4">
-        <p className="truncate px-2 text-[13px] font-medium text-admin-fg-secondary" title={user.email}>
-          {label}
-        </p>
-        {church ? (
-          <p className="truncate px-2 text-[12px] text-admin-muted" title={church.name}>
-            {church.name}
-          </p>
-        ) : null}
-        <SignOutButton />
+      <div className="pl-3">
+        <AdminSidebarNav {...perms} {...counts} />
+      </div>
+      <div className="mt-auto pt-4">
+        <AdminAccountBlock label={label} email={email} churchName={churchName} />
       </div>
     </>
   );
 }
 
-/** Church name for the phone header; falls back to the generic label when there is no church yet. */
-export async function AdminMobileChurchName({ fallback }: { fallback: React.ReactNode }) {
-  const { profile } = await requireAdminSession();
-  const church = await getChurchForProfile(profile.church_id);
-  return <>{church?.name?.trim() || fallback}</>;
+export async function AdminTopBarSlot({ brand }: { brand: React.ReactNode }) {
+  const { perms, counts, label, email, churchName } = await loadAdminChrome();
+  return (
+    <AdminTopBar
+      {...perms}
+      {...counts}
+      brand={brand}
+      account={<AdminAccountBlock label={label} email={email} churchName={churchName} />}
+    />
+  );
 }
 
-export async function AdminMobileHeaderSlot() {
-  const { user, profile, staffRole, isApprovedStaff } = await requireAdminSession();
-  const church = await getChurchForProfile(profile.church_id);
-  const canViewTeam = canAccessTeamNav(profile, staffRole, {
-    ownerUserId: church?.owner_user_id,
-    userId: user.id,
-  });
-  const canViewNotifications =
-    isApprovedStaff && staffHasPermission(staffRole, profile, 'can_send_notifications');
-
-  const [memberCount, teamCount] = await Promise.all([
-    loadMemberCount(Boolean(church) && isApprovedStaff),
-    loadTeamCount(Boolean(church) && canViewTeam),
-  ]);
-
+function AdminAccountBlock({
+  label,
+  email,
+  churchName,
+}: {
+  label: string;
+  email?: string;
+  churchName: string | null;
+}) {
+  const initials =
+    label
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join('') || 'A';
   return (
-    <AdminSidebarNav
-      canViewTeam={canViewTeam}
-      canViewNotifications={canViewNotifications}
-      memberCount={memberCount}
-      teamCount={teamCount}
-      variant="compact"
-    />
+    <div className="glass-inner flex items-center gap-3 p-2.5">
+      <span
+        aria-hidden
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-300 to-blue-500 text-[13px] font-semibold text-[#071226]"
+      >
+        {initials}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-medium text-[var(--admin-fg-strong)]" title={email}>
+          {label}
+        </p>
+        {churchName ? (
+          <p className="truncate text-[12px] text-[var(--admin-muted)]" title={churchName}>
+            {churchName}
+          </p>
+        ) : null}
+      </div>
+      <SignOutButton variant="icon" />
+    </div>
   );
 }
 

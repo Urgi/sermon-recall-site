@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { AdminPageFallback } from '@/components/admin/AdminPageFallback';
-import { DashboardShareCard } from '@/components/admin/DashboardShareCard';
+import { MembersInviteAccordion } from '@/components/admin/MembersInviteAccordion';
 import { MembersRoster } from '@/components/admin/MembersRoster';
 import { parseChurchMembers, type ChurchMemberRow } from '@/lib/admin/church-members';
 import { staffHasPermission } from '@/lib/auth/profile';
@@ -57,7 +57,7 @@ async function MembersPageBody() {
   const qrDataUrl = church.church_code ? '/api/church/qr-image' : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="admin-heading">
@@ -88,28 +88,12 @@ async function MembersPageBody() {
         <MembersRoster members={members} canRemove={canRemove} />
       )}
 
-      <section id="invite">
-        {joinUrl && qrDataUrl ? (
-          <DashboardShareCard
-            churchName={church.name}
-            churchCode={church.church_code}
-            joinUrl={joinUrl}
-            qrDataUrl={qrDataUrl}
-            headingKey="members.inviteHeading"
-            hintKey="members.inviteHint"
-            size="lg"
-          />
-        ) : (
-          <div className="admin-card p-6">
-            <h2 className="admin-section-title">
-              <AdminChromeCopy k="members.inviteHeading" />
-            </h2>
-            <p className="admin-body mt-2">
-              <AdminChromeCopy k="members.noCode" />
-            </p>
-          </div>
-        )}
-      </section>
+      <MembersInviteAccordion
+        churchName={church.name}
+        churchCode={church.church_code ?? null}
+        joinUrl={joinUrl}
+        qrDataUrl={qrDataUrl}
+      />
     </div>
   );
 }
